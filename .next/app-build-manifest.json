@@ -16,30 +16,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/portfolio/page.js"
     ],
-    "/markets/page": [
+    "/api/dexscreener/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/markets/page.js"
+      "static/chunks/app/api/dexscreener/route.js"
     ],
-    "/alerts/page": [
+    "/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/alerts/page.js"
+      "static/chunks/app/dashboard/page.js"
     ],
-    "/transactions/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/transactions/page.js"
-    ],
-    "/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/settings/page.js"
-    ],
-    "/balance/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/balance/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
