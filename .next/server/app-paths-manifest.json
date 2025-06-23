@@ -1,11 +1,3 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/portfolio/page": "app/portfolio/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/page": "app/page.js",
-  "/transactions/page": "app/transactions/page.js",
-  "/markets/page": "app/markets/page.js",
-  "/alerts/page": "app/alerts/page.js",
-  "/balance/page": "app/balance/page.js",
-  "/settings/page": "app/settings/page.js"
+  "/portfolio/page": "app/portfolio/page.js"
 }

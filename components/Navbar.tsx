@@ -10,8 +10,8 @@ const menuItems = [
   { name: "Markets", href: "/markets" },
   { name: "Alerts", href: "/alerts" },
   { name: "Transactions", href: "/transactions" },
-  { name: "Settings", href: "/settings" },
   { name: "Balance", href: "/balance" },
+  { name: "Settings", href: "/settings" },
 ];
 
 export default function Navbar() {
