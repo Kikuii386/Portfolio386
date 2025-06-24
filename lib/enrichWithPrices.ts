@@ -1,34 +1,71 @@
 import type { TokenRow } from "./getSheetTokens";
 
 export type EnrichedToken = TokenRow & {
-  price: number;
-  value: number;
-  pnl: number;
+  currentPrice: number;
+  symbol: string;
+  logo: string;
 };
 
-export async function enrichWithPrices(
-  tokens: TokenRow[]
-): Promise<EnrichedToken[]> {
-  const enriched = await Promise.all(
-    tokens.map(async (token) => {
-      try {
-        const res = await fetch(
-          `/api/dexscreener?chain=${token.chain}&contract=${token.contract}`
-        );
-        const json = await res.json();
-        const price = parseFloat(json?.pair?.priceUsd || "0");
-        const qty = token.totalQty;
-        const entry = token.totalEntry;
-        const value = price * qty;
-        const pnl = entry > 0 ? ((price - entry) / entry) * 100 : 0;
+export async function enrichWithPrices(tokens: TokenRow[]): Promise<EnrichedToken[]> {
+  const CHUNK_SIZE = 50;
+  const DELAY_MS = 1500;
 
-        return { ...token, price, value, pnl };
-      } catch (err) {
-        console.error(`Failed to enrich ${token.name}`, err);
-        return { ...token, price: 0, value: 0, pnl: 0 };
-      }
-    })
+  const chunks = [...Array(Math.ceil(tokens.length / CHUNK_SIZE))].map((_, i) =>
+    tokens.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + CHUNK_SIZE)
   );
 
-  return enriched;
+  let results: EnrichedToken[] = [];
+  let firstShown = false;
+
+  for (const chunk of chunks) {
+    const fetches = chunk.map(async (row) => {
+      try {
+        const res = await fetch(`/api/dexscreener?contract=${row.contract}`);
+        const json = await res.json();
+        const info = json.pairs?.[0];
+
+        if (!info || !info.priceUsd) {
+          console.warn("⛔ DexScreener ไม่มีข้อมูล:", row.name);
+          return null;
+        }
+
+        const currentPrice = parseFloat(info.priceUsd);
+        const symbol = info.baseToken?.symbol || "";
+        const logo =
+          info.baseToken?.logoURI ||
+          info.imageUrl ||
+          info.info?.imageUrl ||
+          "https://via.placeholder.com/32";
+
+        return { ...row, currentPrice, symbol, logo };
+      } catch (e) {
+        console.error("Error fetching price for", row.contract, e);
+        return null;
+      }
+    });
+
+    const chunkResults = (await Promise.all(fetches)).filter(
+      (t): t is EnrichedToken => Boolean(t)
+    );
+    results = results.concat(chunkResults);
+
+    // Emit intermediate results (optional, must be supported in consuming component)
+    if (typeof window !== "undefined") {
+      const event = new CustomEvent("enrichUpdate", {
+        detail: { results },
+      });
+      window.dispatchEvent(event);
+    }
+
+    if (!firstShown && results.length > 0) {
+      firstShown = true;
+      document.querySelector(".loader")?.parentElement?.parentElement?.parentElement?.remove();
+    }
+
+    if (chunk !== chunks[chunks.length - 1]) {
+      await new Promise((res) => setTimeout(res, DELAY_MS));
+    }
+  }
+
+  return results;
 }
