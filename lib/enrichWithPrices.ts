@@ -4,28 +4,43 @@ export type EnrichedToken = TokenRow & {
   currentPrice: number;
   symbol: string;
   logo: string;
+  id: string;
 };
 
-export async function enrichWithPrices(tokens: TokenRow[]): Promise<EnrichedToken[]> {
+export async function enrichWithPrices(
+  tokens: TokenRow[],
+  onBatch?: (results: EnrichedToken[]) => void
+): Promise<EnrichedToken[]> {
   const CHUNK_SIZE = 50;
   const DELAY_MS = 1500;
 
-  const chunks = [...Array(Math.ceil(tokens.length / CHUNK_SIZE))].map((_, i) =>
-    tokens.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + CHUNK_SIZE)
+  // กรองเฉพาะ token ที่มี contract และมี qty
+  const filtered = tokens
+    .filter(t => t.contract && (t.totalQty > 0 || t.highQty > 0 || t.lowQty > 0))
+    .filter((token, index, self) =>
+      index === self.findIndex(t => t.contract === token.contract)
+    );
+
+  const chunks = [...Array(Math.ceil(filtered.length / CHUNK_SIZE))].map((_, i) =>
+    filtered.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + CHUNK_SIZE)
   );
 
   let results: EnrichedToken[] = [];
-  let firstShown = false;
+  const seen = new Set<string>();
 
   for (const chunk of chunks) {
     const fetches = chunk.map(async (row) => {
       try {
         const res = await fetch(`/api/dexscreener?contract=${row.contract}`);
+        if (!res.ok) {
+          console.warn(`[BLOCKED] ${row.contract} → Status: ${res.status}`);
+          return null;
+        }
+
         const json = await res.json();
         const info = json.pairs?.[0];
-
         if (!info || !info.priceUsd) {
-          console.warn("⛔ DexScreener ไม่มีข้อมูล:", row.name);
+          console.warn(`[NOT FOUND] ${row.contract} on ${row.chain}`);
           return null;
         }
 
@@ -37,33 +52,36 @@ export async function enrichWithPrices(tokens: TokenRow[]): Promise<EnrichedToke
           info.info?.imageUrl ||
           "https://via.placeholder.com/32";
 
-        return { ...row, currentPrice, symbol, logo };
+        return {
+          ...row,
+          currentPrice,
+          symbol,
+          logo,
+          id: `${row.contract}-${row.chain}`,
+        };
       } catch (e) {
         console.error("Error fetching price for", row.contract, e);
         return null;
       }
     });
 
-    const chunkResults = (await Promise.all(fetches)).filter(
-      (t): t is EnrichedToken => Boolean(t)
-    );
-    results = results.concat(chunkResults);
+    const settled = await Promise.all(fetches);
+    const chunkResults = settled.filter((r): r is EnrichedToken => Boolean(r));
 
-    // Emit intermediate results (optional, must be supported in consuming component)
-    if (typeof window !== "undefined") {
-      const event = new CustomEvent("enrichUpdate", {
-        detail: { results },
-      });
-      window.dispatchEvent(event);
-    }
+    const newResults = chunkResults.filter(t => {
+      const key = `${t.contract}-${t.chain}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
-    if (!firstShown && results.length > 0) {
-      firstShown = true;
-      document.querySelector(".loader")?.parentElement?.parentElement?.parentElement?.remove();
-    }
+    results = results.concat(newResults);
+
+    if (onBatch) onBatch([...results]);
 
     if (chunk !== chunks[chunks.length - 1]) {
-      await new Promise((res) => setTimeout(res, DELAY_MS));
+      const delay = DELAY_MS + Math.random() * 500;
+      await new Promise((res) => setTimeout(res, delay));
     }
   }
 
