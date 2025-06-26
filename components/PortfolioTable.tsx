@@ -1,16 +1,43 @@
 "use client";
+import { Search, ChevronDown, Copy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { EnrichedToken } from "@/lib/enrichWithPrices";
 
 type Props = {
   tokens: EnrichedToken[];
+  loading?: boolean;
 };
 
-export default function PortfolioTable({ tokens }: Props) {
+export default function PortfolioTable({ tokens, loading }: Props) {
   const [type, setType] = useState<'total' | 'high' | 'low'>('total');
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  function requestSort(key: string) {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  }
+
+  function copyToClipboard(text: string, index: number) {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        console.log("Copied:", text);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 800);
+      });
+    } else {
+      console.warn("Clipboard API not available");
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 800);
+    }
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -21,6 +48,10 @@ export default function PortfolioTable({ tokens }: Props) {
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+  console.log("sample token:", tokens[0]);
+}, [tokens]);
 
   const filtered = tokens.filter((row) => {
     const match = !searchTerm ||
@@ -39,133 +70,197 @@ export default function PortfolioTable({ tokens }: Props) {
     return sum + qty * row.currentPrice;
   }, 0);
 
+  // Rename type and setType to viewMode and setViewMode for UI
+  const [viewMode, setViewMode] = useState(type);
+  // Sync viewMode and type states
+  useEffect(() => {
+    setType(viewMode);
+  }, [viewMode]);
+
+  const sortedTokens = [...filtered].sort((a, b) => {
+    if (!sortConfig) return 0;
+    let aVal: any;
+    let bVal: any;
+    if (sortConfig.key === 'value') {
+      const aQty = type === 'high' ? a.highQty : type === 'low' ? a.lowQty : a.totalQty;
+      const bQty = type === 'high' ? b.highQty : type === 'low' ? b.lowQty : b.totalQty;
+      aVal = a.currentPrice * aQty;
+      bVal = b.currentPrice * bQty;
+    } else if (sortConfig.key === 'allocation') {
+      const aQty = type === 'high' ? a.highQty : type === 'low' ? a.lowQty : a.totalQty;
+      const bQty = type === 'high' ? b.highQty : type === 'low' ? b.lowQty : b.totalQty;
+      const aValue = a.currentPrice * aQty;
+      const bValue = b.currentPrice * bQty;
+      aVal = totalValue > 0 ? (aValue / totalValue) * 100 : 0;
+      bVal = totalValue > 0 ? (bValue / totalValue) * 100 : 0;
+    } else if (sortConfig.key === 'totalInv') {
+      aVal = type === 'high' ? a.highInv : type === 'low' ? a.lowInv : a.totalInv;
+      bVal = type === 'high' ? b.highInv : type === 'low' ? b.lowInv : b.totalInv;
+    } else {
+      aVal = a[sortConfig.key as keyof typeof a];
+      bVal = b[sortConfig.key as keyof typeof b];
+    }
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    const aStr = String(aVal).toLowerCase();
+    const bStr = String(bVal).toLowerCase();
+    return sortConfig.direction === 'asc'
+      ? aStr.localeCompare(bStr)
+      : bStr.localeCompare(aStr);
+  });
+
   return (
-    <section className="p-4">
-      <div className="flex flex-col md:flex-row justify-between mb-4 items-center">
-        <h2 className="text-xl font-bold mb-2 md:mb-0 text-earth-darkbrown">Your Portfolio</h2>
-        <div className="flex items-center space-x-2 mb-2 md:mb-0">
-          {/* Dropdown */}
-          <div
-            className="relative inline-block text-left"
-            ref={dropdownRef}
-          >
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                setDropdownOpen(!dropdownOpen);
-              }}
-              className="bg-earth-sage hover:bg-earth-moss text-white px-4 py-2 rounded-md transition text-sm flex items-center justify-between w-[100px] shadow font-semibold"
-            >
-              <span className="w-full text-center font-semibold">{type.toUpperCase()}</span>
-              <svg className="ml-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {dropdownOpen && (
-              <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                {['total', 'high', 'low'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={e => {
-                      e.stopPropagation();
-                      setType(option as any);
-                      setDropdownOpen(false);
-                    }}
-                    className={`block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left ${type === option ? 'bg-earth-sage text-white' : ''}`}
-                  >
-                    {option.toUpperCase()}
-                  </button>
-                ))}
+    <div className="p-4">
+      <div className="overflow-x-auto bg-white rounded-xl shadow border border-earth-cream/60">
+        {/* Header Controls */}
+        <div className="w-full bg-gradient-to-r from-earth-darkbrown to-earth-brown p-6 rounded-t-xl relative z-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h2 className="text-2xl font-bold text-earth-cream">Portfolio Overview</h2>
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-earth-sage w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search tokens or addresses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 bg-earth-cream/10 border border-earth-sage/30 rounded-lg text-earth-cream placeholder-earth-sage/70 focus:outline-none focus:ring-2 focus:ring-earth-sage focus:border-transparent w-full sm:w-64"
+                />
               </div>
-            )}
+              {/* Dropdown */}
+              <div className="relative inline-block text-left" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setDropdownOpen(!dropdownOpen);
+                  }}
+                  className="bg-earth-cream text-earth-moss px-4 py-2 rounded-2xl transition text-sm flex items-center justify-between w-[110px] shadow font-semibold z-20"
+                >
+                  <span className="w-full text-center font-semibold">{viewMode.toUpperCase()}</span>
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute z-30 mt-1 w-full rounded-2xl bg-earth-cream shadow-lg ring-1 ring-black ring-opacity-5">
+                    {['total', 'high', 'low'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setViewMode(option as any);
+                          setDropdownOpen(false);
+                        }}
+                        className={`block w-full px-4 py-2 text-sm text-earth-moss hover:bg-earth-moss hover:text-earth-cream text-left rounded-2xl ${viewMode === option ? 'bg-earth-moss text-earth-cream font-bold' : ''}`}
+                      >
+                        {option.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <input
-          type="text"
-          placeholder="Search assets..."
-          className="border border-earth-cream bg-white rounded px-2 py-1 text-earth-darkbrown focus:outline-none focus:border-earth-sage transition text-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-auto border-collapse border border-earth-cream/60 text-sm bg-white rounded-xl shadow">
-          <thead className="bg-earth-cream/50 backdrop-blur">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-earth-stone uppercase tracking-wider">Asset</th>
-              <th className="px-4 py-2 text-center text-xs font-semibold text-earth-stone uppercase tracking-wider">Chain</th>
-              <th className="px-4 py-2 text-right text-xs font-semibold text-earth-stone uppercase tracking-wider">Price</th>
-              <th className="px-4 py-2 text-right text-xs font-semibold text-earth-stone uppercase tracking-wider">PnL</th>
-              <th className="px-4 py-2 text-right text-xs font-semibold text-earth-stone uppercase tracking-wider">Invest/QTY</th>
-              <th className="px-4 py-2 text-right text-xs font-semibold text-earth-stone uppercase tracking-wider">Value</th>
-              <th className="px-4 py-2 text-right text-xs font-semibold text-earth-stone uppercase tracking-wider">Allocation</th>
-              <th className="px-4 py-2 text-right text-xs font-semibold text-earth-stone uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr className="hover:bg-earth-cream/20 transition">
-                <td colSpan={8} className="text-center py-8 text-earth-stone">No data</td>
+        <div className="pt-4 relative z-0">
+          <table className="min-w-full table-auto border-collapse border-earth-cream/60 text-sm">
+            <thead className="bg-earth-sage/20 sticky top-0 z-0">
+              <tr>
+                <th onClick={() => requestSort('name')} className="px-6 py-4 text-left text-sm font-semibold text-earth-darkbrown cursor-pointer">Asset</th>
+                <th onClick={() => requestSort('chain')} className="px-6 py-4 text-left text-sm font-semibold text-earth-darkbrown cursor-pointer">Chain</th>
+                <th onClick={() => requestSort('currentPrice')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Price</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown">PnL %</th>
+                <th onClick={() => requestSort('totalInv')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Investment</th>
+                <th onClick={() => requestSort('value')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Value</th>
+                <th onClick={() => requestSort('allocation')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Allocation</th>
+                <th className="px-6 py-4 text-center text-sm font-semibold text-earth-darkbrown">Actions</th>
               </tr>
-            ) : (
-              filtered.map((t, index) => {
-                const entry = type === 'high' ? t.highEntry : type === 'low' ? t.lowEntry : t.totalEntry;
-                const qty = type === 'high' ? t.highQty : type === 'low' ? t.lowQty : t.totalQty;
-                const inv = type === 'high' ? t.highInv : type === 'low' ? t.lowInv : t.totalInv;
-                const value = t.currentPrice * qty;
-                const pnl = entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
-                const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0;
-                const profitAmount = value - inv;
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr className="text-center text-earth-stone">
+                  <td colSpan={8} className="px-6 py-4">Loading...</td>
+                </tr>
+              ) : sortedTokens.length === 0 ? (
+                <tr className="text-center text-earth-stone">
+                  <td colSpan={8} className="px-6 py-4">No data</td>
+                </tr>
+              ) : (
+                sortedTokens.map((t, index) => {
+                  const entry = type === 'high' ? t.highEntry : type === 'low' ? t.lowEntry : t.totalEntry;
+                  const qty = type === 'high' ? t.highQty : type === 'low' ? t.lowQty : t.totalQty;
+                  const inv = type === 'high' ? t.highInv : type === 'low' ? t.lowInv : t.totalInv;
+                  const value = t.currentPrice * qty;
+                  const pnl = entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
+                  const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0;
+                  const profitAmount = value - inv;
 
-                return (
-                  <tr
-                    key={t.contract}
-                    className="text-center hover:bg-earth-cream/30 cursor-pointer transition"
-                  >
-                    <td className="px-4 py-2 text-left text-earth-darkbrown">
-                      <div className="flex items-center">
-                        <img src={t.logo || 'https://via.placeholder.com/32'} alt={t.name} className="h-8 w-8 rounded-full border border-earth-cream mr-3" />
-                        <div>
-                          <div className="font-semibold text-earth-darkbrown">{t.name}</div>
-                          <div className="flex items-center text-xs text-earth-stone">
-                            <span>{t.contract.slice(0, 6)}...{t.contract.slice(-4)}</span>
+                  return (
+                    <tr
+                      key={t.contract}
+                      className="text-center hover:bg-earth-cream/30 cursor-pointer transition"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-left text-earth-darkbrown">
+                        <div className="flex items-center">
+                          <img src={t.logo || 'https://via.placeholder.com/40'} alt={t.name} className="h-10 w-10 rounded-full border border-earth-cream mr-4" />
+                          <div>
+                            <div className="font-semibold text-earth-darkbrown">{t.name}</div>
+                                <div className="flex items-center text-xs text-earth-stone cursor-pointer group gap-1">
+                                  <span className="transition-colors group-hover:text-earth-sage">{t.contract.slice(0, 6)}...{t.contract.slice(-4)}</span>
+                                  <div className="transition-colors group-hover:text-earth-sage flex items-center relative">
+                                    <button
+                                      onClick={() => copyToClipboard(t.contract, index)}
+                                      className="transition-colors"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                    <div className="relative">
+                                      <span
+                                        className={`absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-earth-sage text-white px-2 py-1 rounded shadow z-50 whitespace-nowrap transition-opacity duration-500 ${
+                                          copiedIndex === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                                        }`}
+                                      >
+                                        Copied!
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 text-center text-earth-stone">{t.chain}</td>
-                    <td className="px-4 py-2 text-right text-earth-darkbrown">${t.currentPrice.toFixed(6)}</td>
-                    <td className={`px-4 py-2 text-right font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {pnl.toFixed(2)}%
-                      <div className="text-xs mt-1 text-earth-stone font-normal">
-                        {profitAmount >= 0 ? '+' : ''}${profitAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 text-right text-earth-darkbrown">
-                      ${inv.toFixed(2)}
-                      <div className="text-xs text-earth-stone mt-1">{qty.toLocaleString()}</div>
-                    </td>
-                    <td className="px-4 py-2 text-right text-earth-darkbrown">${value.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-right text-earth-darkbrown">
-                      <div className="w-full bg-earth-cream/70 rounded-full h-2.5">
-                        <div className="bg-earth-sage h-2.5 rounded-full transition-all duration-300" style={{ width: `${allocation.toFixed(0)}%` }}></div>
-                      </div>
-                      <div className="text-xs mt-1 text-earth-stone">{allocation.toFixed(0)}%</div>
-                    </td>
-                    <td className="px-4 py-2 text-right">
-                      <button className="text-earth-stone hover:text-earth-darkbrown transition mr-2">⟳</button>
-                      <button className="text-earth-stone hover:text-earth-darkbrown transition">⋯</button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-earth-stone">{t.chain}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">${t.currentPrice.toFixed(6)}</td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-right font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {pnl.toFixed(2)}%
+                        <div className="text-xs mt-1 text-earth-stone font-normal">
+                          {profitAmount >= 0 ? '+' : ''}${profitAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">
+                        ${inv.toFixed(2)}
+                        <div className="text-xs text-earth-stone mt-1">{qty.toLocaleString()}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">${value.toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">
+                        <div className="w-full bg-earth-cream/70 rounded-full h-2.5">
+                          <div className="bg-earth-sage h-2.5 rounded-full transition-all duration-300" style={{ width: `${allocation.toFixed(0)}%` }}></div>
+                        </div>
+                        <div className="text-xs mt-1 text-earth-stone">{allocation.toFixed(0)}%</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <button className="text-earth-stone hover:text-earth-darkbrown transition mr-2">⟳</button>
+                        <button className="text-earth-stone hover:text-earth-darkbrown transition">⋯</button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
