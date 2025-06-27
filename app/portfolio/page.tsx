@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { getSheetTokens } from "@/lib/getSheetTokens";
 import { enrichWithPrices, EnrichedToken } from "@/lib/enrichWithPrices";
 import PortfolioTable from "@/components/PortfolioTable";
+import Tooltip from "@/components/ui/TooltipCopy";
 
 export default function PortfolioPage() {
   const [tokens, setTokens] = useState<EnrichedToken[]>([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,10 +33,25 @@ export default function PortfolioPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (copied) {
+      const timeout = setTimeout(() => setCopied(false), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [copied]);
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">Your Portfolio</h1>
-      <PortfolioTable tokens={tokens} />
-    </div>
+    <section className="py-2" id="portfolio">
+      <div className="w-full max-w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
+          <div>
+            <h2 className="text-3xl font-bold mb-2 section-heading">Your Portfolio</h2>
+            <p className="text-earth-brown mt-4">Overview of your crypto portfolio performance</p>
+          </div>
+        </div>
+        <PortfolioTable tokens={tokens} setCopied={setCopied} />
+        {copied && <Tooltip message="Copied!" />}
+      </div>
+    </section>
   );
 }

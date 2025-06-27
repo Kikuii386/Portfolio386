@@ -1,28 +1,38 @@
 "use client";
-import { Search, ChevronDown, Copy } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { EnrichedToken } from "@/lib/enrichWithPrices";
+import { refreshPrices } from "@/lib/refreshPrices";
 
 type Props = {
   tokens: EnrichedToken[];
   loading?: boolean;
+  setCopied?: (value: boolean) => void;
 };
 
-export default function PortfolioTable({ tokens, loading }: Props) {
+
+export default function PortfolioTable({ tokens, loading, setCopied }: Props) {
   const [type, setType] = useState<'total' | 'high' | 'low'>('total');
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
+  // For keeping old prices between refreshes
+  const oldPrices = useRef<Record<string, number>>({});
+
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   function requestSort(key: string) {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    if (sortConfig?.key === key) {
+      if (sortConfig.direction === 'asc') {
+        setSortConfig({ key, direction: 'desc' });
+      } else {
+        setSortConfig(null); // reset sort
+      }
+    } else {
+      setSortConfig({ key, direction: 'asc' });
     }
-    setSortConfig({ key, direction });
   }
 
   function copyToClipboard(text: string, index: number) {
@@ -30,12 +40,14 @@ export default function PortfolioTable({ tokens, loading }: Props) {
       navigator.clipboard.writeText(text).then(() => {
         console.log("Copied:", text);
         setCopiedIndex(index);
-        setTimeout(() => setCopiedIndex(null), 800);
+        setTimeout(() => setCopiedIndex(null), 1000);
+        if (setCopied) setCopied(true);
       });
     } else {
       console.warn("Clipboard API not available");
       setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 800);
+      setTimeout(() => setCopiedIndex(null), 1000);
+      if (setCopied) setCopied(true);
     }
   }
 
@@ -49,9 +61,22 @@ export default function PortfolioTable({ tokens, loading }: Props) {
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Save old prices when tokens change
   useEffect(() => {
-  console.log("sample token:", tokens[0]);
-}, [tokens]);
+    if (tokens.length > 0) {
+      tokens.forEach((t) => {
+        oldPrices.current[t.contract] = t.currentPrice;
+      });
+    }
+  }, [tokens]);
+
+  // Auto-refresh prices every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshPrices(tokens, oldPrices.current);
+    }, 10000); // ทุก 10 วินาที
+    return () => clearInterval(interval);
+  }, [tokens]);
 
   const filtered = tokens.filter((row) => {
     const match = !searchTerm ||
@@ -96,6 +121,13 @@ export default function PortfolioTable({ tokens, loading }: Props) {
     } else if (sortConfig.key === 'totalInv') {
       aVal = type === 'high' ? a.highInv : type === 'low' ? a.lowInv : a.totalInv;
       bVal = type === 'high' ? b.highInv : type === 'low' ? b.lowInv : b.totalInv;
+    } else if (sortConfig.key === 'pnlPercentage') {
+      const aQty = type === 'high' ? a.highQty : type === 'low' ? a.lowQty : a.totalQty;
+      const bQty = type === 'high' ? b.highQty : type === 'low' ? b.lowQty : b.totalQty;
+      const aEntry = type === 'high' ? a.highEntry : type === 'low' ? a.lowEntry : a.totalEntry;
+      const bEntry = type === 'high' ? b.highEntry : type === 'low' ? b.lowEntry : b.totalEntry;
+      aVal = aEntry > 0 ? ((a.currentPrice - aEntry) / aEntry) * 100 : 0;
+      bVal = bEntry > 0 ? ((b.currentPrice - bEntry) / bEntry) * 100 : 0;
     } else {
       aVal = a[sortConfig.key as keyof typeof a];
       bVal = b[sortConfig.key as keyof typeof b];
@@ -110,9 +142,9 @@ export default function PortfolioTable({ tokens, loading }: Props) {
       : bStr.localeCompare(aStr);
   });
 
-  return (
-    <div className="p-4">
-      <div className="overflow-x-auto bg-white rounded-xl shadow border border-earth-cream/60">
+return (
+<div className="p-4 w-full max-w-none">
+  <div className="w-full overflow-x-auto bg-white rounded-xl shadow border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
         <div className="w-full bg-gradient-to-r from-earth-darkbrown to-earth-brown p-6 rounded-t-xl relative z-10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -164,28 +196,130 @@ export default function PortfolioTable({ tokens, loading }: Props) {
             </div>
           </div>
         </div>
-        <div className="pt-4 relative z-0">
-          <table className="min-w-full table-auto border-collapse border-earth-cream/60 text-sm">
-            <thead className="bg-earth-sage/20 sticky top-0 z-0">
+        <div className="relative z-0 overflow-y-auto max-h-screen">
+          <table className="table-fixed w-full border-collapse border-earth-cream/60 text-sm md:text-base">
+            <thead className="bg-earth-cream/40 sticky top-0 z-30 opacity-100">
               <tr>
-                <th onClick={() => requestSort('name')} className="px-6 py-4 text-left text-sm font-semibold text-earth-darkbrown cursor-pointer">Asset</th>
-                <th onClick={() => requestSort('chain')} className="px-6 py-4 text-left text-sm font-semibold text-earth-darkbrown cursor-pointer">Chain</th>
-                <th onClick={() => requestSort('currentPrice')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Price</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown">PnL %</th>
-                <th onClick={() => requestSort('totalInv')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Investment</th>
-                <th onClick={() => requestSort('value')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Value</th>
-                <th onClick={() => requestSort('allocation')} className="px-6 py-4 text-right text-sm font-semibold text-earth-darkbrown cursor-pointer">Allocation</th>
-                <th className="px-6 py-4 text-center text-sm font-semibold text-earth-darkbrown">Actions</th>
+                <th
+                  style={{ width: "160px" }}
+                  onClick={() => requestSort('name')}
+                  className="px-6 py-4 text-left text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Asset</span>
+                    {sortConfig?.key === 'name' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "120px" }}
+                  onClick={() => requestSort('chain')}
+                  className="px-6 py-4 text-right pl-2 text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1 justify-end">
+                    <span>Chain</span>
+                    {sortConfig?.key === 'chain' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "140px" }}
+                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown"
+                >
+                  Entry Price
+                </th>
+                <th
+                  style={{ width: "160px" }}
+                  onClick={() => requestSort('currentPrice')}
+                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1 justify-end">
+                    <span>Current Price</span>
+                    {sortConfig?.key === 'currentPrice' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "120px" }}
+                  onClick={() => requestSort('pnlPercentage')}
+                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1 justify-end">
+                    <span>PnL %</span>
+                    {sortConfig?.key === 'pnlPercentage' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "140px" }}
+                  onClick={() => requestSort('totalInv')}
+                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1 justify-end">
+                    <span>Investment</span>
+                    {sortConfig?.key === 'totalInv' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "140px" }}
+                  onClick={() => requestSort('value')}
+                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1 justify-end">
+                    <span>Value</span>
+                    {sortConfig?.key === 'value' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "160px" }}
+                  onClick={() => requestSort('allocation')}
+                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
+                >
+                  <div className="flex items-center gap-1 justify-end">
+                    <span>Allocation</span>
+                    {sortConfig?.key === 'allocation' && (
+                      sortConfig.direction === 'asc'
+                        ? <ChevronUp className="w-4 h-4" />
+                        : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  style={{ width: "100px" }}
+                  className="px-6 py-4 text-center text-sm md:text-base font-semibold text-earth-darkbrown"
+                >
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr className="text-center text-earth-stone">
-                  <td colSpan={8} className="px-6 py-4">Loading...</td>
+                  <td colSpan={9} className="px-6 py-4 text-sm md:text-base">Loading...</td>
                 </tr>
               ) : sortedTokens.length === 0 ? (
                 <tr className="text-center text-earth-stone">
-                  <td colSpan={8} className="px-6 py-4">No data</td>
+                  <td colSpan={9} className="px-6 py-4 text-sm md:text-base">No data</td>
                 </tr>
               ) : (
                 sortedTokens.map((t, index) => {
@@ -202,54 +336,63 @@ export default function PortfolioTable({ tokens, loading }: Props) {
                       key={t.contract}
                       className="text-center hover:bg-earth-cream/30 cursor-pointer transition"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-left text-earth-darkbrown">
+                      {/* Asset */}
+                      <td className="px-6 py-4 whitespace-nowrap text-left text-sm md:text-base text-earth-darkbrown">
                         <div className="flex items-center">
                           <img src={t.logo || 'https://via.placeholder.com/40'} alt={t.name} className="h-10 w-10 rounded-full border border-earth-cream mr-4" />
                           <div>
                             <div className="font-semibold text-earth-darkbrown">{t.name}</div>
-                                <div className="flex items-center text-xs text-earth-stone cursor-pointer group gap-1">
-                                  <span className="transition-colors group-hover:text-earth-sage">{t.contract.slice(0, 6)}...{t.contract.slice(-4)}</span>
-                                  <div className="transition-colors group-hover:text-earth-sage flex items-center relative">
-                                    <button
-                                      onClick={() => copyToClipboard(t.contract, index)}
-                                      className="transition-colors"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                    <div className="relative">
-                                      <span
-                                        className={`absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-earth-sage text-white px-2 py-1 rounded shadow z-50 whitespace-nowrap transition-opacity duration-500 ${
-                                          copiedIndex === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                                        }`}
-                                      >
-                                        Copied!
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
+                            <div className="flex items-center text-sm text-earth-stone cursor-pointer group gap-1">
+                              <span className="transition-colors group-hover:text-earth-sage">{t.contract.slice(0, 6)}...{t.contract.slice(-4)}</span>
+                              <div className="transition-colors group-hover:text-earth-sage flex items-center relative">
+                                <button
+                                  onClick={() => copyToClipboard(t.contract, index)}
+                                  className="transition-colors"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-earth-stone">{t.chain}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">${t.currentPrice.toFixed(6)}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-right font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {/* Chain */}
+                      <td className="px-6 py-4 pr-6 whitespace-nowrap text-sm md:text-base text-earth-stone">
+                        <div className="flex justify-center items-center">{t.chain}</div>
+                      </td>
+                      {/* Entry Price */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
+                        ${entry.toFixed(6)}
+                      </td>
+                      {/* Current Price */}
+                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown price transition duration-300`}>
+                        ${t.currentPrice.toFixed(6)}
+                      </td>
+                      {/* PnL % */}
+                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm md:text-base font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'} profit transition duration-300`}>
                         {pnl.toFixed(2)}%
-                        <div className="text-xs mt-1 text-earth-stone font-normal">
+                        <div className="text-sm mt-1 text-earth-stone font-normal">
                           {profitAmount >= 0 ? '+' : ''}${profitAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">
+                      {/* Investment */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
                         ${inv.toFixed(2)}
-                        <div className="text-xs text-earth-stone mt-1">{qty.toLocaleString()}</div>
+                        <div className="text-sm text-earth-stone mt-1">{qty.toLocaleString()}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">${value.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-earth-darkbrown">
+                      {/* Value */}
+                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown value transition duration-300`}>
+                        ${value.toFixed(2)}
+                      </td>
+                      {/* Allocation */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
                         <div className="w-full bg-earth-cream/70 rounded-full h-2.5">
                           <div className="bg-earth-sage h-2.5 rounded-full transition-all duration-300" style={{ width: `${allocation.toFixed(0)}%` }}></div>
                         </div>
-                        <div className="text-xs mt-1 text-earth-stone">{allocation.toFixed(0)}%</div>
+                        <div className="text-sm mt-1 text-earth-stone">{allocation.toFixed(0)}%</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {/* Actions */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm md:text-base">
                         <button className="text-earth-stone hover:text-earth-darkbrown transition mr-2">⟳</button>
                         <button className="text-earth-stone hover:text-earth-darkbrown transition">⋯</button>
                       </td>
