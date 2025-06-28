@@ -1,4 +1,4 @@
-// File: /Users/New/Documents/GitHub/Portfolio386/app/portfolio/page.tsx
+// File: C:\Users\champ\OneDrive\เอกสาร\Portfolio386-main\app\portfolio\page.tsx
 import * as entry from '../../../../app/portfolio/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
