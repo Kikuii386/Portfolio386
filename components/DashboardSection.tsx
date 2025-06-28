@@ -1,7 +1,7 @@
 export default function DashboardPage() {
   return (
-    <section className="py-10" id="portfolio">
-       <div className="w-full mx-auto px-10 md:px-20 sm:px-14">
+    <section className="py-12" id="portfolio">
+       <div className="w-full mx-auto px-4 md:px-14 sm:px-8">
         <div className="flex flex-col md:flex-row justify-between items-start mb-8">
           <div>
             <h2 className="text-3xl font-bold mb-2 section-heading">Dashboard</h2>

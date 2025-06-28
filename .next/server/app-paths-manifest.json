@@ -1,3 +1,5 @@
 {
-  "/dashboard/page": "app/dashboard/page.js"
+  "/api/dexscreener/route": "app/api/dexscreener/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/portfolio/page": "app/portfolio/page.js"
 }

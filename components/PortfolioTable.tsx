@@ -144,7 +144,7 @@ export default function PortfolioTable({ tokens, loading, setCopied }: Props) {
   });
 
 return (
-<div className="p-2 w-full max-w-none">
+<div className="px-0 w-full max-w-none">
   <div className="w-full overflow-x-auto bg-white rounded-xl shadow border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
         <div className="w-full bg-gradient-to-r from-earth-darkbrown to-earth-brown p-6 rounded-t-xl relative z-10">
@@ -203,18 +203,18 @@ return (
           <table className="table-fixed w-full border-collapse border-earth-cream/60 text-sm md:text-base">
             <thead className="hidden md:table-header-group sticky top-0 z-20 bg-earth-cream/60 backdrop-blur-sm">
               <tr>
-                <th style={{ width: "160px" }} className="px-6 py-4 text-left text-base font-semibold text-earth-darkbrown cursor-pointer">
+                <th style={{ width: "220px" }} className="px-6 py-4 text-left text-base font-semibold text-earth-darkbrown cursor-pointer">
                   <SortButton column="name" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
                     Asset
                   </SortButton>
                 </th>
-                <th style={{ width: "120px" }} className="px-6 py-4 text-center text-base font-semibold text-earth-darkbrown cursor-pointer">
+                <th style={{ width: "120px" }} className="px-6 py-4 whitespace-nowrap text-center text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer">
                   <SortButton column="chain" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
-                    Chain
+                  Chain
                   </SortButton>
                 </th>
-                <th style={{ width: "140px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown">
-                  Entry Price
+                   <th style={{ width: "140px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown">
+                    Entry Price
                 </th>
                 <th style={{ width: "160px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown cursor-pointer">
                   <SortButton column="currentPrice" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
@@ -241,7 +241,7 @@ return (
                     Allocation
                   </SortButton>
                 </th>
-                <th style={{ width: "100px" }} className="px-6 py-4 text-center text-base font-semibold text-earth-darkbrown">
+                <th style={{ width: "80px" }} className="px-6 py-4 text-center text-base font-semibold text-earth-darkbrown">
                   Actions
                 </th>
               </tr>
@@ -291,8 +291,8 @@ return (
                         </div>
                       </td>
                       {/* Chain */}
-                      <td className="px-6 py-4 pr-6 whitespace-nowrap text-sm md:text-base text-earth-stone">
-                        <div className="flex justify-center items-center">{t.chain}</div>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm md:text-base text-earth-stone">
+                          {t.chain}
                       </td>
                       {/* Entry Price */}
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
