@@ -3,6 +3,7 @@ import { Search, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { EnrichedToken } from "@/lib/enrichWithPrices";
 import { refreshPrices } from "@/lib/refreshPrices";
+import { SortButton } from "@/components/ui/SortButton";
 
 type Props = {
   tokens: EnrichedToken[];
@@ -143,7 +144,7 @@ export default function PortfolioTable({ tokens, loading, setCopied }: Props) {
   });
 
 return (
-<div className="p-4 w-full max-w-none">
+<div className="p-2 w-full max-w-none">
   <div className="w-full overflow-x-auto bg-white rounded-xl shadow border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
         <div className="w-full bg-gradient-to-r from-earth-darkbrown to-earth-brown p-6 rounded-t-xl relative z-10">
@@ -165,31 +166,33 @@ return (
               <div className="relative inline-block text-left" ref={dropdownRef}>
                 <button
                   type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setDropdownOpen(!dropdownOpen);
-                  }}
-                  className="bg-earth-cream text-earth-moss px-4 py-2 rounded-2xl transition text-sm flex items-center justify-between w-[110px] shadow font-semibold z-20"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="inline-flex justify-center w-full rounded-md border border-earth-sage shadow-sm px-4 py-2 bg-earth-cream text-sm font-medium text-earth-moss hover:bg-earth-sage focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-earth-moss"
                 >
-                  <span className="w-full text-center font-semibold">{viewMode.toUpperCase()}</span>
-                  <ChevronDown className="ml-2 h-4 w-4" />
+                  {viewMode.toUpperCase()}
+                  <ChevronDown className="ml-2 -mr-1 h-5 w-5 text-earth-moss" aria-hidden="true" />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute z-30 mt-1 w-full rounded-2xl bg-earth-cream shadow-lg ring-1 ring-black ring-opacity-5">
-                    {['total', 'high', 'low'].map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation();
-                          setViewMode(option as any);
-                          setDropdownOpen(false);
-                        }}
-                        className={`block w-full px-4 py-2 text-sm text-earth-moss hover:bg-earth-moss hover:text-earth-cream text-left rounded-2xl ${viewMode === option ? 'bg-earth-moss text-earth-cream font-bold' : ''}`}
-                      >
-                        {option.toUpperCase()}
-                      </button>
-                    ))}
+                  <div className="absolute z-30 mt-2 w-full rounded-md bg-earth-cream shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <div className="py-1">
+                      {['total', 'high', 'low'].map((option) => (
+                        <button
+                          key={option}
+                          onClick={e => {
+                            e.stopPropagation();
+                            setViewMode(option as any);
+                            setDropdownOpen(false);
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm ${
+                            viewMode === option
+                              ? 'bg-earth-moss text-earth-cream font-bold'
+                              : 'text-earth-moss hover:bg-earth-sage hover:text-earth-cream'
+                          }`}
+                        >
+                          {option.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -198,116 +201,47 @@ return (
         </div>
         <div className="relative z-0 overflow-y-auto max-h-screen">
           <table className="table-fixed w-full border-collapse border-earth-cream/60 text-sm md:text-base">
-            <thead className="bg-earth-cream/40 sticky top-0 z-30 opacity-100">
+            <thead className="hidden md:table-header-group sticky top-0 z-20 bg-earth-cream/60 backdrop-blur-sm">
               <tr>
-                <th
-                  style={{ width: "160px" }}
-                  onClick={() => requestSort('name')}
-                  className="px-6 py-4 text-left text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Asset</span>
-                    {sortConfig?.key === 'name' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "160px" }} className="px-6 py-4 text-left text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="name" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    Asset
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "120px" }}
-                  onClick={() => requestSort('chain')}
-                  className="px-6 py-4 text-right pl-2 text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <span>Chain</span>
-                    {sortConfig?.key === 'chain' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "120px" }} className="px-6 py-4 text-center text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="chain" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    Chain
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "140px" }}
-                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown"
-                >
+                <th style={{ width: "140px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown">
                   Entry Price
                 </th>
-                <th
-                  style={{ width: "160px" }}
-                  onClick={() => requestSort('currentPrice')}
-                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <span>Current Price</span>
-                    {sortConfig?.key === 'currentPrice' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "160px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="currentPrice" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    Current Price
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "120px" }}
-                  onClick={() => requestSort('pnlPercentage')}
-                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <span>PnL %</span>
-                    {sortConfig?.key === 'pnlPercentage' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "120px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="pnlPercentage" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    PnL %
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "140px" }}
-                  onClick={() => requestSort('totalInv')}
-                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <span>Investment</span>
-                    {sortConfig?.key === 'totalInv' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "140px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="totalInv" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    Investment
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "140px" }}
-                  onClick={() => requestSort('value')}
-                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <span>Value</span>
-                    {sortConfig?.key === 'value' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "140px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="value" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    Value
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "160px" }}
-                  onClick={() => requestSort('allocation')}
-                  className="px-6 py-4 text-right text-sm md:text-base font-semibold text-earth-darkbrown cursor-pointer"
-                >
-                  <div className="flex items-center gap-1 justify-end">
-                    <span>Allocation</span>
-                    {sortConfig?.key === 'allocation' && (
-                      sortConfig.direction === 'asc'
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                    )}
-                  </div>
+                <th style={{ width: "160px" }} className="px-6 py-4 text-right text-base font-semibold text-earth-darkbrown cursor-pointer">
+                  <SortButton column="allocation" sortConfig={sortConfig ?? { key: '', direction: 'asc' }} onSort={requestSort}>
+                    Allocation
+                  </SortButton>
                 </th>
-                <th
-                  style={{ width: "100px" }}
-                  className="px-6 py-4 text-center text-sm md:text-base font-semibold text-earth-darkbrown"
-                >
+                <th style={{ width: "100px" }} className="px-6 py-4 text-center text-base font-semibold text-earth-darkbrown">
                   Actions
                 </th>
               </tr>

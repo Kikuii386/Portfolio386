@@ -35,6 +35,7 @@ body {
 .section-heading {
   position: relative;
   display: inline-block;
+  color: #4A4A48;
 }
 .section-heading::after {
   content: "";

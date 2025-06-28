@@ -17,7 +17,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col bg-earth-cream text-earth-stone font-sans">
         <Navbar />
         <main className="flex-1">
-          <div className="container mx-auto px-4 py-8">{children}</div>
+          <div className="w-full px-0">{children}</div>
         </main>
       </body>
     </html>

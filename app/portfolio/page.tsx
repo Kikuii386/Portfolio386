@@ -41,12 +41,14 @@ export default function PortfolioPage() {
   }, [copied]);
 
   return (
-    <section className="py-2" id="portfolio">
-      <div className="w-full max-w-full">
+    <section className="py-10" id="portfolio">
+       <div className="w-full mx-auto px-10 md:px-20 sm:px-14">
         <div className="flex flex-col md:flex-row justify-between items-start mb-8">
           <div>
             <h2 className="text-3xl font-bold mb-2 section-heading">Your Portfolio</h2>
-            <p className="text-earth-brown mt-4">Overview of your crypto portfolio performance</p>
+            <p className="text-earth-brown mt-4 text-base md:text-lg">
+              Overview of your crypto portfolio performance
+            </p>
           </div>
         </div>
         <PortfolioTable tokens={tokens} setCopied={setCopied} />
