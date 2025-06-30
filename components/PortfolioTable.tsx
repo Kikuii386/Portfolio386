@@ -172,80 +172,63 @@ export default function PortfolioTable({ tokens, loading, setCopied }: Props) {
                 />
               </div>
               {/* Toggle + SortBy (Mobile only) */}
-              <div className="flex gap-2 md:hidden">
-                {/* Toggle TOTAL/HIGH/LOW */}
-                <div className="relative inline-block text-left" ref={dropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="inline-flex justify-center min-w-[128px] rounded-md border border-earth-sage shadow-sm px-4 py-2 bg-earth-cream text-sm font-medium text-earth-moss hover:bg-earth-sage focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-earth-moss"
-                  >
-                    {viewMode.toUpperCase()}
-                    <ChevronDown className="ml-2 -mr-1 h-5 w-5 text-earth-moss" aria-hidden="true" />
-                  </button>
-                  {dropdownOpen && (
-                    <div className="absolute z-30 mt-2 w-full rounded-md bg-earth-cream shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                      <div className="py-1">
-                        {['total', 'high', 'low'].map((option) => (
-                          <button
-                            key={option}
-                            onClick={e => {
-                              e.stopPropagation();
-                              setViewMode(option as any);
-                              setDropdownOpen(false);
-                            }}
-                            className={`block w-full text-left px-4 py-2 text-sm ${
-                              viewMode === option
-                                ? 'bg-earth-moss text-earth-cream font-bold'
-                                : 'text-earth-moss hover:bg-earth-sage hover:text-earth-cream'
-                            }`}
-                          >
-                            {option.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              <div className="flex flex-col gap-2 md:hidden w-full sm:w-auto">
+                {/* Toggle View Mode for Mobile */}
+                <div className="flex justify-between w-full gap-2">
+                  {['total', 'high', 'low'].map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setViewMode(option as any)}
+                      className={`w-full px-4 py-2 rounded-md border text-sm font-medium ${
+                        viewMode === option
+                          ? 'bg-earth-moss text-earth-cream font-bold'
+                          : 'bg-earth-cream text-earth-moss hover:bg-earth-sage'
+                      }`}
+                    >
+                      {option.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
-                {/* Sort By Dropdown (Mobile only) */}
-                <div className="relative inline-block text-left">
+
+                {/* Sort By Dropdown */}
+                <div className="relative inline-block text-left w-full">
                   <button
                     type="button"
                     onClick={() => setSortDropdownOpen(prev => !prev)}
-                    className="inline-flex justify-center min-w-[128px] rounded-md border border-earth-sage shadow-sm px-4 py-2 bg-earth-cream text-sm font-medium text-earth-moss hover:bg-earth-sage focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-earth-moss"
+                    className="inline-flex justify-between w-full rounded-md border border-earth-sage shadow-sm px-4 py-2 bg-earth-cream text-sm font-medium text-earth-moss hover:bg-earth-sage"
                   >
                     Sort By: {sortConfig?.key ? sortConfig.key.charAt(0).toUpperCase() + sortConfig.key.slice(1) : 'Asset'}
                     <ChevronDown className="ml-2 -mr-1 h-5 w-5 text-earth-moss" aria-hidden="true" />
                   </button>
                   {sortDropdownOpen && (
                     <div className="absolute z-30 mt-2 w-full rounded-md bg-earth-cream shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-<div className="py-1">
-  {[
-    { key: 'name', label: 'Asset' },
-    { key: 'chain', label: 'Chain' },
-    { key: 'entry', label: 'Entry Price' },
-    { key: 'currentPrice', label: 'Current Price' },
-    { key: 'pnlPercentage', label: 'PnL %' },
-    { key: 'totalInv', label: 'Investment' },
-    { key: 'value', label: 'Value' },
-    { key: 'allocation', label: 'Allocation' },
-  ].map((col) => (
-    <button
-      key={col.key}
-      onClick={() => {
-        requestSort(col.key);
-        setSortDropdownOpen(false);
-      }}
-      className={`block w-full text-left px-4 py-2 text-sm ${
-        sortConfig?.key === col.key
-          ? 'bg-earth-moss text-earth-cream font-bold'
-          : 'text-earth-moss hover:bg-earth-sage hover:text-earth-cream'
-      }`}
-    >
-      {col.label}
-    </button>
-  ))}
-</div>
+                      <div className="py-1">
+                        {[
+                          { key: 'name', label: 'Asset' },
+                          { key: 'chain', label: 'Chain' },
+                          { key: 'entry', label: 'Entry Price' },
+                          { key: 'currentPrice', label: 'Current Price' },
+                          { key: 'pnlPercentage', label: 'PnL %' },
+                          { key: 'totalInv', label: 'Investment' },
+                          { key: 'value', label: 'Value' },
+                          { key: 'allocation', label: 'Allocation' },
+                        ].map((col) => (
+                          <button
+                            key={col.key}
+                            onClick={() => {
+                              requestSort(col.key);
+                              setSortDropdownOpen(false);
+                            }}
+                            className={`block w-full text-left px-4 py-2 text-sm ${
+                              sortConfig?.key === col.key
+                                ? 'bg-earth-moss text-earth-cream font-bold'
+                                : 'text-earth-moss hover:bg-earth-sage hover:text-earth-cream'
+                            }`}
+                          >
+                            {col.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
