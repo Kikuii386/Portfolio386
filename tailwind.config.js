@@ -8,12 +8,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'earth-darkbrown': '#3C2F2F',
-        'earth-brown': '#6D4C41',
-        'earth-sage': '#B5CBB7',
-        'earth-moss': '#A8BFA3',
-        'earth-cream': '#F5F3EA',
-        'earth-stone': '#A7A9A6',
+        'earth-darkbrown': '#5E4B3C',
+        'earth-brown': '#8B7355',
+        'earth-tan': '#BEA78C',
+        'earth-sage': '#A4AC86',
+        'earth-moss': '#6B7D5E',
+        'earth-stone': '#4A4A48',
+        'earth-cream': '#F5F2EB',
       },
     },
   },
