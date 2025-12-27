@@ -6,30 +6,6 @@ export const dynamic = 'force-dynamic';
 export default function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      {/* 🟢 LEFT SIDE: FORM (พื้นที่ล็อกอิน) */}
-      <div className="flex flex-col gap-4 p-6 md:p-10 bg-white relative">
-        {/* Logo มุมซ้ายบน (แสดงเฉพาะใน Desktop เพราะใน Mobile เราใส่ใน Card แล้ว) */}
-        <div className="hidden md:flex justify-start">
-          <a
-            href="#"
-            className="flex items-center gap-2 font-medium text-earth-darkbrown"
-          >
-            <div className="bg-earth-darkbrown text-earth-cream flex size-8 items-center justify-center rounded-lg">
-              {/* ใส่ Logo เล็กๆ หรือ Icon */}
-              <span className="font-bold text-lg">E</span>
-            </div>
-            <span className="text-lg font-bold">Earth Crypto</span>
-          </a>
-        </div>
-
-        {/* พื้นที่วาง LoginForm ให้อยู่ตรงกลาง */}
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <LoginForm />
-          </div>
-        </div>
-      </div>
-
       {/* 🟤 RIGHT SIDE: VISUALS (พื้นที่กราฟิก เต็มจอฝั่งขวา) */}
       <div className="relative hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-earth-darkbrown to-earth-brown text-earth-cream overflow-hidden">
         {/* Background Patterns (ลายจุด + Blobs) */}
@@ -64,6 +40,29 @@ export default function LoginPage() {
               © 2025 Earth Crypto Inc.
             </footer>
           </blockquote>
+        </div>
+      </div>
+      {/* 🟢 LEFT SIDE: FORM (พื้นที่ล็อกอิน) */}
+      <div className="flex flex-col gap-4 p-6 md:p-10 bg-white relative">
+        {/* Logo มุมซ้ายบน (แสดงเฉพาะใน Desktop เพราะใน Mobile เราใส่ใน Card แล้ว) */}
+        <div className="hidden md:flex justify-start">
+          <a
+            href="#"
+            className="flex items-center gap-2 font-medium text-earth-darkbrown"
+          >
+            <div className="bg-earth-darkbrown text-earth-cream flex size-8 items-center justify-center rounded-lg">
+              {/* ใส่ Logo เล็กๆ หรือ Icon */}
+              
+            </div>
+            <span className="text-lg font-bold">Earth Crypto</span>
+          </a>
+        </div>
+
+        {/* พื้นที่วาง LoginForm ให้อยู่ตรงกลาง */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-xs">
+            <LoginForm />
+          </div>
         </div>
       </div>
     </div>

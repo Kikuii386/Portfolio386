@@ -10,18 +10,7 @@ const JWT_SECRET = new TextEncoder().encode(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. กำหนด Public Paths (หน้านี้เข้าได้โดยไม่ต้องล็อกอิน)
-  // เพิ่ม '/' เข้าไป เพราะหน้า Login อยู่ที่ root แล้ว
-  const publicPaths = [
-    '/',
-    '/api/auth/login',
-    '/_next',
-    '/favicon.ico',
-    '/logo.png',
-    '/public',
-  ];
-
-  // เช็ค Token
+  // 1. ดึง Token และเช็คความถูกต้อง
   const token = request.cookies.get('session_token')?.value;
   let isValidToken = false;
 
@@ -30,32 +19,44 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(token, JWT_SECRET);
       isValidToken = true;
     } catch (err) {
-      // Token หมดอายุหรือปลอม
+      console.log('Token invalid:', err);
     }
   }
 
-  // 2. Logic: ถ้าล็อกอินแล้ว (มี Token) แต่พยายามเข้าหน้า Login (/) -> ดีดไป Dashboard
-  if (isValidToken && pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  // 3. Logic: ถ้าเป็น Public Path (เช่น รูปภาพ, API Login) ปล่อยผ่าน
-  if (
-    publicPaths.some((path) => pathname.startsWith(path)) &&
-    pathname !== '/'
-  ) {
+  // ==========================================
+  //  🛡️ โซนคนมี Token (ล็อกอินแล้ว)
+  // ==========================================
+  if (isValidToken) {
+    // ถ้าล็อกอินแล้ว แต่อยากกลับไปหน้า Login (/) -> ดีดไป Dashboard
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    // ถ้าไปหน้าอื่น (Dashboard, Profile) -> ปล่อยผ่านโลด
     return NextResponse.next();
   }
 
-  // 4. Logic: ถ้าไม่มี Token และไม่ได้เข้าหน้า Login (/) -> ดีดกลับมาหน้า Login (/)
-  if (!isValidToken && pathname !== '/') {
-    // แก้จาก /login เป็น /
-    return NextResponse.redirect(new URL('/', request.url));
+  // ==========================================
+  //  ⛔ โซนคนไม่มี Token (ยังไม่ล็อกอิน)
+  // ==========================================
+
+  // เช็คว่าเป็นไฟล์ที่ต้องปล่อยผ่านไหม (รูปภาพ, API Login, System Files)
+  // ⚠️ สังเกตว่าผมเอา '/' ออกจากตรงนี้ เพื่อไม่ให้มันเหมารวม
+  const isPublicPath =
+    pathname.startsWith('/api/auth') || // ให้ยิง API Login ได้
+    pathname.startsWith('/_next') || // ให้โหลดไฟล์ Next.js ได้
+    pathname.startsWith('/static') || // ให้โหลดรูป static ได้
+    pathname.includes('.') || // ให้โหลดไฟล์นามสกุลต่างๆ (favicon.ico, logo.png) ได้
+    pathname === '/'; // ให้เข้าหน้า Login (หน้าแรก) ได้
+
+  if (isPublicPath) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // 🛑 ถ้าไม่ใช่ไฟล์สาธารณะ และไม่มี Token -> ดีดกลับไปหน้า Login
+  return NextResponse.redirect(new URL('/', request.url));
 }
 
 export const config = {
+  // บังคับให้ Middleware ทำงานกับทุก Route (ยกเว้นไฟล์ static บางตัว)
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
