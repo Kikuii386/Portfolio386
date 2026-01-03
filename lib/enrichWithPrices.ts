@@ -1,11 +1,10 @@
-import type { TokenRow } from "./getSheetTokens";
-import { getFromCache, setToCache } from "@/lib/redisCache";
+import type { TokenRow } from './getSheetTokens';
+import { getFromCache, setToCache } from '@/lib/redisCache';
 
-import crypto from "crypto";
+import crypto from 'crypto';
 
-const PRICE_API_BASE =
-  process.env.NEXT_PUBLIC_PRICE_API_BASE 
-  
+const PRICE_API_BASE = process.env.NEXT_PUBLIC_PRICE_API_BASE;
+
 type ApiPriceRow = {
   chain: string;
   address: string;
@@ -24,24 +23,28 @@ async function loadPriceMap(): Promise<Map<string, ApiPriceRow>> {
     const res = await fetch(`${PRICE_API_BASE}/prices`);
     if (!res.ok) {
       console.warn(
-        "[enrichWithPrices] failed to load /prices",
+        '[enrichWithPrices] failed to load /prices',
         res.status,
-        await res.text().catch(() => "")
+        await res.text().catch(() => '')
       );
       return new Map();
     }
     const data = (await res.json()) as any;
-    const rows: ApiPriceRow[] = (data.prices ?? data.rows ?? []) as ApiPriceRow[];
+    const rows: ApiPriceRow[] = (data.prices ??
+      data.rows ??
+      []) as ApiPriceRow[];
     const map = new Map<string, ApiPriceRow>();
     for (const r of rows) {
       if (!r || !r.chain || !r.address) continue;
-      const key = `${String(r.chain).toLowerCase()}:${String(r.address).toLowerCase()}`;
+      const key = `${String(r.chain).toLowerCase()}:${String(
+        r.address
+      ).toLowerCase()}`;
       map.set(key, r);
     }
-    console.log("[enrichWithPrices] loaded price rows:", map.size);
+    console.log('[enrichWithPrices] loaded price rows:', map.size);
     return map;
   } catch (e) {
-    console.error("[enrichWithPrices] loadPriceMap error", e);
+    console.error('[enrichWithPrices] loadPriceMap error', e);
     return new Map();
   }
 }
@@ -58,26 +61,35 @@ export type EnrichedToken = TokenRow & {
 };
 
 function hashTokens(tokens: TokenRow[]): string {
-  const json = JSON.stringify(tokens.map(t => ({ contract: t.contract, totalQty: t.totalQty, highQty: t.highQty, lowQty: t.lowQty, chain: t.chain })));
+  const json = JSON.stringify(
+    tokens.map((t) => ({
+      contract: t.contract,
+      totalQty: t.totalQty,
+      highQty: t.highQty,
+      lowQty: t.lowQty,
+      chain: t.chain,
+    }))
+  );
   return crypto.createHash('sha256').update(json).digest('hex');
 }
 
 export async function enrichWithPrices(
   tokens: TokenRow[],
-  onBatch?: (results: EnrichedToken[]) => void
+  onBatch?: (results: EnrichedToken[]) => void,
+  forceRefresh: boolean = false
 ): Promise<EnrichedToken[]> {
-  console.log("🧩 ENRICH START");
-  console.log("📦 input length:", tokens.length);
+  console.log('🧩 ENRICH START');
+  console.log('📦 input length:', tokens.length);
 
   const CHUNK_SIZE = 100;
   const DELAY_MS = 1000;
 
   // --- Fast path: try to serve entirely from cache without hitting PRICE_API_BASE ---
   const currentHash = hashTokens(tokens);
-  const cachedHash = await getFromCache("sheet:hash");
+  const cachedHash = await getFromCache('sheet:hash');
 
-  if (cachedHash === currentHash) {
-    const cachedEnriched = await getFromCache("sheet:enrichedTokens");
+  if (!forceRefresh && cachedHash === currentHash) {
+    const cachedEnriched = await getFromCache('sheet:enrichedTokens');
     if (cachedEnriched) {
       const enriched = cachedEnriched as EnrichedToken[];
       console.log(`🧊 Loaded from cache: ${enriched.length} tokens`);
@@ -92,20 +104,23 @@ export async function enrichWithPrices(
   const priceMap = await loadPriceMap();
 
   // กรองเฉพาะ token ที่มี contract และมี qty
-const filtered = tokens
-    .filter(t => t.contract && (
-      t.totalQty > 0 || 
-      t.highQty > 0 || 
-      t.lowQty > 0 || 
-      t.otherQty > 0 ||
-      t.freeQty > 0  
-    ))
-    .filter((token, index, self) =>
-      index === self.findIndex(t => t.contract === token.contract)
+  const filtered = tokens
+    .filter(
+      (t) =>
+        t.contract &&
+        (t.totalQty > 0 ||
+          t.highQty > 0 ||
+          t.lowQty > 0 ||
+          t.otherQty > 0 ||
+          t.freeQty > 0)
+    )
+    .filter(
+      (token, index, self) =>
+        index === self.findIndex((t) => t.contract === token.contract)
     );
 
-  const chunks = [...Array(Math.ceil(filtered.length / CHUNK_SIZE))].map((_, i) =>
-    filtered.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + CHUNK_SIZE)
+  const chunks = [...Array(Math.ceil(filtered.length / CHUNK_SIZE))].map(
+    (_, i) => filtered.slice(i * CHUNK_SIZE, i * CHUNK_SIZE + CHUNK_SIZE)
   );
 
   let results: EnrichedToken[] = [];
@@ -122,7 +137,9 @@ const filtered = tokens
       const p = priceMap.get(priceKey);
 
       if (!p) {
-        console.warn(`[NOT FOUND] ${row.contract} on ${row.chain} (no price row)`);
+        console.warn(
+          `[NOT FOUND] ${row.contract} on ${row.chain} (no price row)`
+        );
         return null;
       }
 
@@ -135,7 +152,7 @@ const filtered = tokens
       }
 
       const numericPrice =
-        typeof rawPrice === "string" ? parseFloat(rawPrice) : Number(rawPrice);
+        typeof rawPrice === 'string' ? parseFloat(rawPrice) : Number(rawPrice);
 
       if (!Number.isFinite(numericPrice)) {
         console.warn(
@@ -151,12 +168,12 @@ const filtered = tokens
       const currentPrice = numericPrice;
       const symbol =
         (p.symbol && p.symbol.trim().length > 0 ? p.symbol : row.name) ||
-        "UNKNOWN";
+        'UNKNOWN';
 
       const logo =
-        typeof row.logo === "string" && row.logo.trim().length > 0
+        typeof row.logo === 'string' && row.logo.trim().length > 0
           ? row.logo
-          : "https://via.placeholder.com/32";
+          : 'https://via.placeholder.com/32';
 
       const enrichedToken = {
         ...row,
@@ -164,8 +181,8 @@ const filtered = tokens
         symbol,
         logo,
         id: key,
-        priceChangeH24: typeof rawChange === "number" ? rawChange : null,
-        marketCap: typeof rawMcap === "number" ? rawMcap : null,
+        priceChangeH24: typeof rawChange === 'number' ? rawChange : null,
+        marketCap: typeof rawMcap === 'number' ? rawMcap : null,
       };
       enrichCache.set(key, enrichedToken);
       return enrichedToken;
@@ -174,7 +191,7 @@ const filtered = tokens
     const settled = await Promise.all(fetches);
     const chunkResults = settled.filter((r): r is EnrichedToken => Boolean(r));
 
-    const newResults = chunkResults.filter(t => {
+    const newResults = chunkResults.filter((t) => {
       const key = `${t.contract}-${t.chain}`;
       if (seen.has(key)) return false;
       seen.add(key);
@@ -191,8 +208,8 @@ const filtered = tokens
     }
   }
 
-  await setToCache("sheet:enrichedTokens", results, 21600);
-  await setToCache("sheet:hash", currentHash, 21600);
+  await setToCache('sheet:enrichedTokens', results, 21600);
+  await setToCache('sheet:hash', currentHash, 21600);
 
   console.log(`✅ Enriched tokens: ${results.length}`);
   console.log(`❌ Not found or failed: ${filtered.length - results.length}`);

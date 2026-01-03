@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import ThemeToggle from './components/ThemeToggle';
+
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'default-secret-change-me'
@@ -45,6 +47,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth') || // ให้ยิง API Login ได้
     pathname.startsWith('/_next') || // ให้โหลดไฟล์ Next.js ได้
     pathname.startsWith('/static') || // ให้โหลดรูป static ได้
+    pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/components/ThemeToggle') ||
     pathname.includes('.') || // ให้โหลดไฟล์นามสกุลต่างๆ (favicon.ico, logo.png) ได้
     pathname === '/'; // ให้เข้าหน้า Login (หน้าแรก) ได้
 
