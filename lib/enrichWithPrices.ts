@@ -4,9 +4,8 @@ import { getFromCache, setToCache } from "@/lib/redisCache";
 import crypto from "crypto";
 
 const PRICE_API_BASE =
-  process.env.NEXT_PUBLIC_PRICE_API_BASE ??
-  "https://cron-price-fetcher.onrender.com";
-
+  process.env.NEXT_PUBLIC_PRICE_API_BASE 
+  
 type ApiPriceRow = {
   chain: string;
   address: string;
