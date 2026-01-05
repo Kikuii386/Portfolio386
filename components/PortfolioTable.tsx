@@ -29,9 +29,7 @@ type Props = {
 
 const RowActions = ({ token }: { token: any }) => {
   const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID';
-  const graphUrl = `https://dexscreener.com/${token.chain.toLowerCase()}/${
-    token.contract
-  }`;
+  const graphUrl = `https://dexscreener.com/${token.chain.toLowerCase()}/${token.contract.toLowerCase()}`;
 
   return (
     <div className="flex justify-end relative z-10">
