@@ -10,12 +10,48 @@
    ========================================= */
 @layer base {
   :root {
+    /* --- 🟤 Main Colors (ชุดหลักที่คุณตั้งไว้) --- */
     --earth-primary: 74 74 72;
     --earth-cream: 245 242 235;
     --earth-sage: 164 172 134;
     --earth-tan: 190 167 140;
     --earth-darkbrown: 94 75 60;
     --earth-brown: 139 115 85;
+
+    /* --- 🌿 Green Tones (ปรับใหม่: ให้เขียวแห้งลง เข้ากับ Sage) --- */
+    /* Moss: เข้มขึ้นและอมเทา เหมาะสำหรับปุ่ม Secondary */
+    --earth-moss: 105 115 95; /* ปรับจากเขียวสดเป็นเขียวขี้ม้าเข้ม */
+    /* Olive: ปรับให้อุ่นขึ้น เข้ากับสี Earth-Brown */
+    --earth-olive: 135 140 110; /* ปรับให้ละมุนขึ้น */
+    /* Mist: ลดความเขียวนีออนลง เป็นสีขาวอมเขียวจางๆ */
+    --earth-mist: 225 230 215; /* ปรับให้ใกล้เคียง Cream แต่ติดเขียว */
+    /* Sageleaf: เป็นสีเชื่อมระหว่าง Sage กับ Cream */
+    --earth-sageleaf: 190 195 170; /* ปรับให้ตุ่นลง */
+
+    /* --- 🧱 Earth/Brown Tones (ปรับใหม่: ลดสีส้มจัดจ้านลง) --- */
+    /* Clay: ลดความแดง/ส้ม ให้เป็นสีอิฐมอญเก่า */
+    --earth-clay: 145 100 75; /* ลดความสดลงเยอะพอสมควร */
+    /* BrownMedium: สีน้ำตาลกลาง เชื่อมระหว่าง Darkbrown กับ Brown */
+    --earth-brownmedium: 115 95 75;
+    /* TanLight: ปรับให้เหมือนสีทรายเปียก ไม่เหลืองโดด */
+    --earth-tanlight: 195 175 145;
+    /* AmberLight: ปรับให้เป็นสีไม้โอ๊คอ่อนๆ */
+    --earth-amberlight: 205 180 150;
+
+    /* --- 🍦 Cream/Neutral Tones (ปรับใหม่: ลดความเหลืองทองลง) --- */
+    /* Stone: ปรับให้เป็นสีเทาหินจริงๆ (Warm Grey) ไว้ทำ Border */
+    --earth-stone: 200 195 190;
+    /* Creammy: เข้มกว่า Cream หลักนิดหน่อย ไว้ทำ Card Background */
+    --earth-creammy: 235 230 220;
+    /* Creamlight: สีเกือบขาว ไว้ทำ Highlight */
+    --earth-creamlight: 252 250 248;
+    /* SoftCream: สีครีมนวลๆ ไม่อมเหลืองมาก */
+    --earth-softcream: 240 230 210;
+    /* Flax: แก้ไขเยอะสุด จากเหลืองทองเป็นสีฟางแห้ง */
+    --earth-flax: 225 210 180;
+    /* Haze: สีหมอกจางๆ อมน้ำตาลนิดๆ */
+    --earth-haze: 240 235 225;
+    /* --- ⚙️ Other UI Colors (สีอื่นๆ สำหรับ UI) --- */
 
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
@@ -451,12 +487,47 @@
   }
 }
 body.theme-christmas {
-  --earth-primary: 26 71 42; /* Pine Green */
-  --earth-cream: 255 253 245; /* Snow White */
-  --earth-sage: 201 42 42; /* Christmas Red */
-  --earth-tan: 212 163 115; /* Gold */
-  --earth-darkbrown: 45 90 39; /* Dark Green */
-  --earth-brown: 176 137 104; /* Reindeer Brown */
+  /* --- 🎄 Main Colors (ชุดหลักที่คุณกำหนด) --- */
+  --earth-primary: 26 71 42; /* Pine Green (เขียวสนเข้ม) */
+  --earth-cream: 255 253 245; /* Snow White (ขาวหิมะ) */
+  --earth-sage: 201 42 42; /* Christmas Red (แดงคริสต์มาส) - ใช้แทน Sage เดิม */
+  --earth-tan: 212 163 115; /* Gold (ทองด้าน) */
+  --earth-darkbrown: 45 90 39; /* Deep Green (เขียวเข้มมาก) - ใช้แทน Darkbrown เดิม */
+  --earth-brown: 176 137 104; /* Reindeer Brown (น้ำตาลกวางเรนเดียร์) */
+
+  /* --- 🌿 Green Tones (ปรับเป็นโทน Mistletoe & Ivy) --- */
+  /* Moss -> Mistletoe: เขียวที่สว่างกว่า Primary นิดหน่อย ไว้ทำปุ่มรอง */
+  --earth-moss: 85 120 80;
+  /* Olive -> Holly Leaf: เขียวมะกอกอมทองนิดๆ ดูอบอุ่น */
+  --earth-olive: 100 115 65;
+  /* Mist -> Frosty Mint: สีขาวอมเขียวเย็นๆ เหมือนน้ำแข็งเกาะ */
+  --earth-mist: 220 235 230;
+  /* Sageleaf -> Winter Fir: เขียวซีดๆ เหมือนต้นสนโดนหิมะ */
+  --earth-sageleaf: 160 185 160;
+
+  /* --- 🧱 Earth/Brown Tones (ปรับเป็นโทน Cinnamon & Gingerbread) --- */
+  /* Clay -> Cranberry/Mulled Wine: แดงก่ำอมน้ำตาล เข้าคู่กับ Red (Sage) */
+  --earth-clay: 140 60 60;
+  /* BrownMedium -> Pine Cone: น้ำตาลลูกสน เข้มขรึม */
+  --earth-brownmedium: 90 60 40;
+  /* TanLight -> Cookie Dough: สีแป้งคุกกี้ อ่อนกว่า Gold นิดหน่อย */
+  --earth-tanlight: 225 190 150;
+  /* AmberLight -> Gingerbread: สีขนมปังขิง ส้มอมน้ำตาล */
+  --earth-amberlight: 200 140 80;
+
+  /* --- 🍦 Cream/Neutral Tones (ปรับเป็นโทน Snow & Silver & Star) --- */
+  /* Stone -> Silver Bell: เทาเงินเย็นๆ ตัดกับสีแดง/เขียวได้ดี */
+  --earth-stone: 200 205 210;
+  /* Creammy -> Eggnog: สีครีมนวลๆ เข้มกว่า Snow */
+  --earth-creammy: 245 235 220;
+  /* Creamlight -> Pure Snow: ขาวสะอาดที่สุด */
+  --earth-creamlight: 255 255 255;
+  /* SoftCream -> Warm Milk: ขาวอุ่นๆ */
+  --earth-softcream: 245 240 230;
+  /* Flax -> Star Light: เหลืองทองสว่าง (Bright Gold) สำหรับ Highlight */
+  --earth-flax: 245 215 130;
+  /* Haze -> Vanilla: สีวานิลลาจางๆ */
+  --earth-haze: 245 240 225;
 }
 html {
   scroll-behavior: smooth;

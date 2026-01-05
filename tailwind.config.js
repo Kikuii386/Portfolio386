@@ -9,29 +9,29 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // --- ✅ ส่วนที่แก้ไข: ใช้สูตร RGB + Alpha Value ---
+        // --- Main Colors ---
+        'earth-primary': 'rgb(var(--earth-primary) / <alpha-value>)',
         'earth-darkbrown': 'rgb(var(--earth-darkbrown) / <alpha-value>)',
         'earth-brown': 'rgb(var(--earth-brown) / <alpha-value>)',
         'earth-tan': 'rgb(var(--earth-tan) / <alpha-value>)',
         'earth-sage': 'rgb(var(--earth-sage) / <alpha-value>)',
         'earth-cream': 'rgb(var(--earth-cream) / <alpha-value>)',
-        'earth-primary': 'rgb(var(--earth-primary) / <alpha-value>)',
 
-        // --- 🟤 ส่วนที่คงเดิม (ไม่ได้เปลี่ยนธีมตามคริสต์มาส) ---
-        'earth-moss': '#6B7D5E',
-        'earth-stone': '#C7BFB1',
-        'earth-olive': '#7A8B5A',
-        'earth-creammy': '#ebe5d7',
-        'earth-creamlight': '#FAF6F2',
-        'earth-flax': '#FFE6A7',
-        'earth-clay': '#99582A',
-        'earth-tanlight': '#BB9457',
-        'earth-amberlight': '#D4A373',
-        'earth-haze': '#FAEDCD',
-        'earth-mist': '#E9EDC9',
-        'earth-sageleaf': '#CCD5AE',
-        'earth-brownmedium': '#5A4428',
-        'earth-softcream': '#F7E7C3',
+        // --- Extended Earth Tones (แปลงให้เข้า Format แล้ว) ---
+        'earth-moss': 'rgb(var(--earth-moss) / <alpha-value>)',
+        'earth-stone': 'rgb(var(--earth-stone) / <alpha-value>)',
+        'earth-olive': 'rgb(var(--earth-olive) / <alpha-value>)',
+        'earth-creammy': 'rgb(var(--earth-creammy) / <alpha-value>)',
+        'earth-creamlight': 'rgb(var(--earth-creamlight) / <alpha-value>)',
+        'earth-flax': 'rgb(var(--earth-flax) / <alpha-value>)',
+        'earth-clay': 'rgb(var(--earth-clay) / <alpha-value>)',
+        'earth-tanlight': 'rgb(var(--earth-tanlight) / <alpha-value>)',
+        'earth-amberlight': 'rgb(var(--earth-amberlight) / <alpha-value>)',
+        'earth-haze': 'rgb(var(--earth-haze) / <alpha-value>)',
+        'earth-mist': 'rgb(var(--earth-mist) / <alpha-value>)',
+        'earth-sageleaf': 'rgb(var(--earth-sageleaf) / <alpha-value>)',
+        'earth-brownmedium': 'rgb(var(--earth-brownmedium) / <alpha-value>)',
+        'earth-softcream': 'rgb(var(--earth-softcream) / <alpha-value>)',
 
         // --- Shadcn & System Colors ---
         background: 'hsl(var(--background))',

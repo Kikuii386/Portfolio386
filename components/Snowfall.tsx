@@ -2,6 +2,7 @@
 
 import { useTheme } from '@/context/ThemeContext';
 import { useEffect, useState } from 'react';
+import { Snowflake } from 'lucide-react';
 
 export default function Snowfall() {
   const { isChristmas } = useTheme();
@@ -25,12 +26,12 @@ export default function Snowfall() {
         const animationDuration = 10 + Math.random() * 20; // 10-30 วินาที
         const animationDelay = Math.random() * 10;
         const opacity = 0.6 + Math.random() * 0.7;
-        const size = 8 + Math.random() * 10;
+        const size = 10 + Math.random() * 15;
 
         return (
-          <div
+          <Snowflake
             key={i}
-            className="absolute top-[-20px] rounded-full bg-white animate-fall shadow-sm"
+            className="absolute top-[-20px] rounded-full text-white animate-fall shadow-sm"
             style={{
               left: `${left}%`,
               width: `${size}px`,
@@ -38,7 +39,7 @@ export default function Snowfall() {
               opacity: opacity,
               animation: `fall ${animationDuration}s linear infinite`,
               animationDelay: `-${animationDelay}s`, // เริ่มตกทันทีแบบสุ่ม
-              boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
+              filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.8))',
             }}
           />
         );

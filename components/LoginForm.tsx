@@ -8,6 +8,7 @@ import { useGoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ThemeToggle from '@/components/ThemeToggle';
+import Snowfall from './Snowfall';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -66,9 +67,6 @@ function LoginFormContent() {
   return (
     <div className="w-full max-w-sm mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
       {/* ✅ 3. ใส่ปุ่ม ThemeToggle ตรงนี้ (ลอยขวาบน) */}
-      <div className="absolute top-0 right-0 z-10 md:-right-12 md:top-2">
-        <ThemeToggle />
-      </div>
       {/* Header */}
       <div className="md:hidden flex items-center gap-2 mb-6 justify-center">
         <div className="w-10 h-10 bg-earth-cream/20 rounded-xl flex items-center justify-center">
@@ -80,7 +78,7 @@ function LoginFormContent() {
       </div>
 
       <div className="space-y-2 text-center md:text-left">
-        <h2 className="text-3xl font-bold text-earth-darkbrown font-serif">
+        <h2 className="text-3xl font-bold text-earth-darkbrown font-serif italic tracking-wide">
           Welcome back
         </h2>
         <p className="text-earth-stone">
@@ -214,15 +212,23 @@ function LoginFormContent() {
       </div>
 
       {/* Footer */}
-      <p className="text-center text-sm text-earth-stone">
-        Don't have an account?{' '}
-        <Link
-          href="/register"
-          className="font-bold text-earth-darkbrown hover:text-earth-sage transition-colors underline decoration-earth-sage/30 underline-offset-4"
-        >
-          Create one
-        </Link>
-      </p>
+      <div className="flex items-center justify-center gap-3 mt-8 text-sm text-earth-stone animate-in fade-in duration-1000 delay-300">
+        
+        {/* ข้อความ */}
+        <span className="font-serif italic tracking-wide text-base">
+          Let it be Snowfall
+        </span>
+
+        {/* เส้นคั่นแนวตั้ง */}
+        <div className="h-3 w-[2px] bg-earth-stone/40"></div>
+
+        {/* ปุ่มเปลี่ยนธีม */}
+        <ThemeToggle />
+        
+      </div>
+      
+      
+
     </div>
   );
 }

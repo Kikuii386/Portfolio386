@@ -1,5 +1,15 @@
 'use client';
-import { Search, X, ChevronDown, Copy, Check } from 'lucide-react';
+import {
+  Search,
+  X,
+  ChevronDown,
+  Copy,
+  Check,
+  MoreHorizontal,
+  LineChart,
+  FileSpreadsheet,
+  ExternalLink,
+} from 'lucide-react';
 import LoadingIndicator from '@/components/ui/LoadingIndicator';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import DropdownSelect from '@/components/ui/DropdownSelect';
@@ -17,7 +27,72 @@ type Props = {
   loading?: boolean;
 };
 
+const RowActions = ({ token }: { token: any }) => {
+  // ลิงก์ไป Google Sheet (แก้เป็นลิงก์จริงของคุณ)
+  const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID';
+
+  // ลิงก์ไปดูกราฟ (สมมติว่าเป็น DexScreener หรือ TradingView)
+  const graphUrl = `https://dexscreener.com/${token.chain}/${token.contract}`;
+
+  return (
+    <div className="flex justify-end relative z-10">
+      {/* Container หลัก: ปกติจะกว้างแค่พอดีปุ่ม More แต่พอ Hover จะยืดออก */}
+      <div className="group flex items-center bg-transparent hover:bg-white/90 hover:shadow-lg hover:ring-1 hover:ring-earth-cream/50 p-1 rounded-full transition-all duration-300 ease-out w-8 hover:w-auto overflow-hidden">
+        {/* 1. ปุ่มหลัก (More Icon) - อยู่ขวาสุดเสมอ */}
+        <div className="flex-shrink-0 cursor-pointer text-earth-stone group-hover:text-earth-darkbrown p-0.5">
+          <MoreHorizontal size={16} />
+        </div>
+
+        {/* 2. ปุ่มที่ซ่อนอยู่ (จะ Slide ออกมาทางซ้าย) */}
+        <div className="flex items-center gap-1 w-0 group-hover:w-auto opacity-0 group-hover:opacity-100 transition-all duration-300 pl-0 group-hover:pl-2 border-l border-earth-cream/0 group-hover:border-earth-cream/40 ml-0 group-hover:ml-2">
+          {/* ปุ่ม Graph */}
+          <Tooltip content="View Graph">
+            <a
+              href={graphUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-full text-earth-stone hover:text-earth-olive hover:bg-earth-cream/50 transition-colors"
+            >
+              <LineChart size={14} />
+            </a>
+          </Tooltip>
+
+          {/* ปุ่ม Google Sheet */}
+          <Tooltip content="Open Sheet">
+            <a
+              href={googleSheetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-full text-earth-stone hover:text-green-600 hover:bg-earth-cream/50 transition-colors"
+            >
+              <FileSpreadsheet size={14} />
+            </a>
+          </Tooltip>
+
+          {/* ปุ่ม Scan (แถมให้) */}
+          <Tooltip content="Explorer">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // ใส่ Logic เปิด explorer ที่เราเขียนไว้ก่อนหน้านี้
+                window.open(
+                  `https://etherscan.io/address/${token.contract}`,
+                  '_blank'
+                );
+              }}
+              className="p-1.5 rounded-full text-earth-stone hover:text-blue-500 hover:bg-earth-cream/50 transition-colors"
+            >
+              <ExternalLink size={14} />
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function PortfolioTable({ tokens: initialTokens }: Props) {
+  const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
   const { copiedText, copy } = useCopyToClipboard();
@@ -409,6 +484,41 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
   const visibleTokens = useMemo(() => {
     return sortedTokens.slice(0, visibleCount);
   }, [sortedTokens, visibleCount]);
+
+  // --- 📊 DASHBOARD CALCULATION ---
+  const dashboardStats = useMemo(() => {
+    let totalBal = 0;
+    let totalInv = 0;
+    let bestAsset = { symbol: '-', pnl: -Infinity };
+    let worstAsset = { symbol: '-', pnl: Infinity };
+
+    tokens.forEach((t) => {
+      // คำนวณ Value ตาม Logic เดียวกับตาราง
+      const qty = t.totalQty; // ใช้ Total เป็นหลักสำหรับ Dashboard
+      const val = t.currentPrice * qty;
+      const inv = t.totalInv;
+
+      totalBal += val;
+      totalInv += inv;
+
+      // หาตัวท็อป/บ๊วย (คำนวณจาก PnL%)
+      const entry = t.totalEntry;
+      const pnlPct = entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
+
+      if (pnlPct > bestAsset.pnl && val > 10) {
+        // กรองเศษเหรียญออก (val > 10)
+        bestAsset = { symbol: t.symbol || t.name, pnl: pnlPct };
+      }
+      if (pnlPct < worstAsset.pnl && val > 10) {
+        worstAsset = { symbol: t.symbol || t.name, pnl: pnlPct };
+      }
+    });
+
+    const totalPnLVal = totalBal - totalInv;
+    const totalPnLPct = totalInv > 0 ? (totalPnLVal / totalInv) * 100 : 0;
+
+    return { totalBal, totalPnLVal, totalPnLPct, bestAsset };
+  }, [tokens]);
 
   // 5. ระบบ Auto Load เมื่อเลื่อนลงล่างสุด
   useEffect(() => {
@@ -848,7 +958,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
           <table className="table-fixed w-full border-collapse border-earth-cream/60 text-sm md:text-base">
             <thead className="hidden sm:table-header-group sticky top-0 z-20 bg-earth-cream/80 backdrop-blur-md ">
               <tr>
-                <th className="px-6 py-4 w-[220px] text-left text-base font-semibold text-earth-brown  cursor-pointer">
+                <th className="px-6 py-4 w-[240px] text-left text-base font-semibold text-earth-brown  cursor-pointer">
                   <SortButton
                     column="name"
                     sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
@@ -857,7 +967,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     Asset
                   </SortButton>
                 </th>
-                <th className="px-6 py-4 w-[120px] whitespace-nowrap text-sm md:text-base font-semibold text-earth-brown cursor-pointer">
+                <th className="px-2 py-4 w-[100px] whitespace-nowrap text-sm md:text-base font-semibold text-earth-brown cursor-pointer">
                   <div className="flex justify-center">
                     <SortButton
                       column="chain"
@@ -869,7 +979,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                   </div>
                 </th>
                 {/* ✅ NEW: Market Cap Column */}
-                <th className="px-4 py-4 w-[110px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
+                <th className="px-6 py-4 w-[120px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="marketCap"
@@ -883,7 +993,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                 <th className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
                   Entry Price
                 </th>
-                <th className="px-6 py-4 w-[160px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
+                <th className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="priceChangeH24" // ✅ ใส่ key ให้ตรงกับที่เขียน Logic ไว้
@@ -905,7 +1015,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[140px] whitespace-nowrap text-base font-semibold text-earth-brown n cursor-pointer">
+                <th className="px-6 py-4 w-[130px] whitespace-nowrap text-base font-semibold text-earth-brown n cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="totalInv"
@@ -916,7 +1026,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[140px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
+                <th className="px-6 py-4 w-[130px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="value"
@@ -1000,7 +1110,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                       className="text-center hover:bg-earth-cream/40 cursor-pointer transition-colors duration-300"
                     >
                       {/* Asset */}
-                      <td className="px-6 py-4 w-[220px] whitespace-nowrap text-left text-sm md:text-base text-earth-darkbrown">
+                      <td className="px-6 py-4 w-[240px] whitespace-nowrap text-left text-sm md:text-base text-earth-darkbrown">
                         <div className="flex items-center">
                           <img
                             src={t.logo || '/smile.png'}
@@ -1047,11 +1157,13 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                         </div>
                       </td>
                       {/* Chain */}
-                      <td className="px-6 py-4 w-[120px] whitespace-nowrap text-center text-sm md:text-base text-earth-stone">
-                        {t.chain}
+                      <td className="px-2 py-4 w-[100px] whitespace-nowrap text-center align-middle">
+                        <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wide bg-earth-cream/60 text-earth-darkbrown border border-earth-cream">
+                          {t.chain}
+                        </span>
                       </td>
                       {/* ✅ NEW: Market Cap */}
-                      <td className="px-4 py-4 w-[110px] whitespace-nowrap text-right text-sm md:text-base text-earth-stone font-mono">
+                      <td className="px-6 py-4 w-[120px] whitespace-nowrap text-right text-sm md:text-base text-earth-stone font-mono">
                         {t.marketCap ? (
                           <QtyDisplay qty={t.marketCap} prefix="$" />
                         ) : (
@@ -1063,7 +1175,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                         <PriceDisplay price={entry} />
                       </td>
                       {/* Current Price */}
-                      <td className="px-6 py-4 w-[160px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
+                      <td className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
                         {/* div ครอบเพื่อทำ Text Animation */}
                         <div
                           className={`inline-block transition-all duration-300 origin-right ${
@@ -1129,7 +1241,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                         </div>
                       </td>
                       {/* Investment */}
-                      <td className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
+                      <td className="px-6 py-4 w-[130px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
                         <div className="w-full text-right">
                           $
                           {inv >= 100_000 ? (
@@ -1146,7 +1258,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                         </div>
                       </td>
                       {/* Value */}
-                      <td className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown value transition duration-300">
+                      <td className="px-6 py-4 w-[130px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown value transition duration-300">
                         $
                         {value >= 1_000_000 ? (
                           // กรณีมากกว่า 1 ล้าน: ใช้ QtyDisplay ช่วยย่อ (จะได้ 1.5M)
@@ -1184,13 +1296,9 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                         </div>
                       </td>
                       {/* Actions */}
-                      <td className="px-6 py-4 w-[80px] whitespace-nowrap text-right text-sm md:text-base">
-                        <button className="text-earth-stone hover:text-earth-darkbrown transition mr-2">
-                          ⟳
-                        </button>
-                        <button className="text-earth-stone hover:text-earth-darkbrown transition">
-                          ⋯
-                        </button>
+                      <td className="px-6 py-4 w-[80px] whitespace-nowrap text-right align-middle">
+                        {/* ส่ง token เข้าไปใน Component */}
+                        <RowActions token={t} />
                       </td>
                     </tr>
                   );
