@@ -1,3 +1,4 @@
+import 'server-only';
 import Redis from "ioredis";
 
 // 1. สร้าง Singleton Pattern เพื่อป้องกัน Connection บานปลายใน Next.js (Hot Reload)

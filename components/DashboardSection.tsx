@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   ComposedChart,
   Line,
@@ -16,23 +16,24 @@ import {
   AreaChart,
   BarChart,
   Cell,
-  Brush,
   PieChart,
   Pie,
-  Legend,
   Label,
 } from 'recharts';
 import {
   TrendingUp,
-  TrendingDown,
   DollarSign,
   Wallet,
-  ArrowUpRight,
 } from 'lucide-react';
-import { EnrichedToken } from '@/lib/enrichWithPrices';
-import { KPIRow } from '@/lib/getSheetKPIs';
+import type { EnrichedToken } from '@/lib/enrichWithPrices';
+import type { KPIRow } from '@/lib/getSheetKPIs';
 import { ZoomableChartWrapper } from '@/hook/useChartZoom';
 import QtyDisplay from '@/components/QtyDisplay'; // 👈 import เข้ามา
+
+interface DashboardSectionProps {
+  initialTokens?: EnrichedToken[];
+  initialHistory?: KPIRow[]; // 👈 เพิ่มบรรทัดนี้
+}
 
 // --- 🎨 Palette (Soft Earth Tone) ---
 const COLORS = {
@@ -198,47 +199,62 @@ function DashboardSkeleton() {
     </div>
   );
 }
+export default function DashboardSection({ 
+  initialTokens = [], 
+  initialHistory = [] 
+}: DashboardSectionProps) {
 
-export default function DashboardSection() {
-  const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState<KPIRow[]>([]);
-  const [tokens, setTokens] = useState<EnrichedToken[]>([]);
+  // ✅ 3. Initialize State: ถ้ามีของส่งมา ก็ใช้เลย ไม่ต้อง Loading
+  const hasInitialData = initialTokens.length > 0 || initialHistory.length > 0;
+  
+  const [loading, setLoading] = useState(!hasInitialData); // ถ้ามีข้อมูลแล้ว ไม่ต้องหมุน
+  const [tokens, setTokens] = useState<EnrichedToken[]>(initialTokens);
+  const [history, setHistory] = useState<KPIRow[]>(initialHistory);
+  
   const [volTimeframe, setVolTimeframe] = useState<'1D' | '1W' | '1M'>('1D');
+
+  // ✅ 4. แก้ useEffect: ให้ฉลาดขึ้น (ถ้ามีของแล้ว ไม่ต้อง Fetch ซ้ำ)
   useEffect(() => {
     async function fetchData() {
+      // ถ้าข้อมูลครบแล้ว (ส่งมาจาก Server) ก็จบงานเลย ไม่ต้องยิง API
+      if (tokens.length > 0 && history.length > 0) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
 
-        const [resTokens, resHistory] = await Promise.all([
-          fetch('/api/enrich'),
-          fetch('/api/history'),
-        ]);
-
-        if (!resTokens.ok) throw new Error('Failed to fetch tokens');
-        if (!resHistory.ok) throw new Error('Failed to fetch history');
-
-        const tokensData = await resTokens.json();
-        const historyData = await resHistory.json();
-
-        // ❌ ของเดิม: ลืมบรรทัดนี้ครับ!
-        // ✅ ของใหม่: ใส่ Logic ดึงค่า tokens ให้รองรับทั้ง Array และ Object
-        // (เผื่อ API ส่งมาเป็น { tokens: [...] } หรือ [...])
-        const finalTokens = tokensData.tokens || tokensData;
-
-        if (Array.isArray(finalTokens)) {
-          setTokens(finalTokens);
+        // Logic ฉลาดเลือก: ขาดอันไหน โหลดแค่อันนั้น
+        const promises = [];
+        
+        // ถ้าไม่มี tokens ให้โหลด
+        if (tokens.length === 0) {
+           promises.push(fetch('/api/enrich').then(res => res.json()));
         } else {
-          setTokens([]); // ถ้าไม่ใช่ Array ให้เซ็ตเป็นค่าว่าง กัน Error
+           promises.push(Promise.resolve(null)); // ข้าม
         }
 
-        // ส่วน History ของคุณทำถูกแล้วครับ 👍
-        if (Array.isArray(historyData)) {
-          setHistory(historyData);
-        } else if (Array.isArray(historyData.data)) {
-          setHistory(historyData.data);
+        // ถ้าไม่มี history ให้โหลด
+        if (history.length === 0) {
+           promises.push(fetch('/api/history').then(res => res.json()));
         } else {
-          setHistory([]);
+           promises.push(Promise.resolve(null)); // ข้าม
         }
+
+        const [tokensData, historyData] = await Promise.all(promises);
+
+        // อัปเดต State เฉพาะตัวที่โหลดมาใหม่
+        if (tokensData) {
+          const finalTokens = tokensData.tokens || tokensData;
+          if (Array.isArray(finalTokens)) setTokens(finalTokens);
+        }
+
+        if (historyData) {
+          const finalHistory = Array.isArray(historyData) ? historyData : historyData.data;
+          if (Array.isArray(finalHistory)) setHistory(finalHistory);
+        }
+
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
@@ -246,9 +262,11 @@ export default function DashboardSection() {
       }
     }
 
-    fetchData();
+    // สั่งรัน fetchData เฉพาะเมื่อข้อมูลไม่ครบ
+    if (tokens.length === 0 || history.length === 0) {
+      fetchData();
+    }
   }, []);
-
   // 🛡️ Summary Logic (รวม Total + Other + Free)
   const summary = useMemo(() => {
     // 1. Guard Clause
@@ -1465,7 +1483,7 @@ function AllocationChart({ tokens }: { tokens: EnrichedToken[] }) {
               />
             ) : (
               // Fallback กรณีไม่มี Logo หรือเป็น Others
-              <div className="w-5 h-5 rounded-full bg-earth-stone/20 flex items-center justify-center text-[8px]  text-earth-stone">
+              <div className="w-8 h-8 rounded-full bg-earth-stone/20 flex items-center justify-center text-[8px]  text-earth-stone">
                 {d.name[0]}
               </div>
             )}

@@ -2,6 +2,8 @@
 
 import CryptoBalanceChecker from 'components/CryptoBalanceChecker';
 
+export const dynamic = 'force-dynamic';
+
 export default function MyPage() {
   return (
     <section className="py-12" id="balance-checker">
@@ -13,10 +15,10 @@ export default function MyPage() {
           A safe, multi-chain explorer for your DEX wallets.
         </p>
       </div>
-       {/* ส่วนเช็ค Balance วางไว้ด้านบน หรือ Sidebar */}
-       <div className="mb-20">
-         <CryptoBalanceChecker />
-       </div>
+      {/* ส่วนเช็ค Balance วางไว้ด้านบน หรือ Sidebar */}
+      <div className="mb-20">
+        <CryptoBalanceChecker />
+      </div>
     </section>
-  )
+  );
 }

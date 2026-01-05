@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useGoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -63,7 +64,11 @@ function LoginFormContent() {
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full max-w-sm mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+      {/* ✅ 3. ใส่ปุ่ม ThemeToggle ตรงนี้ (ลอยขวาบน) */}
+      <div className="absolute top-0 right-0 z-10 md:-right-12 md:top-2">
+        <ThemeToggle />
+      </div>
       {/* Header */}
       <div className="md:hidden flex items-center gap-2 mb-6 justify-center">
         <div className="w-10 h-10 bg-earth-cream/20 rounded-xl flex items-center justify-center">

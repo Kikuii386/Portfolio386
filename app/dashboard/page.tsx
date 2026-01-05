@@ -1,13 +1,17 @@
-'use client';
 
-import React, { useState, useEffect } from 'react';
+
 import DashboardSection from '@/components/DashboardSection'; // ✅ Import Dashboard
-import { EnrichedToken } from '@/lib/enrichWithPrices'; // ✅ Import Type
-import LoadingIndicator from '@/components/ui/LoadingIndicator'; // (Optional) ถ้ามี
-import { KPIRow } from '@/lib/getSheetKPIs';
+import { getDashboardData } from "@/lib/getDashboardData"; // ดึงเหรียญ
+import { getSheetKPIs } from "@/lib/getSheetKPIs";         // ดึงกราฟ (เพิ่มมาใหม่)
 
 export const dynamic = 'force-dynamic';
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // ⚡️ สั่งดึงข้อมูล 2 อย่างพร้อมกัน (Server-Side)
+  // ข้อมูลจะวิ่งมาจาก Redis ทันที (เร็วมาก)
+  const [tokens, history] = await Promise.all([
+    getDashboardData(),
+    getSheetKPIs()
+  ]);
   return (
     <section className="py-12" id="dashboard">
       <div className="container mx-auto px-4">
@@ -21,7 +25,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
-        <DashboardSection />
+        <DashboardSection initialTokens={tokens} initialHistory={history} />
       </div>
     </section>
   );
