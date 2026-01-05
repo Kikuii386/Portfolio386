@@ -28,11 +28,10 @@ type Props = {
 };
 
 const RowActions = ({ token }: { token: any }) => {
-  // ลิงก์ไป Google Sheet (แก้เป็นลิงก์จริงของคุณ)
   const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID';
-
-  // ลิงก์ไปดูกราฟ (สมมติว่าเป็น DexScreener หรือ TradingView)
-  const graphUrl = `https://dexscreener.com/${token.chain}/${token.contract}`;
+  const graphUrl = `https://dexscreener.com/${token.chain.toLowerCase()}/${
+    token.contract
+  }`;
 
   return (
     <div className="flex justify-end relative z-10">
