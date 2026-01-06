@@ -1,5 +1,15 @@
 'use client';
-import { Search, X, ChevronDown, Copy, Check } from 'lucide-react';
+import {
+  Search,
+  X,
+  ChevronDown,
+  Copy,
+  Check,
+  MoreHorizontal,
+  LineChart,
+  FileSpreadsheet,
+  ExternalLink,
+} from 'lucide-react';
 import LoadingIndicator from '@/components/ui/LoadingIndicator';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import DropdownSelect from '@/components/ui/DropdownSelect';
@@ -10,12 +20,72 @@ import QtyDisplay from '@/components/QtyDisplay';
 import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
 import React from 'react';
 import Tooltip from '@/components/ui/Tooltips';
-import { SwipeableRow } from './SwipeableRow';
 
 type Props = {
   tokens: EnrichedToken[];
   setCopied?: (value: boolean) => void;
   loading?: boolean;
+};
+
+const RowActions = ({ token }: { token: any }) => {
+  const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID';
+  const graphUrl = `https://dexscreener.com/${token.chain.toLowerCase()}/${token.contract.toLowerCase()}`;
+
+  return (
+    <div className="flex justify-end relative z-10">
+      {/* Container หลัก: ปกติจะกว้างแค่พอดีปุ่ม More แต่พอ Hover จะยืดออก */}
+      <div className="group flex items-center bg-transparent hover:bg-white/90 hover:shadow-lg hover:ring-1 hover:ring-earth-cream/50 p-1 rounded-full transition-all duration-300 ease-out w-8 hover:w-auto overflow-hidden">
+        {/* 1. ปุ่มหลัก (More Icon) - อยู่ขวาสุดเสมอ */}
+        <div className="flex-shrink-0 cursor-pointer text-earth-stone group-hover:text-earth-darkbrown p-0.5">
+          <MoreHorizontal size={16} />
+        </div>
+
+        {/* 2. ปุ่มที่ซ่อนอยู่ (จะ Slide ออกมาทางซ้าย) */}
+        <div className="flex items-center gap-1 w-0 group-hover:w-auto opacity-0 group-hover:opacity-100 transition-all duration-300 pl-0 group-hover:pl-2 border-l border-earth-cream/0 group-hover:border-earth-cream/40 ml-0 group-hover:ml-2">
+          {/* ปุ่ม Graph */}
+          <Tooltip content="View Graph">
+            <a
+              href={graphUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-full text-earth-stone hover:text-earth-olive hover:bg-earth-cream/50 transition-colors"
+            >
+              <LineChart size={14} />
+            </a>
+          </Tooltip>
+
+          {/* ปุ่ม Google Sheet */}
+          <Tooltip content="Open Sheet">
+            <a
+              href={googleSheetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-full text-earth-stone hover:text-green-600 hover:bg-earth-cream/50 transition-colors"
+            >
+              <FileSpreadsheet size={14} />
+            </a>
+          </Tooltip>
+
+          {/* ปุ่ม Scan (แถมให้) */}
+          <Tooltip content="Explorer">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // ใส่ Logic เปิด explorer ที่เราเขียนไว้ก่อนหน้านี้
+                window.open(
+                  `https://etherscan.io/address/${token.contract}`,
+                  '_blank'
+                );
+              }}
+              className="p-1.5 rounded-full text-earth-stone hover:text-blue-500 hover:bg-earth-cream/50 transition-colors"
+            >
+              <ExternalLink size={14} />
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 function PortfolioTable({ tokens: initialTokens }: Props) {
@@ -882,10 +952,10 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
 
         {/* ----------- Desktop/Tablet Table View ----------- */}
         <div className="hidden md:block relative z-0 overflow-y-auto max-h-[85vh] transition-opacity duration-300">
-          <table className="w-full border-collapse border-earth-cream/60 text-sm md:text-base">
+          <table className="table-fixed w-full border-collapse border-earth-cream/60 text-sm md:text-base">
             <thead className="hidden sm:table-header-group sticky top-0 z-20 bg-earth-cream/80 backdrop-blur-md ">
               <tr>
-                <th className="px-6 py-4 w-[261.2px] text-left text-base font-semibold text-earth-brown  cursor-pointer">
+                <th className="px-6 py-4 w-[240px] text-left text-base font-semibold text-earth-brown  cursor-pointer">
                   <SortButton
                     column="name"
                     sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
@@ -894,7 +964,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     Asset
                   </SortButton>
                 </th>
-                <th className="px-2 py-4 w-[108.83px] whitespace-nowrap text-sm md:text-base font-semibold text-earth-brown cursor-pointer">
+                <th className="px-2 py-4 w-[100px] whitespace-nowrap text-sm md:text-base font-semibold text-earth-brown cursor-pointer">
                   <div className="flex justify-center">
                     <SortButton
                       column="chain"
@@ -906,7 +976,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                   </div>
                 </th>
                 {/* ✅ NEW: Market Cap Column */}
-                <th className="px-6 py-4 w-[130.59px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
+                <th className="px-6 py-4 w-[120px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="marketCap"
@@ -917,10 +987,10 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[152.38px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
+                <th className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
                   Entry Price
                 </th>
-                <th className="px-6 py-4 w-[152.38px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
+                <th className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="priceChangeH24" // ✅ ใส่ key ให้ตรงกับที่เขียน Logic ไว้
@@ -931,7 +1001,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[130.59px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
+                <th className="px-6 py-4 w-[120px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="pnlPercentage"
@@ -942,7 +1012,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[141.48px] whitespace-nowrap text-base font-semibold text-earth-brown n cursor-pointer">
+                <th className="px-6 py-4 w-[130px] whitespace-nowrap text-base font-semibold text-earth-brown n cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="totalInv"
@@ -953,7 +1023,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[141.48px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
+                <th className="px-6 py-4 w-[130px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
                   <div className="flex justify-end">
                     <SortButton
                       column="value"
@@ -964,36 +1034,274 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     </SortButton>
                   </div>
                 </th>
-                <th className="px-6 py-4 w-[174.14px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
+                <th className="px-6 py-4 w-[160px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
                   Allocation
                 </th>
-                <th className="px-6 py-4 w-[108.92px] whitespace-nowrap text-center text-base font-semibold text-earth-brown">
+                <th className="px-6 py-4 w-[100px] whitespace-nowrap text-center text-base font-semibold text-earth-brown">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
-              {/* ... loading check ... */}
-              {visibleTokens.map((t) => (
-                <SwipeableRow
-                  key={t.contract}
-                  t={t}
-                  viewMode={viewMode}
-                  priceChanges={priceChanges}
-                  copy={copy}
-                  copiedText={copiedText}
-                  // ✅ เพิ่มบรรทัดนี้: ส่งค่า Total Value ไปคำนวณ Allocation
-                  totalValue={totalValue}
-                  isExpanded={openRowId === t.contract}
-                  onToggle={() =>
-                    setOpenRowId((prev) =>
-                      prev === t.contract ? null : t.contract
-                    )
-                  }
-                />
-              ))}
+              {initialLoading ? (
+                <tr>
+                  <td colSpan={10}>
+                    <LoadingIndicator />
+                  </td>
+                </tr>
+              ) : visibleTokens.length === 0 ? (
+                <tr className="text-center text-earth-stone">
+                  <td colSpan={10} className="px-6 py-4 text-sm md:text-base">
+                    No data
+                  </td>
+                </tr>
+              ) : (
+                visibleTokens.map((t, index) => {
+                  const entry =
+                    viewMode === 'high'
+                      ? t.highEntry
+                      : viewMode === 'low'
+                      ? t.lowEntry
+                      : viewMode === 'other'
+                      ? t.otherEntry
+                      : viewMode === 'free'
+                      ? t.freeEntry
+                      : t.totalEntry;
+                  const qty =
+                    viewMode === 'high'
+                      ? t.highQty
+                      : viewMode === 'low'
+                      ? t.lowQty
+                      : viewMode === 'other'
+                      ? t.otherQty
+                      : viewMode === 'free'
+                      ? t.freeQty
+                      : t.totalQty;
+                  const inv =
+                    viewMode === 'high'
+                      ? t.highInv
+                      : viewMode === 'low'
+                      ? t.lowInv
+                      : viewMode === 'other'
+                      ? t.otherInv
+                      : viewMode === 'free'
+                      ? t.freeInv
+                      : t.totalInv;
+                  const value = t.currentPrice * qty;
+                  const pnl =
+                    entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
+                  const allocation =
+                    totalValue > 0 ? (value / totalValue) * 100 : 0;
+                  const profitAmount = value - inv;
+                  const chg = t.priceChangeH24 ?? 0;
+                  const chgColor =
+                    chg > 0
+                      ? 'text-earth-olive'
+                      : chg < 0
+                      ? 'text-red-500'
+                      : 'text-earth-stone';
+
+                  return (
+                    <tr
+                      key={t.contract}
+                      className="text-center hover:bg-earth-cream/40 cursor-pointer transition-colors duration-300"
+                    >
+                      {/* Asset */}
+                      <td className="px-6 py-4 w-[240px] whitespace-nowrap text-left text-sm md:text-base text-earth-darkbrown">
+                        <div className="flex items-center">
+                          <img
+                            src={t.logo || '/smile.png'}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/smile.png';
+                            }}
+                            alt={t.name}
+                            loading="lazy"
+                            className="h-10 w-10 rounded-full border border-earth-cream mr-4"
+                          />
+                          <div>
+                            <div className="font-semibold text-earth-darkbrown">
+                              {t.name}
+                            </div>
+                            <Tooltip content="Copy address" side="right">
+                              <div
+                                className="inline-flex items-center gap-1.5 cursor-pointer group align-middle"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // กันไม่ให้ไปกดโดนการขยาย Accordion
+                                  copy(t.contract, 'Address');
+                                }}
+                                title="Click to copy address"
+                              >
+                                <span className="font-mono text-sm text-earth-stone opacity-70 group-hover:text-earth-sage group-hover:opacity-100 transition-all duration-200">
+                                  {t.contract.slice(0, 6)}...
+                                  {t.contract.slice(-4)}
+                                </span>
+
+                                <div className="p-1 rounded-md text-earth-stone group-hover:text-earth-sage group-hover:bg-earth-cream/50 transition-all duration-200">
+                                  {/* เช็คว่า index นี้ถูกก๊อปปี้หรือไม่ */}
+                                  {copiedText === t.contract ? (
+                                    <Check
+                                      size={16}
+                                      className="text-earth-sage animate-in zoom-in duration-200"
+                                    />
+                                  ) : (
+                                    <Copy size={16} />
+                                  )}
+                                </div>
+                              </div>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Chain */}
+                      <td className="px-2 py-4 w-[100px] whitespace-nowrap text-center align-middle">
+                        <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wide bg-earth-cream/60 text-earth-darkbrown border border-earth-cream">
+                          {t.chain}
+                        </span>
+                      </td>
+                      {/* ✅ NEW: Market Cap */}
+                      <td className="px-6 py-4 w-[120px] whitespace-nowrap text-right text-sm md:text-base text-earth-stone font-mono">
+                        {t.marketCap ? (
+                          <QtyDisplay qty={t.marketCap} prefix="$" />
+                        ) : (
+                          <span className="text-earth-stone/50 text-xs">-</span>
+                        )}
+                      </td>
+                      {/* Entry Price */}
+                      <td className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
+                        <PriceDisplay price={entry} />
+                      </td>
+                      {/* Current Price */}
+                      <td className="px-6 py-4 w-[140px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
+                        {/* div ครอบเพื่อทำ Text Animation */}
+                        <div
+                          className={`inline-block transition-all duration-300 origin-right ${
+                            priceChanges[t.contract] === 'up'
+                              ? 'animate-text-pop-green' // ใส่ font-bold เพิ่มให้เด่นขึ้นตอนเด้ง
+                              : priceChanges[t.contract] === 'down'
+                              ? 'animate-text-pop-red '
+                              : ''
+                          }`}
+                        >
+                          <PriceDisplay price={t.currentPrice} />
+                        </div>
+                        {/* ✅ 24h Change Display */}
+                        <div
+                          className={`w-full text-right text-sm mt-1 font-normal ${chgColor}`}
+                        >
+                          {chg > 0 ? '▲' : chg < 0 ? '▼' : ''} {chg.toFixed(2)}%
+                        </div>
+                      </td>
+                      {/* PnL % */}
+                      <td
+                        className={`px-6 py-4 w-[120px] whitespace-nowrap text-right text-sm md:text-base font-semibold ${
+                          pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                        } profit transition duration-300`}
+                      >
+                        <div className="w-full text-right flex items-center justify-end gap-1">
+                          {pnl >= 0 ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                              <polyline points="16 7 22 7 22 13" />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <polyline points="2 7 10.5 15.5 15.5 10.5 22 17" />
+                              <polyline points="16 17 22 17 22 11" />
+                            </svg>
+                          )}
+                          {pnl.toFixed(2)}%
+                        </div>
+                        <div className="w-full text-right text-sm mt-1 text-earth-stone font-normal">
+                          {profitAmount >= 0 ? '+$' : '-$'}
+                          {Math.abs(profitAmount) >= 10_000 ? (
+                            <QtyDisplay qty={Math.abs(profitAmount)} />
+                          ) : (
+                            // กรณีปกติ: แสดงทศนิยม 2 ตำแหน่ง
+                            Math.abs(profitAmount).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          )}
+                        </div>
+                      </td>
+                      {/* Investment */}
+                      <td className="px-6 py-4 w-[130px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown">
+                        <div className="w-full text-right">
+                          $
+                          {inv >= 100_000 ? (
+                            <QtyDisplay qty={inv} />
+                          ) : (
+                            inv.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          )}
+                        </div>
+                        <div className="w-full text-right text-sm text-earth-stone mt-1">
+                          <QtyDisplay qty={qty} />
+                        </div>
+                      </td>
+                      {/* Value */}
+                      <td className="px-6 py-4 w-[130px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown value transition duration-300">
+                        $
+                        {value >= 1_000_000 ? (
+                          // กรณีมากกว่า 1 ล้าน: ใช้ QtyDisplay ช่วยย่อ (จะได้ 1.5M)
+                          <QtyDisplay qty={value} />
+                        ) : (
+                          // กรณีต่ำกว่า 1 ล้าน: แสดงตัวเลขเต็มๆ (จะได้ 500,000.00)
+                          value.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        )}
+                      </td>
+                      {/* Allocation */}
+                      <td className="px-6 py-4 w-[160px] whitespace-nowrap text-right text-sm md:text-base text-earth-darkbrown align-middle">
+                        <div className="flex flex-col justify-center gap-1">
+                          <div className="w-full bg-earth-cream/70 rounded-full h-2.5 overflow-hidden border border-earth-cream/30">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ease-out ${
+                                // เปลี่ยนสีตามความเยอะ (Option เสริม: ถ้าชอบสีเดียวลบส่วนนี้ได้เลย)
+                                allocation > 30
+                                  ? 'bg-earth-olive/90'
+                                  : 'bg-earth-sage/90'
+                              }`}
+                              style={{
+                                // 2. ใช้ Math.max ให้มันมีเนื้ออย่างน้อย 2% จะได้ไม่ดูเป็นขีดเส้นเดียว
+                                width: `${Math.max(allocation, 2)}%`,
+                              }}
+                            ></div>
+                          </div>
+
+                          {/* 3. ตัวเลข (Text) - อยู่ด้านล่างเหมือนเดิม */}
+                          <div className="pt-1 w-full text-right text-xs  text-earth-stone/95 font-mono">
+                            {allocation.toFixed(2)}%
+                          </div>
+                        </div>
+                      </td>
+                      {/* Actions */}
+                      <td className="px-6 py-4 w-[80px] whitespace-nowrap text-right align-middle">
+                        {/* ส่ง token เข้าไปใน Component */}
+                        <RowActions token={t} />
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
-            // ...
           </table>
           {visibleTokens.length < sortedTokens.length && (
             <div
