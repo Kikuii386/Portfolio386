@@ -1,12 +1,12 @@
 import React from 'react';
 import { X, SlidersHorizontal } from 'lucide-react';
 
-// กำหนด Type ของ Props ที่ต้องส่งเข้ามา
+// กำหนด Type ของ Props (เหมือนเดิม)
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   viewMode: string;
-  setViewMode: (mode: any) => void; // หรือระบุ Type ที่ชัดเจนกว่านี้ถ้ามี
+  setViewMode: (mode: any) => void;
   sortConfig: { key: string; direction: string } | null;
   requestSort: (key: string) => void;
   sortOptions: { key: string; label: string }[];
@@ -26,7 +26,8 @@ const MobileFilterDrawer = ({
       {/* 1. Backdrop (พื้นหลังดำจางๆ) */}
       <div
         className={`
-          md:hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          md:hidden fixed inset-0 z-[30] bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          top-16 /* ✅ เว้นระยะด้านบน 16 (64px) ให้อยู่ใต้ Navbar */
           ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
         `}
         onClick={onClose}
@@ -35,11 +36,15 @@ const MobileFilterDrawer = ({
       {/* 2. Drawer Container */}
       <div
         className={`
-          md:hidden fixed z-[70] w-[280px] h-full
-          top-0 right-0
-          bg-gradient-to-bl from-earth-darkbrown to-earth-brown shadow-2xl border-l border-white/10
+          md:hidden fixed z-[40] w-[280px] 
+          top-16 bottom-0 /* ✅ ติดขอบล่าง แต่เว้นด้านบนไว้ใต้ Navbar */
+          left-0 /* ✅ ย้ายมาด้านซ้าย (เหมือน Navbar) */
+          bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl 
+          border-r border-white/10 /* ✅ เปลี่ยนเป็นเส้นขอบขวา */
           transform transition-transform duration-300 ease-out flex flex-col
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          } /* ✅ Animation เข้าจากซ้าย */
         `}
       >
         {/* Header Drawer */}
@@ -75,7 +80,7 @@ const MobileFilterDrawer = ({
                   key={mode.id}
                   onClick={() => {
                     setViewMode(mode.id);
-                    onClose(); // ปิดเมนูเมื่อเลือกเสร็จ
+                    onClose();
                   }}
                   className={`
                     w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 border
@@ -118,7 +123,11 @@ const MobileFilterDrawer = ({
                     <span>{option.label}</span>
                     {isActive && (
                       <span className="text-xs bg-black/10 px-1.5 py-0.5 rounded">
-                        {sortConfig?.direction === 'ascending' ? 'ASC' : 'DESC'}
+                        {/* ✅ แก้เงื่อนไขให้เช็คทั้ง 'asc' และ 'ascending' */}
+                        {sortConfig?.direction === 'asc' ||
+                        sortConfig?.direction === 'ascending'
+                          ? 'ASC'
+                          : 'DESC'}
                       </span>
                     )}
                   </button>

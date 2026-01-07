@@ -34,6 +34,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
   const { copiedText, copy } = useCopyToClipboard();
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     // ใช้สำหรับให้ทั้งตาราง fade-in ตอนเปิดหน้านี้ครั้งแรกเท่านั้น
@@ -456,32 +457,37 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
     >
       <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85vh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
-        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-30 md:relative">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-2xl font-bold text-earth-primary">All Asset</h2>
-            <div className="flex flex-col md:flex-row gap-4 w-full sm:w-auto items-start md:items-center justify-start md:justify-end">
-              {/* Search Input */}
+        <div className="w-full bg-white/95 backdrop-blur-sm p-6 rounded-t-xl sticky top-0 z-30 shadow-sm border-b border-earth-cream/20 md:border-none md:shadow-none md:relative transition-all">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
+            {/* Title */}
+            <div className="flex justify-between items-center w-full md:w-auto">
+              <h2 className="text-xl md:text-2xl font-bold text-earth-primary tracking-tight">
+                All Asset
+              </h2>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto items-start md:items-center justify-start md:justify-end">
+              {/* --- Search Input (Responsive) --- */}
               <div className="w-full md:w-auto flex items-center gap-4">
                 <div className="relative w-full group">
-                  <div className=" absolute left-3.5 top-1/2 -translate-y-1/2 text-earth-stone/80 group-focus-within:text-earth-sage transition-colors">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-earth-stone/80 group-focus-within:text-earth-sage transition-colors">
                     <Search size={18} />
                   </div>
                   <input
                     type="text"
-                    placeholder="Search tokens or addresses..."
+                    placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-10 py-2.5 w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown placeholder-earth-stone/80 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage transition-all text-sm font-mono hover:bg-earth-cream/30"
+                    // ✅ ใช้ text-base บนมือถือ (กัน iOS zoom) และ text-sm บน desktop
+                    className="pl-10 pr-10 py-2.5 w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown placeholder-earth-stone/80 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage transition-all text-base md:text-sm font-mono hover:bg-earth-cream/30"
                   />
 
                   {searchTerm && (
-                    // 2. ❌ Wrapper: แค่กำหนดตำแหน่งก็พอ (ตัด flex ออก เพราะ Tooltip จัดการตัวเองได้แล้ว)
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10">
                       <Tooltip content="Clear" side="bottom">
                         <button
-                          type="button" // ✅ ใส่กันเหนียวไว้ ไม่ให้ไป Trigger การ Submit form
+                          type="button"
                           onClick={() => setSearchTerm('')}
-                          // ✅ เพิ่ม flex justify-center items-center เพื่อให้ตัว X อยู่กลางวงกลมเป๊ะๆ
                           className="p-1 rounded-full bg-earth-brown/50 text-white hover:bg-red-400 transition-all duration-200 shadow-sm hover:scale-110 flex items-center justify-center"
                         >
                           <X size={10} strokeWidth={4} />
@@ -491,76 +497,30 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                   )}
                 </div>
               </div>
-              {/* Responsive Sort + View Mode controls */}
-              <div className="w-full flex gap-2 md:hidden mb-2">
-                {/* Sort Button (mobile only) */}
-                <div className="w-1/2">
-                  <DropdownSelect
-                    options={[
-                      {
-                        label: 'SORT BY',
-                        items: sortOptions.map((o) => o.key),
-                      },
-                    ]}
-                    selected={sortConfig?.key || ''}
-                    onSelect={(val) => requestSort(val)}
-                    buttonClass="bg-earth-cream text-earth-brown transition-colors duration-200 uppercase"
-                    getLabel={(key) =>
-                      sortOptions.find((o) => o.key === key)?.label || key
-                    }
-                  />
-                </div>
-                {/* ViewMode Button (mobile) */}
-                <div className="w-1/2">
-                  <DropdownSelect
-                    options={[
-                      {
-                        label: 'MAIN', // หัวข้อกลุ่มที่ 1
-                        items: ['total', 'high', 'low'],
-                      },
-                      {
-                        label: 'ETC', // หัวข้อกลุ่มที่ 2
-                        items: ['other', 'free'],
-                      },
-                    ]}
-                    selected={viewMode}
-                    onSelect={(val) => {
-                      setViewMode(
-                        val as 'total' | 'high' | 'low' | 'other' | 'free'
-                      );
-                    }}
-                    getLabel={(val) => {
-                      switch (val) {
-                        case 'total':
-                          return 'Total';
-                        case 'high':
-                          return 'High';
-                        case 'low':
-                          return 'Low';
-                        case 'other':
-                          return 'Other';
-                        case 'free':
-                          return 'Free';
-                        default:
-                          return val.toUpperCase();
-                      }
-                    }}
-                    buttonClass="bg-earth-sage text-white transition-colors duration-200 hover:bg-earth-olive uppercase"
-                  />
-                </div>
+
+              {/* --- MOBILE ONLY: Filter & Sort Button (New Style) --- */}
+              {/* ส่วนนี้จะโชว์เฉพาะมือถือ (md:hidden) แทนที่ Dropdown คู่เดิม */}
+              <div className="w-full md:hidden mt-0">
+                <button
+                  onClick={() => setIsFilterOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-earth-cream/20 border border-earth-cream/60 text-earth-darkbrown font-bold py-2.5 rounded-xl shadow-sm active:bg-earth-cream/40 transition-all uppercase tracking-wide text-xs hover:bg-earth-cream/30"
+                >
+                  <SlidersHorizontal size={16} />
+                  Filter & Sort Options
+                </button>
               </div>
 
-              {/* View Mode Dropdown - Desktop/Tablet only (always show, not hidden) */}
-              <div className="w-full md:w-auto hidden md:block ">
+              {/* --- DESKTOP ONLY: View Mode Dropdown --- */}
+              {/* ส่วนนี้จะโชว์เฉพาะ Desktop (hidden md:block) ใช้ Logic เดิมของคุณ */}
+              <div className="w-full md:w-auto hidden md:block">
                 <DropdownSelect
-                  // 1. แก้ไขตรงนี้: เปลี่ยน options ให้เป็นรูปแบบกลุ่ม
                   options={[
                     {
-                      label: 'MAIN', // หัวข้อกลุ่มที่ 1
+                      label: 'MAIN',
                       items: ['total', 'high', 'low'],
                     },
                     {
-                      label: 'ETC', // หัวข้อกลุ่มที่ 2
+                      label: 'ETC',
                       items: ['other', 'free'],
                     },
                   ]}
@@ -570,7 +530,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                       val as 'total' | 'high' | 'low' | 'other' | 'free'
                     );
                   }}
-                  // 2. แนะนำให้เพิ่ม getLabel เพื่อให้ชื่อสวยงาม (ถ้าต้องการ)
                   getLabel={(val) => {
                     switch (val) {
                       case 'total':
@@ -587,7 +546,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                         return val.toUpperCase();
                     }
                   }}
-                  buttonClass="bg-earth-sage text-white transition-colors duration-200 hover:bg-earth-olive hover:shadow-sm uppercase"
+                  buttonClass="bg-earth-sage text-white transition-colors duration-200 hover:bg-earth-olive hover:shadow-sm uppercase font-semibold px-4 py-2 rounded-xl text-sm"
                 />
               </div>
             </div>
@@ -959,6 +918,15 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
             </div>
           )}
         </div>
+        <MobileFilterDrawer
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          sortConfig={sortConfig}
+          requestSort={requestSort}
+          sortOptions={sortOptions}
+        />
 
         {/* ----------- Desktop/Tablet Table View ----------- */}
         <div className="hidden md:block relative z-0 overflow-y-auto max-h-[85vh] transition-opacity duration-300">
