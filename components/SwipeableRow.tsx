@@ -71,11 +71,7 @@ export const SwipeableRow = ({
   const profitAmount = value - inv;
   const chg = t.priceChangeH24 ?? 0;
   const chgColor =
-    chg > 0
-      ? 'text-earth-olive'
-      : chg < 0
-      ? 'text-red-500'
-      : 'text-earth-stone';
+    chg > 0 ? 'text-green-700 ' : chg < 0 ? 'text-red-700' : 'text-earth-stone';
 
   const SLIDE_WIDTH = 160;
 
@@ -150,11 +146,11 @@ export const SwipeableRow = ({
     // 3. M.Cap (8%)
     {
       className:
-        'w-[130.59px] flex-none px-6 py-4 text-right text-earth-stone font-mono flex-shrink-0',
+        'w-[130.59px] flex-none px-6 py-4 text-right text-earth-stone font-mono flex-shrink-0 ',
       content: t.marketCap ? (
         <QtyDisplay qty={t.marketCap} prefix="$" />
       ) : (
-        <span className="text-earth-stone/50 text-xs">-</span>
+        <span className="text-earth-stone text-xs">-</span>
       ),
     },
     // 4. Entry Price (9%)
@@ -267,7 +263,7 @@ export const SwipeableRow = ({
     // 8. Value (9%)
     {
       className:
-        'w-[141.48px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0 ',
+        'w-[141.48px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0 font-semibold',
       content: (
         <>
           $

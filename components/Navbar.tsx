@@ -119,7 +119,8 @@ export default function Navbar() {
             <span>Connect Wallet</span>
           </button>
         </div>
-      </div><div className="h-16 hidden md:block" />
+      </div>
+      <div className="h-16 hidden md:block" />
       {/* =========================================================
           2. SIDE DOCK (DESKTOP ONLY)
           จะซ่อนอยู่ตอนแรก / เมื่อเลื่อนลงจะค่อยๆ ปรากฏขึ้นมา (Fade In)
@@ -190,63 +191,124 @@ export default function Navbar() {
       </div>
 
       {/* =========================================================
-          MOBILE NAVBAR (Sticky Top - No Side Dock)
+          MOBILE NAVBAR (Sticky Top)
           ========================================================= */}
-      <div className="md:hidden sticky top-0 z-50 bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 p-4 flex justify-between items-center">
+      <div className="md:hidden sticky top-0 z-50 bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
+        {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="Logo" className="w-8 h-8" />
+          <img
+            src={isChristmas ? '/logo-xmas.png' : '/logo.png'}
+            alt="Logo"
+            className="w-8 h-8 object-contain"
+          />
           <span className="text-xl font-bold text-earth-cream">
             Earth Crypto
           </span>
         </Link>
+
+        {/* Custom Hamburger Button */}
         <div className="flex gap-4">
           <button
-            onClick={() => setMobileOpen(true)}
-            className="text-earth-cream hover:bg-white/10 p-1 rounded transition-colors"
+            type="button"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-expanded={mobileOpen}
+            className="text-earth-cream hover:text-white transition-colors p-1"
           >
-            <Menu size={24} />
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* เส้นบน */}
+              <rect
+                x="1"
+                y="7"
+                width="14"
+                height="2"
+                rx="1"
+                style={{
+                  transformOrigin: 'center center',
+                  transition: 'transform 200ms ease-out',
+                  // ถ้าเปิด: หมุน 45 องศา, ถ้าปิด: เลื่อนขึ้นไปข้างบน (-3.5px)
+                  transform: mobileOpen
+                    ? 'rotate(45deg)'
+                    : 'translateY(-3.5px)',
+                }}
+              />
+              {/* เส้นล่าง */}
+              <rect
+                x="1"
+                y="7"
+                width="14"
+                height="2"
+                rx="1"
+                style={{
+                  transformOrigin: 'center center',
+                  transition: 'transform 200ms ease-out',
+                  // ถ้าเปิด: หมุน -45 องศา, ถ้าปิด: เลื่อนลงไปข้างล่าง (3.5px)
+                  transform: mobileOpen
+                    ? 'rotate(-45deg)'
+                    : 'translateY(3.5px)',
+                }}
+              />
+            </svg>
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* =========================================================
+          MOBILE DRAWER (Left Side & Under Navbar)
+          ========================================================= */}
+
+      {/* Backdrop (พื้นหลังดำจางๆ) */}
       <div
-        className={`md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-          mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-        }`}
+        className={`
+          md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          top-16 /* ✅ เว้นระยะด้านบน 64px (h-16) เพื่อให้อยู่ใต้ Navbar */
+          ${mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
+        `}
         onClick={() => setMobileOpen(false)}
       />
 
+      {/* Drawer Container */}
       <div
         className={`
-          md:hidden fixed top-0 right-0 bottom-0 w-[280px] z-50 
-          bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-l border-white/10
+          md:hidden fixed z-40 w-[280px] 
+          top-16 bottom-0 /* ✅ ติดขอบล่าง แต่เว้นด้านบนไว้ใต้ Navbar */
+          left-0 /* ✅ ย้ายมาด้านซ้าย */
+          bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl border-r border-white/10
           transform transition-transform duration-300 ease-out flex flex-col
-          ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${
+            mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          } /* ✅ Animation เข้าจากซ้าย */
         `}
       >
-        <div className="p-6 flex items-center justify-between border-b border-white/10">
-          <span className="text-lg font-bold text-earth-cream">Menu</span>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="text-earth-cream/70 hover:text-earth-cream"
-          >
-            <X size={24} />
-          </button>
+        {/* Header ของ Drawer (ไม่ต้องมีปุ่มปิดแล้ว เพราะปุ่มข้างบนทำหน้าที่ปิดได้) */}
+        <div className="p-4 border-b border-white/10">
+          <span className="text-sm font-bold text-earth-stone uppercase tracking-wider">
+            Menu
+          </span>
         </div>
-        <div className="flex-1 p-4 flex flex-col gap-2">
+
+        {/* Menu Items */}
+        <div className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
           {menuItems.map((item) => (
             <Link
               key={item.name}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              // ✅ แก้ไขความชัดเจนตรงนี้ครับ
               className={`
-                    flex items-center gap-3 p-2 rounded-xl transition-all duration-200
+                    flex items-center gap-3 p-3 rounded-xl transition-all duration-200
                     ${
                       pathname === item.href
-                        ? 'bg-earth-stone/80 text-darkbrown shadow-lg shadow-earth-sage/20' // Active: สีพื้นเข้ม ตัวขาวหนา มีเงา
-                        : 'text-earth-cream/70 hover:bg-white/10 hover:text-white' // Inactive: สีจาง
+                        ? `${
+                            isChristmas
+                              ? 'bg-red-600 text-white'
+                              : 'bg-earth-stone/80 text-darkbrown'
+                          } shadow-lg font-bold`
+                        : 'text-earth-cream/70 hover:bg-white/10 hover:text-white'
                     }
                   `}
             >
@@ -256,9 +318,8 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Mobile Connect Wallet Button */}
-        <div className="p-6 border-t border-white/10 space-y-4">
-          {/* ✅ เพิ่มส่วน Theme Toggle ตรงนี้ครับ */}
+        {/* Footer (Connect & Theme) */}
+        <div className="p-6 border-t border-white/10 space-y-4 bg-black/10">
           <div className="flex items-center justify-between px-1">
             <span className="text-earth-cream/80 font-medium">
               Switch Theme
@@ -266,7 +327,17 @@ export default function Navbar() {
             <ThemeToggle />
           </div>
 
-          <button className="w-full flex justify-center items-center gap-2 bg-earth-sage text-white font-bold py-3 rounded-xl hover:bg-earth-sage/90 transition-all shadow-lg active:scale-95">
+          <button
+            className={`
+              w-full flex justify-center items-center gap-2 text-white font-bold py-3 rounded-xl 
+              transition-all shadow-lg active:scale-95
+              ${
+                isChristmas
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-earth-sage hover:bg-earth-sage/90'
+              }
+            `}
+          >
             <Wallet size={20} />
             Connect Wallet
           </button>

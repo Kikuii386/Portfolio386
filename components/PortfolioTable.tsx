@@ -1,5 +1,14 @@
 'use client';
-import { Search, X, ChevronDown, Copy, Check } from 'lucide-react';
+import {
+  Search,
+  X,
+  ChevronDown,
+  Copy,
+  Check,
+  LineChart,
+  FileSpreadsheet,
+  SlidersHorizontal,
+} from 'lucide-react';
 import LoadingIndicator from '@/components/ui/LoadingIndicator';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import DropdownSelect from '@/components/ui/DropdownSelect';
@@ -11,6 +20,8 @@ import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
 import React from 'react';
 import Tooltip from '@/components/ui/Tooltips';
 import { SwipeableRow } from './SwipeableRow';
+import { getGraphLink, getGoogleSheetLink } from './ui/RowActions';
+import MobileFilterDrawer from '@/components/MobileFilterDrawer';
 
 type Props = {
   tokens: EnrichedToken[];
@@ -412,41 +423,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
     return sortedTokens.slice(0, visibleCount);
   }, [sortedTokens, visibleCount]);
 
-  // --- 📊 DASHBOARD CALCULATION ---
-  const dashboardStats = useMemo(() => {
-    let totalBal = 0;
-    let totalInv = 0;
-    let bestAsset = { symbol: '-', pnl: -Infinity };
-    let worstAsset = { symbol: '-', pnl: Infinity };
-
-    tokens.forEach((t) => {
-      // คำนวณ Value ตาม Logic เดียวกับตาราง
-      const qty = t.totalQty; // ใช้ Total เป็นหลักสำหรับ Dashboard
-      const val = t.currentPrice * qty;
-      const inv = t.totalInv;
-
-      totalBal += val;
-      totalInv += inv;
-
-      // หาตัวท็อป/บ๊วย (คำนวณจาก PnL%)
-      const entry = t.totalEntry;
-      const pnlPct = entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
-
-      if (pnlPct > bestAsset.pnl && val > 10) {
-        // กรองเศษเหรียญออก (val > 10)
-        bestAsset = { symbol: t.symbol || t.name, pnl: pnlPct };
-      }
-      if (pnlPct < worstAsset.pnl && val > 10) {
-        worstAsset = { symbol: t.symbol || t.name, pnl: pnlPct };
-      }
-    });
-
-    const totalPnLVal = totalBal - totalInv;
-    const totalPnLPct = totalInv > 0 ? (totalPnLVal / totalInv) * 100 : 0;
-
-    return { totalBal, totalPnLVal, totalPnLPct, bestAsset };
-  }, [tokens]);
-
   // 5. ระบบ Auto Load เมื่อเลื่อนลงล่างสุด
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -618,15 +594,16 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
           </div>
         </div>
 
-        {/* ----------- Mobile Stacked/Accordion View ----------- */}
-        <div className="md:hidden transition-opacity duration-300">
+        {/* ----------- Mobile Stacked/Accordion View (With Show More) ----------- */}
+        <div className="md:hidden transition-opacity duration-300 pb-20">
           {initialLoading ? (
             <LoadingIndicator />
           ) : sortedTokens.length === 0 ? (
             <div className="text-center text-earth-stone p-6">No data</div>
           ) : (
-            <div className="space-y-2 p-4 ">
-              {visibleTokens.map((t, index) => {
+            <div className="space-y-4 p-4">
+              {visibleTokens.map((t) => {
+                // --- 1. Logic คำนวณค่า (เหมือนเดิม) ---
                 const entry =
                   viewMode === 'high'
                     ? t.highEntry
@@ -637,6 +614,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     : viewMode === 'free'
                     ? t.freeEntry
                     : t.totalEntry;
+
                 const qty =
                   viewMode === 'high'
                     ? t.highQty
@@ -647,6 +625,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     : viewMode === 'free'
                     ? t.freeQty
                     : t.totalQty;
+
                 const inv =
                   viewMode === 'high'
                     ? t.highInv
@@ -657,35 +636,54 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                     : viewMode === 'free'
                     ? t.freeInv
                     : t.totalInv;
+
                 const value = t.currentPrice * qty;
-                const pnl =
+                const profitAmount = value - inv;
+                const pnlPercentage =
                   entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
                 const allocation =
                   totalValue > 0 ? (value / totalValue) * 100 : 0;
+                const chg = t.priceChangeH24 ?? 0;
+                const chgColor =
+                  chg > 0
+                    ? 'text-green-600'
+                    : chg < 0
+                    ? 'text-red-600'
+                    : 'text-earth-stone';
+
+                const isProfit = profitAmount >= 0;
+                const pnlColor = isProfit ? 'text-green-700' : 'text-red-700';
                 const isExpanded = expandedTokens[t.contract];
-                const profitAmount = value - inv;
+
                 return (
                   <div
                     key={t.contract}
-                    className="bg-white rounded-lg border border-earth-cream/60 p-4 shadow-sm"
+                    className="bg-white rounded-2xl border border-earth-cream/80 shadow-sm overflow-hidden relative"
                   >
-                    {/* Top row: logo, name, contract, PnL% + value */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center min-w-0 flex-1">
-                        <img
-                          src={t.logo || '/smile.png'}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = '/smile.png';
-                          }}
-                          alt={t.name}
-                          loading="lazy"
-                          className="h-10 w-10 rounded-full border border-earth-cream mr-3 flex-shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-earth-darkbrown truncate">
+                    {/* --- Header: Identity & Price (แสดงตลอด) --- */}
+                    <div
+                      className="p-4 pb-2 flex justify-between items-start"
+                      onClick={() => toggleTokenExpand(t.contract)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <img
+                            src={t.logo || '/smile.png'}
+                            onError={(e) => {
+                              e.currentTarget.src = '/smile.png';
+                            }}
+                            alt={t.name}
+                            className="w-11 h-11 rounded-full bg-white shadow-sm p-0.5 border border-earth-cream/40 object-cover"
+                          />
+                          <div className="absolute -bottom-1 -right-1 bg-[#Fdfbf7] text-earth-darkbrown text-[9px] font-bold px-1.5 py-0.5 rounded border border-earth-cream/60 shadow-sm uppercase">
+                            {t.chain}
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-earth-darkbrown text-lg leading-tight truncate max-w-[140px]">
                             {t.name}
                           </div>
+                          {/* แสดง Price แทน Value เมื่อปิด Grid */}
                           <div
                             className="flex items-center text-xs text-earth-stone font-mono cursor-pointer group gap-1"
                             onClick={(e) => {
@@ -694,7 +692,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                             }}
                           >
                             <span className="font-mono transition-colors group-hover:text-earth-sage">
-                              {t.contract.slice(0, 6)}...{t.contract.slice(-4)}
+                              {t.contract.slice(0, 6)}...
                             </span>
                             <div className="transition-colors group-hover:text-earth-sage flex items-center relative">
                               <button className="transition-colors">
@@ -703,7 +701,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                                   {copiedText === t.contract ? (
                                     <Check
                                       size={12}
-                                      className="text-earth-sage animate-in zoom-in duration-200"
+                                      className="text-earth-sage animate-in zoom-in duration-300"
                                     />
                                   ) : (
                                     <Copy size={12} />
@@ -714,16 +712,29 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right ml-3">
+
+                      <div className="text-right">
+                        {/* 1. Value (มูลค่ารวม) */}
+                        <div className="text-earth-darkbrown font-semibold text-lg">
+                          $
+                          {value.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </div>
+
+                        {/* 1. Percentage Line: มีลูกศร + พื้นหลังสี */}
                         <div
-                          className={`flex items-center justify-end gap-1 ${
-                            pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                          className={`flex items-center justify-end gap-1 font-semibold px-2 py-0.5 rounded-md ml-auto w-fit ${
+                            isProfit
+                              ? 'text-green-700 bg-green-50'
+                              : 'text-red-700 bg-red-50'
                           }`}
                         >
-                          {pnl >= 0 ? (
+                          {isProfit ? (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
+                              className="h-3.5 w-3.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -734,7 +745,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                           ) : (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
+                              className="h-3.5 w-3.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -743,135 +754,204 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                               <polyline points="16 17 22 17 22 11" />
                             </svg>
                           )}
-                          {pnl.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                          %
-                        </div>
-                        <div className="text-sm text-earth-darkbrown">
-                          <QtyDisplay
-                            prefix={profitAmount >= 0 ? '+$' : '-$'}
-                            qty={Math.abs(profitAmount)}
-                          />
+                          <span className="text-xs">
+                            {pnlPercentage.toFixed(2)}%
+                          </span>
                         </div>
                       </div>
                     </div>
-                    {/* Data blocks: Price, Holdings, Allocation */}
-                    <div className="grid grid-cols-3 gap-3 mb-3 text-center">
-                      <div className="bg-earth-cream/60 rounded-lg p-2">
-                        <div className="text-xs text-earth-stone font-medium">
-                          Price
-                        </div>
-                        <div className=" text-earth-darkbrown text-sm">
-                          {t.currentPrice > 0 ? (
-                            <PriceDisplay price={t.currentPrice} />
-                          ) : (
-                            'N/A'
-                          )}
-                        </div>
-                      </div>
-                      <div className="bg-earth-cream/60 rounded-lg p-2">
-                        <div className="text-xs text-earth-stone font-medium">
-                          Holdings
-                        </div>
-                        <div className="text-earth-darkbrown text-sm">
-                          <QtyDisplay qty={qty} />
-                        </div>
-                      </div>
-                      <div className="bg-earth-cream/60 rounded-lg p-2">
-                        <div className="text-xs text-earth-stone font-medium">
-                          Chain
-                        </div>
-                        <div className="font-semibold text-earth-darkbrown text-sm">
-                          {t.chain}
+
+                    {/* --- Collapsible Area: Stats Grid (ส่วนที่ซ่อน) --- */}
+                    <div
+                      className={`transition-all duration-300 ease-in-out overflow-hidden border-earth-cream/20 ${
+                        isExpanded
+                          ? 'max-h-[500px] opacity-100 border-t'
+                          : 'max-h-0 opacity-0 border-none'
+                      }`}
+                    >
+                      <div className="px-4 py-2 bg-earth-cream/10">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm bg-earth-cream/50 p-3 rounded-xl border border-earth-cream/40">
+                          {/* --- Row 1: Entry Price vs Current Price --- */}
+                          <div>
+                            <div className="text-earth-stone text-[10px] uppercase tracking-wide">
+                              Entry Price
+                            </div>
+                            <div className="font-medium text-earth-darkbrown">
+                              <PriceDisplay price={entry} />
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div>
+                              <div className="text-earth-stone text-[10px] uppercase tracking-wide">
+                                Current Price
+                              </div>
+                              <div className="font-medium text-earth-darkbrown">
+                                <PriceDisplay price={t.currentPrice} />
+                              </div>
+                              {/* ส่วนแสดง 24h % Change */}
+                              <div
+                                className={`text-[10px] font-bold mt-0.5 ${chgColor}`}
+                              >
+                                {chg > 0 ? '▲' : chg < 0 ? '▼' : ''}{' '}
+                                {chg.toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* ✅ Separator 1: เพิ่มเส้นแบ่งตรงนี้กลับมาครับ */}
+                          <div className="col-span-2 h-px bg-earth-cream/60 my-1"></div>
+
+                          {/* --- Row 2: M.Cap vs Holdings --- */}
+                          <div>
+                            <div className="text-earth-stone text-[10px] uppercase tracking-wide">
+                              M.Cap
+                            </div>
+                            <div className="font-medium font-mono text-earth-stone">
+                              {t.marketCap ? (
+                                <QtyDisplay qty={t.marketCap} prefix="$" />
+                              ) : (
+                                '-'
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-earth-stone text-[10px] uppercase tracking-wide">
+                              Quantity
+                            </div>
+                            <div className="font-medium text-earth-darkbrown">
+                              <QtyDisplay qty={qty} />
+                            </div>
+                          </div>
+
+                          {/* ✅ Separator 2: เส้นแบ่งเดิมก่อนเข้าเรื่องเงิน */}
+                          <div className="col-span-2 h-px bg-earth-cream/60 my-1"></div>
+
+                          {/* --- Row 3: Invested vs PnL --- */}
+                          <div className="col-span-2 flex justify-between items-end">
+                            <div>
+                              <div className="text-earth-stone text-[10px] uppercase tracking-wide mb-0.5">
+                                Invested
+                              </div>
+                              <div className="text-xl font-semibold text-earth-darkbrown">
+                                {inv >= 10_000 ? (
+                                  <QtyDisplay qty={inv} prefix="$" />
+                                ) : (
+                                  <>
+                                    $
+                                    {inv.toLocaleString(undefined, {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-earth-stone text-[10px] uppercase tracking-wide mb-0.5">
+                                PnL
+                              </div>
+                              <div
+                                className={`font-semibold ${pnlColor} text-xl`}
+                              >
+                                {Math.abs(profitAmount) >= 10_000 ? (
+                                  <QtyDisplay
+                                    qty={Math.abs(profitAmount)}
+                                    prefix={isProfit ? '+$' : '-$'}
+                                  />
+                                ) : (
+                                  <>
+                                    {isProfit ? '+' : '-'}$
+                                    {Math.abs(profitAmount).toLocaleString(
+                                      undefined,
+                                      {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      }
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    {/* Allocation bar */}
-                    <div className="mb-3">
-                      <div className="flex flex-col justify-center gap-1">
-                        {/* 1. หลอดพลัง (Bar) */}
-                        <div className="w-full bg-earth-cream/70 rounded-full h-2.5 overflow-hidden border border-earth-cream/30">
-                          <div
-                            className={`h-full rounded-full transition-all duration-300 ease-out ${
-                              // เปลี่ยนสีตามความเยอะ (Logic เดียวกับ Desktop)
-                              allocation > 30
-                                ? 'bg-earth-olive/90'
-                                : 'bg-earth-sage/90'
-                            }`}
-                            style={{
-                              // บังคับความกว้างขั้นต่ำ 2% แก้ปัญหาขีดแหว่งๆ
-                              width: `${Math.max(allocation, 1)}%`,
-                            }}
-                          ></div>
-                        </div>
-                        <div className="pt-1 w-full text-right text-xs text-earth-stone/95 font-mono">
-                          {allocation.toFixed(2)}%
-                        </div>
+
+                    {/* --- Allocation Bar (แสดงตลอด) --- */}
+                    <div
+                      className="px-4 py-2"
+                      onClick={() => toggleTokenExpand(t.contract)}
+                    >
+                      <div className="flex justify-between text-[10px] text-earth-stone mb-1 font-medium">
+                        <span>Allocation</span>
+                        <span>{allocation.toFixed(2)}%</span>
+                      </div>
+                      <div className="w-full bg-earth-cream/70 rounded-full h-2.5 overflow-hidden border border-earth-cream/30">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ease-out ${
+                            // เปลี่ยนสีตามความเยอะ (Logic เดียวกับ Desktop)
+                            allocation > 30
+                              ? 'bg-earth-olive/90'
+                              : 'bg-earth-sage/90'
+                          }`}
+                          style={{
+                            // บังคับความกว้างขั้นต่ำ 2% แก้ปัญหาขีดแหว่งๆ
+                            width: `${Math.max(allocation, 1)}%`,
+                          }}
+                        ></div>
                       </div>
                     </div>
-                    {/* Footer: Show More, buttons */}
-                    <div className="flex justify-between items-center text-sm text-earth-sage font-semibold">
+
+                    {/* --- Footer: Actions & Toggle Button --- */}
+                    <div className="px-4 py-2 bg-earth-cream border-t border-earth-cream/40 flex justify-between items-center mt-1">
+                      {/* ปุ่ม Show More / Hide */}
                       <button
-                        className="flex items-center gap-1"
-                        onClick={() => toggleTokenExpand(t.contract)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTokenExpand(t.contract);
+                        }}
+                        className="flex items-center gap-1 text-xs font-bold text-earth-darkbrown transition-colors uppercase tracking-wide"
                       >
-                        {isExpanded ? 'Hide' : 'Show More'}
+                        {isExpanded ? 'Hide Stats' : 'Show Stats'}
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform duration-300 ease-in-out ${
+                          size={14}
+                          className={`transition-transform duration-300 ease-in-out ${
                             isExpanded ? 'rotate-180' : ''
                           }`}
                         />
                       </button>
-                    </div>
-                    {/* Expanded section with animated transition */}
-                    <div
-                      className={`transition-[max-height,opacity,margin] duration-300 ease-in-out overflow-hidden border-earth-cream/30 space-y-2 ${
-                        isExpanded
-                          ? // 1. ลด max-h เหลือ 200px (เพราะเนื้อหามีนิดเดียว) จะทำให้จังหวะการยืดสมูทขึ้น
-                            // 2. border-t ย้ายมาใส่ตลอดเวลา (แต่ซ่อนด้วย max-h) หรือใส่ logic แยก
-                            'max-h-[200px] opacity-100 mt-3 pt-2 border-t'
-                          : 'max-h-0 opacity-0 mt-0 pt-0 border-none'
-                      }`}
-                    >
-                      {/* Flex row for Entry Price and Investment (Chain and Contract removed) */}
-                      <div className="flex flex-wrap gap-3 mb-3 text-left">
-                        {/* Entry Price */}
-                        <div className="bg-earth-sageleaf/30 rounded-lg p-3 flex-1 min-w-0">
-                          <div className="text-sm text-earth-tan font-medium">
-                            Entry Price
-                          </div>
-                          <div className="text-earth-darkbrown text-sm">
-                            <PriceDisplay price={entry} />
-                          </div>
-                        </div>
-                        {/* Investment */}
-                        <div className="bg-earth-mist/60 rounded-lg p-3 flex-1 min-w-0">
-                          <div className="text-sm text-earth-tan font-medium">
-                            Investment
-                          </div>
-                          <div className="text-earth-darkbrown text-sm">
-                            $
-                            {inv >= 10_000 ? (
-                              <QtyDisplay qty={inv} />
-                            ) : (
-                              inv.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
-                            )}
-                          </div>
-                        </div>
+
+                      {/* ปุ่ม Link (Chart / Sheet) */}
+                      <div className="flex gap-2">
+                        <a
+                          href={getGraphLink(t)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
+                        >
+                          <LineChart size={14} />
+                          Chart
+                        </a>
+                        <a
+                          href={getGoogleSheetLink()}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
+                        >
+                          <FileSpreadsheet size={14} />
+                          Sheet
+                        </a>
                       </div>
                     </div>
                   </div>
                 );
               })}
+
+              {/* Loading Indicator */}
               {visibleTokens.length < sortedTokens.length && (
                 <div
                   ref={mobileTarget}
-                  className="text-earth-stone text-base animate-pulse"
+                  className="text-earth-stone text-base animate-pulse text-center pt-4"
                 >
                   Loading more assets...
                 </div>
@@ -982,7 +1062,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                   priceChanges={priceChanges}
                   copy={copy}
                   copiedText={copiedText}
-                  // ✅ เพิ่มบรรทัดนี้: ส่งค่า Total Value ไปคำนวณ Allocation
                   totalValue={totalValue}
                   isExpanded={openRowId === t.contract}
                   onToggle={() =>
@@ -993,7 +1072,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                 />
               ))}
             </tbody>
-            // ...
           </table>
           {visibleTokens.length < sortedTokens.length && (
             <div

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const GOOGLE_SHEET_ID = '154YVMJYcJ8_5q_hNknll3XwVwIGvNst4G13ACYpywdY';
+const GOOGLE_SHEET_ID = '1FaW6yYtGRjDzLvD0igoM6KPaYqw9gl9dBBl_y_nUIgc';
 
 const CHAIN_MAP: Record<string, string> = {
   ETH: 'ethereum',

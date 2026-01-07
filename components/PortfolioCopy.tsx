@@ -550,7 +550,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
     >
       <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85vh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
-        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-30 md:relative">
+        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-30 md:relative backdrop-blur-sm border-b border-earth-cream/60">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-2xl font-bold text-earth-primary">All Asset</h2>
             <div className="flex flex-col md:flex-row gap-4 w-full sm:w-auto items-start md:items-center justify-start md:justify-end">
