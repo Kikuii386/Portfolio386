@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, SlidersHorizontal } from 'lucide-react';
+import MenuToggle from '@/components/ui/MenuToggle';
 
 // กำหนด Type ของ Props (เหมือนเดิม)
 type Props = {
@@ -70,10 +71,10 @@ const MobileFilterDrawer = ({
             </div>
             <div className="space-y-2">
               {[
-                { id: 'total', label: 'Total Portfolio' },
-                { id: 'high', label: 'High Value' },
-                { id: 'low', label: 'Low Value' },
-                { id: 'other', label: 'Other Assets' },
+                { id: 'total', label: 'Total Stock' },
+                { id: 'high', label: 'High Stock' },
+                { id: 'low', label: 'Low Stock' },
+                { id: 'other', label: 'Other Stock' },
                 { id: 'free', label: 'Free / Airdrop' },
               ].map((mode) => (
                 <button
@@ -123,7 +124,7 @@ const MobileFilterDrawer = ({
                     <span>{option.label}</span>
                     {isActive && (
                       <span className="text-xs bg-black/10 px-1.5 py-0.5 rounded">
-                        {/* ✅ แก้เงื่อนไขให้เช็คทั้ง 'asc' และ 'ascending' */}
+                        {/* ✅ เช็คแบบครอบคลุม: ทั้งคำย่อ 'asc' และคำเต็ม 'ascending' */}
                         {sortConfig?.direction === 'asc' ||
                         sortConfig?.direction === 'ascending'
                           ? 'ASC'
