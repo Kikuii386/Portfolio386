@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Tooltip from './ui/Tooltips';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
+import MenuToggle from './ui/MenuToggle';
 // ✅ Import ไอคอนให้ครบทุกเมนู
 import {
   LayoutDashboard,
@@ -193,7 +194,7 @@ export default function Navbar() {
       {/* =========================================================
           MOBILE NAVBAR (Sticky Top)
           ========================================================= */}
-      <div className="md:hidden sticky top-0 z-50 bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
+      <div className="md:hidden fixed left-0 top-0 w-full z-[100] bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2">
           <img
@@ -207,57 +208,17 @@ export default function Navbar() {
         </Link>
 
         {/* Custom Hamburger Button */}
-        <div className="flex gap-4">
-          <button
-            type="button"
+        <div className="flex gap-4 ">
+          {/* ✅ ใช้ Component กลาง แทน SVG ที่เขียนสด */}
+          {/* ใส่ p-1 เพื่อให้ขนาดปุ่มเท่าเดิมกับตอนเขียนสด */}
+          <MenuToggle
+            isOpen={mobileOpen}
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-expanded={mobileOpen}
-            className="text-earth-cream hover:text-white transition-colors p-1"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* เส้นบน */}
-              <rect
-                x="1"
-                y="7"
-                width="14"
-                height="2"
-                rx="1"
-                style={{
-                  transformOrigin: 'center center',
-                  transition: 'transform 200ms ease-out',
-                  // ถ้าเปิด: หมุน 45 องศา, ถ้าปิด: เลื่อนขึ้นไปข้างบน (-3.5px)
-                  transform: mobileOpen
-                    ? 'rotate(45deg)'
-                    : 'translateY(-3.5px)',
-                }}
-              />
-              {/* เส้นล่าง */}
-              <rect
-                x="1"
-                y="7"
-                width="14"
-                height="2"
-                rx="1"
-                style={{
-                  transformOrigin: 'center center',
-                  transition: 'transform 200ms ease-out',
-                  // ถ้าเปิด: หมุน -45 องศา, ถ้าปิด: เลื่อนลงไปข้างล่าง (3.5px)
-                  transform: mobileOpen
-                    ? 'rotate(-45deg)'
-                    : 'translateY(3.5px)',
-                }}
-              />
-            </svg>
-          </button>
+            className="text-earth-cream hover:text-white p-1 bg-gradient-to-br from-earth-darkbrown to-earth-brown rounded-lg"
+          />
         </div>
       </div>
-
+      <div className="h-12 md:hidden" />
       {/* =========================================================
           MOBILE DRAWER (Left Side & Under Navbar)
           ========================================================= */}
@@ -265,8 +226,8 @@ export default function Navbar() {
       {/* Backdrop (พื้นหลังดำจางๆ) */}
       <div
         className={`
-          md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300
-          top-16 /* ✅ เว้นระยะด้านบน 64px (h-16) เพื่อให้อยู่ใต้ Navbar */
+          md:hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          top-16 
           ${mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
         `}
         onClick={() => setMobileOpen(false)}
@@ -275,14 +236,12 @@ export default function Navbar() {
       {/* Drawer Container */}
       <div
         className={`
-          md:hidden fixed z-40 w-[280px] 
-          top-16 bottom-0 /* ✅ ติดขอบล่าง แต่เว้นด้านบนไว้ใต้ Navbar */
-          left-0 /* ✅ ย้ายมาด้านซ้าย */
+          md:hidden fixed z-[100] w-[280px] 
+          top-16 bottom-0 
+          left-0
           bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl border-r border-white/10
           transform transition-transform duration-300 ease-out flex flex-col
-          ${
-            mobileOpen ? 'translate-x-0' : '-translate-x-full'
-          } /* ✅ Animation เข้าจากซ้าย */
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} 
         `}
       >
         {/* Header ของ Drawer (ไม่ต้องมีปุ่มปิดแล้ว เพราะปุ่มข้างบนทำหน้าที่ปิดได้) */}

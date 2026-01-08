@@ -13,7 +13,7 @@ const MenuToggle = ({ isOpen, onClick, className = 'text-earth-darkbrown' }: Pro
       onClick={onClick}
       aria-expanded={isOpen}
       // ใส่ class พื้นฐาน และรับ class ที่ส่งเข้ามาเพิ่ม
-      className={`p-2 transition-colors hover:opacity-80 active:scale-95 ${className}`}
+      className={` transition-colors hover:opacity-80 active:scale-95 ${className}`}
     >
       <svg
         width="24" // ปรับขนาดมาตรฐาน

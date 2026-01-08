@@ -86,7 +86,7 @@ export const SwipeableRow = ({
   const columns = [
     // 1. Asset (19%)
     {
-      className: 'w-[261.2px] flex-none px-6 py-4 text-left flex-shrink-0',
+      className: 'w-[260.25px] flex-none px-6 py-4 text-left flex-shrink-0',
       content: (
         <div className="flex items-center">
           <img
@@ -136,7 +136,7 @@ export const SwipeableRow = ({
     // 2. Chain (7%)
     {
       className:
-        'w-[108.83px] flex-none px-2 py-4 text-center flex-shrink-0 flex justify-center items-center',
+        'w-[108.55px] flex-none px-2 py-4 text-center flex-shrink-0 flex justify-center items-center',
       content: (
         <span className="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wide bg-earth-cream/60 text-earth-darkbrown border border-earth-cream">
           {t.chain}
@@ -146,7 +146,7 @@ export const SwipeableRow = ({
     // 3. M.Cap (8%)
     {
       className:
-        'w-[130.59px] flex-none px-6 py-4 text-right text-earth-stone font-mono flex-shrink-0 ',
+        'w-[130.38px] flex-none px-6 py-4 text-right text-earth-stone font-mono flex-shrink-0 ',
       content: t.marketCap ? (
         <QtyDisplay qty={t.marketCap} prefix="$" />
       ) : (
@@ -156,13 +156,13 @@ export const SwipeableRow = ({
     // 4. Entry Price (9%)
     {
       className:
-        'w-[152.38px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
+        'w-[152.22px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
       content: <PriceDisplay price={entry} />,
     },
     // 5. Current Price (10%)
     {
       className:
-        'w-[152.38px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
+        'w-[152.23px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
       content: (
         <div className="w-full">
           <div
@@ -186,7 +186,7 @@ export const SwipeableRow = ({
     },
     // 6. PnL (9%)
     {
-      className: `w-[130.59px] flex-none px-6 py-4 text-right font-semibold flex-shrink-0 transition-colors duration-300 ${
+      className: `w-[133.05px] flex-none px-6 py-4 text-right font-semibold flex-shrink-0 transition-colors duration-300 ${
         pnl >= 0 ? 'text-green-600' : 'text-red-600'
       }`,
       content: (
@@ -240,7 +240,7 @@ export const SwipeableRow = ({
     // 7. Invest (9%)
     {
       className:
-        'w-[141.48px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
+        'w-[141.34px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
       content: (
         <div className="w-full">
           <div className="w-full text-right">
@@ -263,7 +263,7 @@ export const SwipeableRow = ({
     // 8. Value (9%)
     {
       className:
-        'w-[141.48px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0 font-semibold',
+        'w-[141.23px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0 font-semibold',
       content: (
         <>
           $
@@ -281,7 +281,7 @@ export const SwipeableRow = ({
     // 9. Allocation (13%)
     {
       className:
-        'w-[174.14px] flex-none px-6 py-4 text-right flex-shrink-0 flex flex-col justify-center',
+        'w-[173.88px] flex-none px-6 py-4 text-right flex-shrink-0 flex flex-col justify-center',
       content: (
         <div className="w-full flex flex-col justify-center gap-1">
           <div className="w-full bg-earth-cream/70 rounded-full h-2.5 overflow-hidden border border-earth-cream/30">

@@ -645,7 +645,7 @@ export default function EtcMultiWalletBalanceChecker() {
           <label className="text-xs font-bold text-earth-brown uppercase tracking-wide ml-1">
             Select Network
           </label>
-          <div className="relative group">
+          <div className="relative group z-10">
             <DropdownSelect
               // 1. แปลงรายการ NETWORKS ให้เป็น Group Format
               options={[

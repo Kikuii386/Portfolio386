@@ -28,7 +28,7 @@ const MobileFilterDrawer = ({
       <div
         className={`
           md:hidden fixed inset-0 z-[30] bg-black/60 backdrop-blur-sm transition-opacity duration-300
-          top-16 /* ✅ เว้นระยะด้านบน 16 (64px) ให้อยู่ใต้ Navbar */
+          top-16 
           ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
         `}
         onClick={onClose}
@@ -37,15 +37,13 @@ const MobileFilterDrawer = ({
       {/* 2. Drawer Container */}
       <div
         className={`
-          md:hidden fixed z-[40] w-[280px] 
-          top-16 bottom-0 /* ✅ ติดขอบล่าง แต่เว้นด้านบนไว้ใต้ Navbar */
-          left-0 /* ✅ ย้ายมาด้านซ้าย (เหมือน Navbar) */
+          md:hidden fixed z-[100] w-[280px] 
+          top-16 bottom-0 
+          left-0 
           bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl 
-          border-r border-white/10 /* ✅ เปลี่ยนเป็นเส้นขอบขวา */
+          border-r border-white/10 
           transform transition-transform duration-300 ease-out flex flex-col
-          ${
-            isOpen ? 'translate-x-0' : '-translate-x-full'
-          } /* ✅ Animation เข้าจากซ้าย */
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         `}
       >
         {/* Header Drawer */}
@@ -54,12 +52,6 @@ const MobileFilterDrawer = ({
             <SlidersHorizontal size={16} />
             Display Options
           </span>
-          <button
-            onClick={onClose}
-            className="text-earth-cream/60 hover:text-white transition-colors"
-          >
-            <X size={20} />
-          </button>
         </div>
 
         {/* Content: Scrollable Area */}

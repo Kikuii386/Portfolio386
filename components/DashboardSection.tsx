@@ -20,11 +20,7 @@ import {
   Pie,
   Label,
 } from 'recharts';
-import {
-  TrendingUp,
-  DollarSign,
-  Wallet,
-} from 'lucide-react';
+import { TrendingUp, DollarSign, Wallet } from 'lucide-react';
 import type { EnrichedToken } from '@/lib/enrichWithPrices';
 import type { KPIRow } from '@/lib/getSheetKPIs';
 import { ZoomableChartWrapper } from '@/hook/useChartZoom';
@@ -53,31 +49,43 @@ const COLORS = {
 
 function DashboardSkeleton() {
   // Helper สำหรับสร้างกล่อง Shimmer
-  const ShimmerBlock = ({ className, style }: { className?: string, style?: React.CSSProperties }) => (
-    <div className={`bg-earth-brown/30 animate-pulse rounded-xl ${className || ''}`} 
-      style={style} />
+  const ShimmerBlock = ({
+    className,
+    style,
+  }: {
+    className?: string;
+    style?: React.CSSProperties;
+  }) => (
+    <div
+      className={`bg-earth-brown/30 animate-pulse rounded-xl ${
+        className || ''
+      }`}
+      style={style}
+    />
   );
 
   return (
     <div className="w-full space-y-6">
-      
       {/* 1. Stat Cards Row (3 Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[160px] flex flex-col justify-between shadow-xl">
+          <div
+            key={i}
+            className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[160px] flex flex-col justify-between shadow-xl"
+          >
             <div className="space-y-3">
               <ShimmerBlock className="h-4 w-24" /> {/* Title */}
               <ShimmerBlock className="h-8 w-48" /> {/* Main Value */}
             </div>
             <div className="grid grid-cols-2 gap-4 border-t border-earth-cream/30 pt-3">
-               <div className="space-y-1">
-                 <ShimmerBlock className="h-3 w-16" />
-                 <ShimmerBlock className="h-5 w-20" />
-               </div>
-               <div className="space-y-1">
-                 <ShimmerBlock className="h-3 w-16" />
-                 <ShimmerBlock className="h-5 w-20" />
-               </div>
+              <div className="space-y-1">
+                <ShimmerBlock className="h-3 w-16" />
+                <ShimmerBlock className="h-5 w-20" />
+              </div>
+              <div className="space-y-1">
+                <ShimmerBlock className="h-3 w-16" />
+                <ShimmerBlock className="h-5 w-20" />
+              </div>
             </div>
           </div>
         ))}
@@ -85,132 +93,134 @@ function DashboardSkeleton() {
 
       {/* 2. Middle Row: Allocation & Top Movers */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
         {/* Allocation (Donut) Skeleton */}
         <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[350px] shadow-xl flex flex-col">
-           <ShimmerBlock className="h-6 w-32 mb-6" /> {/* Title */}
-           <div className="flex items-center h-full gap-6">
-              <div className="w-[180px] h-[180px] rounded-full border-[16px] border-earth-brown/30 animate-pulse mx-auto md:mx-0 relative">
-                  {/* Fake Text Center */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                     <div className="w-16 h-4 bg-earth-brown/30 rounded"></div>
+          <ShimmerBlock className="h-6 w-32 mb-6" /> {/* Title */}
+          <div className="flex items-center h-full gap-6">
+            <div className="w-[180px] h-[180px] rounded-full border-[16px] border-earth-brown/30 animate-pulse mx-auto md:mx-0 relative">
+              {/* Fake Text Center */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-4 bg-earth-brown/30 rounded"></div>
+              </div>
+            </div>
+            <div className="flex-1 space-y-3 hidden md:block">
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div key={j} className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-earth-cream/50"></div>
+                    <ShimmerBlock className="h-3 w-12" />
                   </div>
-              </div>
-              <div className="flex-1 space-y-3 hidden md:block">
-                 {[1, 2, 3, 4, 5].map(j => (
-                    <div key={j} className="flex justify-between items-center">
-                       <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-earth-cream/50"></div>
-                          <ShimmerBlock className="h-3 w-12" />
-                       </div>
-                       <ShimmerBlock className="h-3 w-8" />
-                    </div>
-                 ))}
-              </div>
-           </div>
+                  <ShimmerBlock className="h-3 w-8" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Top Movers (Bar List) Skeleton */}
         <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[350px] shadow-xl flex flex-col">
-            <ShimmerBlock className="h-6 w-40 mb-2" />
-            <ShimmerBlock className="h-3 w-20 mb-6" />
-            
-            <div className="flex-1 space-y-5">
-               {[1, 2, 3, 4, 5].map(k => (
-                  <div key={k} className="flex items-center gap-3">
-                     <ShimmerBlock className="h-4 w-12 shrink-0" /> {/* Symbol */}
-                     <ShimmerBlock className={`h-6 rounded-md w-full max-w-[${80 - k * 10}%]`} /> {/* Bar */}
-                  </div>
-               ))}
-            </div>
-        </div>
+          <ShimmerBlock className="h-6 w-40 mb-2" />
+          <ShimmerBlock className="h-3 w-20 mb-6" />
 
+          <div className="flex-1 space-y-5">
+            {[1, 2, 3, 4, 5].map((k) => (
+              <div key={k} className="flex items-center gap-3">
+                <ShimmerBlock className="h-4 w-12 shrink-0" /> {/* Symbol */}
+                <ShimmerBlock
+                  className={`h-6 rounded-md w-full max-w-[${80 - k * 10}%]`}
+                />{' '}
+                {/* Bar */}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* 3. Main Chart Row */}
       <div className="grid grid-cols-12 gap-4">
-        
         {/* Left Column (Wealth + Volume) */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
-           {/* Total Wealth Chart */}
-           <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[380px] shadow-xl space-y-4">
-              <div className="flex justify-between">
-                 <ShimmerBlock className="h-6 w-32" />
-                 <ShimmerBlock className="h-4 w-24" />
-              </div>
-              <div className="flex-1 flex items-end gap-2 h-[280px] pb-2 border-l border-b border-earth-cream/30">
-                  {/* Fake Wave Graph */}
-                  <div className="w-full h-full bg-gradient-to-t from-earth-cream/20 to-transparent rounded-tr-3xl animate-pulse"></div>
-              </div>
-           </div>
+          {/* Total Wealth Chart */}
+          <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[380px] shadow-xl space-y-4">
+            <div className="flex justify-between">
+              <ShimmerBlock className="h-6 w-32" />
+              <ShimmerBlock className="h-4 w-24" />
+            </div>
+            <div className="flex-1 flex items-end gap-2 h-[280px] pb-2 border-l border-b border-earth-cream/30">
+              {/* Fake Wave Graph */}
+              <div className="w-full h-full bg-gradient-to-t from-earth-cream/20 to-transparent rounded-tr-3xl animate-pulse"></div>
+            </div>
+          </div>
 
-           {/* Volume Chart */}
-           <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[360px] shadow-xl space-y-4">
-              <div className="flex justify-between">
-                 <ShimmerBlock className="h-6 w-32" />
-                 <div className="flex gap-2">
-                    <ShimmerBlock className="h-6 w-12" />
-                    <ShimmerBlock className="h-6 w-12" />
-                 </div>
+          {/* Volume Chart */}
+          <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[360px] shadow-xl space-y-4">
+            <div className="flex justify-between">
+              <ShimmerBlock className="h-6 w-32" />
+              <div className="flex gap-2">
+                <ShimmerBlock className="h-6 w-12" />
+                <ShimmerBlock className="h-6 w-12" />
               </div>
-              <div className="flex-1 flex items-end gap-2 mt-4">
-                 {[...Array(12)].map((_, idx) => (
-                    <ShimmerBlock 
-                      key={idx} 
-                      className="w-full rounded-t-sm" 
-                      style={{ height: `${((idx * 17) % 60) + 20}%` }} 
-                    />
-                 ))}
-              </div>
-           </div>
+            </div>
+            <div className="flex-1 flex items-end gap-2 mt-4">
+              {[...Array(12)].map((_, idx) => (
+                <ShimmerBlock
+                  key={idx}
+                  className="w-full rounded-t-sm"
+                  style={{ height: `${((idx * 17) % 60) + 20}%` }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Right Column (PnL + Sentiment) */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
-            {/* PnL Trend */}
-            <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 min-h-[200px] shadow-xl flex flex-col justify-between">
-               <ShimmerBlock className="h-5 w-32" />
-               <div className="h-[100px] w-full border-b border-earth-cream/30 relative mt-4">
-                  <div className="absolute bottom-0 w-full h-[60%] bg-earth-brown/30 rounded-t-lg"></div>
-               </div>
+          {/* PnL Trend */}
+          <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 min-h-[200px] shadow-xl flex flex-col justify-between">
+            <ShimmerBlock className="h-5 w-32" />
+            <div className="h-[100px] w-full border-b border-earth-cream/30 relative mt-4">
+              <div className="absolute bottom-0 w-full h-[60%] bg-earth-brown/30 rounded-t-lg"></div>
             </div>
+          </div>
 
-            {/* Sentiment Barcode */}
-            <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[180px] shadow-xl flex flex-col gap-4">
-                <div className="flex justify-between">
-                   <ShimmerBlock className="h-5 w-32" />
-                   <ShimmerBlock className="h-5 w-16" />
-                </div>
-                <div className="flex-1 flex gap-[2px]">
-                   {[...Array(20)].map((_, idx) => (
-                      <div key={idx} className="flex-1 bg-earth-brown/30 h-full rounded-[1px] animate-pulse" style={{ opacity: ((idx * 13) % 10) / 10 + 0.3 }}></div>
-                   ))}
-                </div>
+          {/* Sentiment Barcode */}
+          <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[180px] shadow-xl flex flex-col gap-4">
+            <div className="flex justify-between">
+              <ShimmerBlock className="h-5 w-32" />
+              <ShimmerBlock className="h-5 w-16" />
             </div>
-            
-            {/* Precise Execution */}
-            <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[340px] shadow-xl">
-                <ShimmerBlock className="h-6 w-40 mb-4" />
-                <div className="h-full w-full bg-earth-cream/10 rounded-lg"></div>
+            <div className="flex-1 flex gap-[2px]">
+              {[...Array(20)].map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex-1 bg-earth-brown/30 h-full rounded-[1px] animate-pulse"
+                  style={{ opacity: ((idx * 13) % 10) / 10 + 0.3 }}
+                ></div>
+              ))}
             </div>
+          </div>
+
+          {/* Precise Execution */}
+          <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 h-[340px] shadow-xl">
+            <ShimmerBlock className="h-6 w-40 mb-4" />
+            <div className="h-full w-full bg-earth-cream/10 rounded-lg"></div>
+          </div>
         </div>
-
       </div>
     </div>
   );
 }
-export default function DashboardSection({ 
-  initialTokens = [], 
-  initialHistory = [] 
+export default function DashboardSection({
+  initialTokens = [],
+  initialHistory = [],
 }: DashboardSectionProps) {
-
   // ✅ 3. Initialize State: ถ้ามีของส่งมา ก็ใช้เลย ไม่ต้อง Loading
   const hasInitialData = initialTokens.length > 0 || initialHistory.length > 0;
-  
+
   const [loading, setLoading] = useState(!hasInitialData); // ถ้ามีข้อมูลแล้ว ไม่ต้องหมุน
   const [tokens, setTokens] = useState<EnrichedToken[]>(initialTokens);
   const [history, setHistory] = useState<KPIRow[]>(initialHistory);
-  
+
   const [volTimeframe, setVolTimeframe] = useState<'1D' | '1W' | '1M'>('1D');
 
   // ✅ 4. แก้ useEffect: ให้ฉลาดขึ้น (ถ้ามีของแล้ว ไม่ต้อง Fetch ซ้ำ)
@@ -227,19 +237,19 @@ export default function DashboardSection({
 
         // Logic ฉลาดเลือก: ขาดอันไหน โหลดแค่อันนั้น
         const promises = [];
-        
+
         // ถ้าไม่มี tokens ให้โหลด
         if (tokens.length === 0) {
-           promises.push(fetch('/api/enrich').then(res => res.json()));
+          promises.push(fetch('/api/enrich').then((res) => res.json()));
         } else {
-           promises.push(Promise.resolve(null)); // ข้าม
+          promises.push(Promise.resolve(null)); // ข้าม
         }
 
         // ถ้าไม่มี history ให้โหลด
         if (history.length === 0) {
-           promises.push(fetch('/api/history').then(res => res.json()));
+          promises.push(fetch('/api/history').then((res) => res.json()));
         } else {
-           promises.push(Promise.resolve(null)); // ข้าม
+          promises.push(Promise.resolve(null)); // ข้าม
         }
 
         const [tokensData, historyData] = await Promise.all(promises);
@@ -251,10 +261,11 @@ export default function DashboardSection({
         }
 
         if (historyData) {
-          const finalHistory = Array.isArray(historyData) ? historyData : historyData.data;
+          const finalHistory = Array.isArray(historyData)
+            ? historyData
+            : historyData.data;
           if (Array.isArray(finalHistory)) setHistory(finalHistory);
         }
-
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
@@ -716,7 +727,7 @@ export default function DashboardSection({
               </div>
             </div>
 
-            <div className="flex-1 w-full -ml-2">
+            <div className="flex-1 w-full -ml-2 min-h-0">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -850,7 +861,7 @@ export default function DashboardSection({
                 </div>
               </div>
             </div>
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full min-h-0">
               <ZoomableChartWrapper originalData={volumeChartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -927,7 +938,7 @@ export default function DashboardSection({
               </div>
             </div>
 
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full min-h-0">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => {
                   // คำนวณจุดตัดศูนย์
@@ -1147,7 +1158,7 @@ export default function DashboardSection({
               )}
             </div>
 
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full min-h-0">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1241,7 +1252,7 @@ export default function DashboardSection({
               </div>
             </div>
 
-            <div className="flex-1 w-full relative ">
+            <div className="flex-1 w-full relative min-h-0 ">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">

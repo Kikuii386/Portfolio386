@@ -10,6 +10,22 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [animateX, setAnimateX] = useState(false);
+  const [showGhost, setShowGhost] = useState(false);
+
+useEffect(() => {
+    if (isFilterOpen) {
+      setShowGhost(true); 
+      const timer = setTimeout(() => setAnimateX(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setAnimateX(false); 
+      const timer = setTimeout(() => {
+        setShowGhost(false); 
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isFilterOpen]);
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -32,17 +48,15 @@ export default function PortfolioPage() {
 
   return (
     <section className="py-12" id="portfolio">
-      {/* 2. ✅ เพิ่มส่วน "Ghost Button" (ปุ่มซ้อนทับ Navbar) ตรงนี้ */}
-      {/* จะทำงานเฉพาะตอน isFilterOpen เป็น true */}
-      {isFilterOpen && (
+
+      {showGhost && (
         <div className="md:hidden fixed top-0 right-4 h-16 z-[100] flex items-center">
-           {/* ใช้ container ความสูง h-16 (64px) เท่า Navbar */}
-           {/* right-4 คือระยะห่างจากขอบขวา เท่ากับ padding ของ Navbar */}
+
            <div className="flex gap-4"> 
              <MenuToggle 
-               isOpen={true} // บังคับให้เป็นรูป X ตลอด
-               onClick={() => setIsFilterOpen(false)} // กดแล้วปิด Filter
-               className="text-earth-cream hover:text-white" 
+               isOpen={animateX} 
+               onClick={() => setIsFilterOpen(false)} 
+               className="text-earth-cream hover:text-white p-1 bg-gradient-to-br from-earth-darkbrown to-earth-brown rounded-lg" 
              />
            </div>
         </div>

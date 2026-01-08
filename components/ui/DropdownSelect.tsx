@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // 1. สร้าง Type ใหม่สำหรับ "กลุ่ม" ของตัวเลือก
 export type DropdownGroup = {
@@ -28,21 +30,45 @@ export default function DropdownSelect({
   getLabel,
 }: DropdownSelectProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [mounted, setMounted] = useState(false);
 
-  // ปิด Dropdown เมื่อคลิกข้างนอก
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY + 8, // เว้นระยะห่างจากปุ่มนิดหน่อย
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [open]);
+
+  // ✅ 2. แก้ Click Outside ให้เช็คทั้งปุ่มและเมนูที่ลอยอยู่
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
-    window.addEventListener('click', handleClickOutside);
-    return () => window.removeEventListener('click', handleClickOutside);
-  }, []);
+    if (open) window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
 
   return (
-    <div className="relative z-20 " ref={ref}>
+    <div className="relative ">
       {/* Label ด้านบน (ถ้ามี) */}
       {label && (
         <label className="block text-sm font-semibold text-earth-brown mb-1 ml-1 uppercase tracking-wider">
@@ -52,6 +78,7 @@ export default function DropdownSelect({
 
       {/* ปุ่มหลัก */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen(!open)}
         className={`
@@ -75,72 +102,86 @@ export default function DropdownSelect({
           aria-hidden="true"
         />
       </button>
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                key="portal-dropdown"
+                // Animation States
+                initial={{ opacity: 0, scale: 0.95, y: -10 }} // เริ่ม: จาง + เล็ก + ลอยขึ้นนิดนึง
+                animate={{ opacity: 1, scale: 1, y: 0 }} // จบ: ชัด + เต็ม + ตรงตำแหน่ง
+                exit={{ opacity: 0, scale: 0.95, y: -10 }} // ออก: กลับไปท่าเดิม
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                // Positioning (สำคัญมาก)
+                style={{
+                  position: 'absolute',
+                  top: coords.top,
+                  left: coords.left,
+                  minWidth: Math.max(coords.width, 180), // กว้างเท่าปุ่ม หรืออย่างน้อย 200px
+                  transformOrigin: 'top center', // ✅ สำคัญ: บอกให้ขยายจากมุมซ้ายบน (จุดที่ปุ่มอยู่)
+                  zIndex: 30,
+                }}
+                className={`
+                portal-dropdown-menu 
+                rounded-xl bg-earth-cream/90
+                p-2 shadow-xl ring-1 ring-black/5 border border-earth-cream/80
+                backdrop-blur-md overflow-hidden
+              `}
+              >
+                <div className="max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-earth-sage/20">
+                  {options.map((group, groupIndex) => (
+                    <div key={groupIndex}>
+                      {group.label && (
+                        <div className="px-3 py-2 text-sm font-bold text-earth-darkbrown uppercase tracking-wider select-none">
+                          {group.label}
+                        </div>
+                      )}
 
-      {/* เมนู Dropdown */}
-      <div
-        className={`
-          absolute right-0 z-50 mt-2 w-full min-w-[180px] origin-top-right 
-          rounded-xl bg-earth-darkbrown/70 p-2 shadow-xl ring-1 ring-black/5 border border-earth-brown/50
-          transition-all duration-200 ease-out backdrop-blur-md
-          ${
-            open
-              ? 'opacity-100 scale-100 translate-y-0 visible'
-              : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'
-          }
-        `}
-      >
-        <div className="max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-earth-sage/20">
-          {/* 3. วนลูปแสดงผลทีละ "กลุ่ม" */}
-          {options.map((group, groupIndex) => (
-            <div key={groupIndex}>
-              {/* ส่วนหัวข้อ (Header) - จะแสดงก็ต่อเมื่อมี label */}
-              {group.label && (
-                <div className="px-3 py-2 text-sm font-bold text-earth-cream uppercase tracking-wider select-none">
-                  {group.label}
+                      {group.items.map((option) => {
+                        const isSelected = selected === option;
+                        return (
+                          <button
+                            key={option}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelect(option);
+                              setOpen(false);
+                            }}
+                            className={`
+                            group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm 
+                            transition-all duration-300 ease-in-out text-left
+                            ${
+                              isSelected
+                                ? 'bg-earth-brown/80 text-white font-semibold'
+                                : 'text-earth-brown hover:bg-earth-sage/80 hover:text-white'
+                            }
+                          `}
+                          >
+                            <span className="truncate">
+                              {getLabel
+                                ? getLabel(option)
+                                : option.toUpperCase()}
+                            </span>
+
+                            {isSelected && (
+                              <Check className="h-4 w-4 text-white ml-2 flex-shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+
+                      {groupIndex < options.length - 1 && (
+                        <div className="my-1 h-0.5 bg-earth-brown/50 mx-2 " />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {/* รายการตัวเลือกในกลุ่มนั้น */}
-              {group.items.map((option) => {
-                const isSelected = selected === option;
-                return (
-                  <button
-                    key={option}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect(option);
-                      setOpen(false);
-                    }}
-                    className={`
-                      group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm 
-                      transition-all duration-150 ease-in-out
-                      ${
-                        isSelected
-                          ? 'bg-earth-cream/70 text-earth-darkbrown font-semibold'
-                          : 'text-earth-stone hover:bg-earth-sage/20 hover:text-earth-sageleaf'
-                      }
-                    `}
-                  >
-                    <span className="truncate">
-                      {getLabel ? getLabel(option) : option.toUpperCase()}
-                    </span>
-
-                    {/* ไอคอนติ๊กถูก */}
-                    {isSelected && (
-                      <Check className="h-4 w-4 text-earth-darkbrown ml-2 flex-shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-
-              {/* เส้นคั่น (Separator) - จะแสดงถ้าไม่ใช่กลุ่มสุดท้าย */}
-              {groupIndex < options.length - 1 && (
-                <div className="my-1 h-0.5 bg-earth-sage/30 mx-2 " />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body // ส่งไป render ที่ Body เพื่อหนี Table
+        )}
     </div>
   );
 }

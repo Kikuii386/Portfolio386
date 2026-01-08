@@ -27,14 +27,19 @@ type Props = {
   tokens: EnrichedToken[];
   setCopied?: (value: boolean) => void;
   loading?: boolean;
+  isFilterOpen: boolean;
+  setIsFilterOpen: (isOpen: boolean) => void;
 };
 
-function PortfolioTable({ tokens: initialTokens }: Props) {
+function PortfolioTable({
+  tokens: initialTokens,
+  isFilterOpen,
+  setIsFilterOpen,
+}: Props) {
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
   const { copiedText, copy } = useCopyToClipboard();
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     // ใช้สำหรับให้ทั้งตาราง fade-in ตอนเปิดหน้านี้ครั้งแรกเท่านั้น
@@ -89,7 +94,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
   // Step 1: Initialize tokens state with initialTokens prop (enriched with totalQty, totalInv, totalEntry)
   useEffect(() => {
     if (initialTokens && initialTokens.length > 0) {
-      // ไม่ต้องคำนวณเอง ให้ใช้ค่าจาก Google Sheet ที่ API ส่งมา
       setInitialLoading(true);
       setTokens(initialTokens); // ใช้ข้อมูลตรงๆ
       setInitialLoading(false);
@@ -441,13 +445,14 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
     return () => observer.disconnect();
   }, [sortedTokens]);
 
-  // Sort options with labels for dropdown
   const sortOptions = [
     { key: 'name', label: 'Asset' },
     { key: 'chain', label: 'Chain' },
-    { key: 'pnlPercentage', label: 'PnL' },
-    { key: 'totalInv', label: 'Invest' },
+    { key: 'marketCap', label: 'Market Cap' },
+    { key: 'pnlPercentage', label: 'Profit / Loss' },
+    { key: 'totalInv', label: 'Invested' },
     { key: 'value', label: 'Value' },
+    { key: 'priceChangeH24', label: '24h Change' },
   ];
 
   return (
@@ -455,9 +460,9 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
       className="w-full px-0 transition-opacity duration-300"
       style={{ opacity: mounted ? 1 : 0 }}
     >
-      <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85vh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
+      <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85dvh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
-        <div className="w-full bg-white/95 backdrop-blur-sm p-6 rounded-t-xl sticky top-0 z-30 shadow-sm border-b border-earth-cream/20 md:border-none md:shadow-none md:relative transition-all">
+        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-30 shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-4">
             {/* Title */}
             <div className="flex justify-between items-center w-full md:w-auto">
@@ -500,7 +505,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
               </div>
 
               {/* --- MOBILE ONLY: Filter & Sort Button (New Style) --- */}
-              {/* ส่วนนี้จะโชว์เฉพาะมือถือ (md:hidden) แทนที่ Dropdown คู่เดิม */}
               <div className="w-full md:hidden mt-0">
                 <button
                   onClick={() => setIsFilterOpen(true)}
@@ -512,7 +516,6 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
               </div>
 
               {/* --- DESKTOP ONLY: View Mode Dropdown --- */}
-              {/* ส่วนนี้จะโชว์เฉพาะ Desktop (hidden md:block) ใช้ Logic เดิมของคุณ */}
               <div className="w-full md:w-auto hidden md:block">
                 <DropdownSelect
                   options={[
@@ -618,7 +621,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                 return (
                   <div
                     key={t.contract}
-                    className="bg-white rounded-2xl border border-earth-cream/80 shadow-sm overflow-hidden relative"
+                    className="bg-white rounded-xl border border-earth-cream/80 shadow-sm overflow-hidden relative"
                   >
                     {/* --- Header: Identity & Price (แสดงตลอด) --- */}
                     <div
@@ -734,7 +737,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                           {/* --- Row 1: Entry Price vs Current Price --- */}
                           <div>
                             <div className="text-earth-stone text-[10px] uppercase tracking-wide">
-                              Entry Price
+                              Avg. Price
                             </div>
                             <div className="font-medium text-earth-darkbrown">
                               <PriceDisplay price={entry} />
@@ -743,7 +746,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                           <div className="text-right">
                             <div>
                               <div className="text-earth-stone text-[10px] uppercase tracking-wide">
-                                Current Price
+                                Price / 24h
                               </div>
                               <div className="font-medium text-earth-darkbrown">
                                 <PriceDisplay price={t.currentPrice} />
@@ -808,7 +811,7 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
                             </div>
                             <div className="text-right">
                               <div className="text-earth-stone text-[10px] uppercase tracking-wide mb-0.5">
-                                PnL
+                                Total PnL
                               </div>
                               <div
                                 className={`font-semibold ${pnlColor} text-xl`}
@@ -932,90 +935,103 @@ function PortfolioTable({ tokens: initialTokens }: Props) {
         {/* ----------- Desktop/Tablet Table View ----------- */}
         <div className="hidden md:block relative z-0 overflow-y-auto max-h-[85vh] transition-opacity duration-300">
           <table className="w-full border-collapse border-earth-cream/60 text-sm md:text-base">
-            <thead className="hidden sm:table-header-group sticky top-0 z-20 bg-earth-cream/80 backdrop-blur-md ">
+            <thead className="hidden sm:table-header-group sticky top-0 z-20 bg-earth-cream/80 backdrop-blur-md">
               <tr>
-                <th className="px-6 py-4 w-[261.2px] text-left text-base font-semibold text-earth-brown  cursor-pointer">
+                {/* 1. Asset (ชิดซ้าย) */}
+                <th className="px-6 py-4 w-[260.25px] text-left text-base font-semibold text-earth-brown">
                   <SortButton
                     column="name"
-                    sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
+                    sortConfig={sortConfig}
                     onSort={requestSort}
+                    // ไม่ต้องใส่ className เพราะ default คือชิดซ้าย
                   >
                     Asset
                   </SortButton>
                 </th>
-                <th className="px-2 py-4 w-[108.83px] whitespace-nowrap text-sm md:text-base font-semibold text-earth-brown cursor-pointer">
-                  <div className="flex justify-center">
-                    <SortButton
-                      column="chain"
-                      sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
-                      onSort={requestSort}
-                    >
-                      Chain
-                    </SortButton>
-                  </div>
+
+                {/* 2. Chain (กึ่งกลาง) */}
+                <th className="px-2 py-4 w-[108.55px] whitespace-nowrap text-sm md:text-base font-semibold text-earth-brown">
+                  <SortButton
+                    column="chain"
+                    sortConfig={sortConfig}
+                    onSort={requestSort}
+                    className="justify-center w-full" // ✅ ใส่ justify-center ตรงนี้
+                  >
+                    Chain
+                  </SortButton>
                 </th>
-                {/* ✅ NEW: Market Cap Column */}
-                <th className="px-6 py-4 w-[130.59px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
-                  <div className="flex justify-end">
-                    <SortButton
-                      column="marketCap"
-                      sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
-                      onSort={requestSort}
-                    >
-                      M.Cap
-                    </SortButton>
-                  </div>
+
+                {/* 3. Market Cap (ชิดขวา) */}
+                <th className="px-6 py-4 w-[130.38px] whitespace-nowrap text-base font-semibold text-earth-brown">
+                  <SortButton
+                    column="marketCap"
+                    sortConfig={sortConfig}
+                    onSort={requestSort}
+                    className="justify-end w-full" // ✅ ใส่ justify-end ตรงนี้ (ลบ div ออก)
+                  >
+                    M.Cap
+                  </SortButton>
                 </th>
-                <th className="px-6 py-4 w-[152.38px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
-                  Entry Price
+
+                {/* 4. Entry Price (ไม่มี Sort) */}
+                <th className="px-6 py-4 w-[152.22px] whitespace-nowrap text-right text-base font-semibold text-earth-brown">
+                  Avg. Price
                 </th>
-                <th className="px-6 py-4 w-[152.38px] whitespace-nowrap text-right text-base font-semibold text-earth-brown cursor-pointer">
-                  <div className="flex justify-end">
-                    <SortButton
-                      column="priceChangeH24" // ✅ ใส่ key ให้ตรงกับที่เขียน Logic ไว้
-                      sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
-                      onSort={requestSort}
-                    >
-                      Current Price
-                    </SortButton>
-                  </div>
+
+                {/* 5. Current Price (ชิดขวา) */}
+                <th className="px-6 py-4 w-[152.23px] whitespace-nowrap text-base font-semibold text-earth-brown">
+                  <SortButton
+                    column="priceChangeH24"
+                    sortConfig={sortConfig}
+                    onSort={requestSort}
+                    className="justify-end w-full"
+                  >
+                    Price / 24h
+                  </SortButton>
                 </th>
-                <th className="px-6 py-4 w-[130.59px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
-                  <div className="flex justify-end">
-                    <SortButton
-                      column="pnlPercentage"
-                      sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
-                      onSort={requestSort}
-                    >
-                      PnL %
-                    </SortButton>
-                  </div>
+
+                {/* 6. PnL % (ชิดขวา) */}
+                <th className="px-6 py-4 w-[133.05px] whitespace-nowrap text-base font-semibold text-earth-brown">
+                  <SortButton
+                    column="pnlPercentage"
+                    sortConfig={sortConfig}
+                    onSort={requestSort}
+                    className="justify-end w-full"
+                  >
+                    Total Pnl
+                  </SortButton>
                 </th>
-                <th className="px-6 py-4 w-[141.48px] whitespace-nowrap text-base font-semibold text-earth-brown n cursor-pointer">
-                  <div className="flex justify-end">
-                    <SortButton
-                      column="totalInv"
-                      sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
-                      onSort={requestSort}
-                    >
-                      Invest/Qty
-                    </SortButton>
-                  </div>
+
+                {/* 7. Invest/Qty (ชิดขวา) */}
+                <th className="px-6 py-4 w-[141.34px] whitespace-nowrap text-base font-semibold text-earth-brown">
+                  <SortButton
+                    column="totalInv"
+                    sortConfig={sortConfig}
+                    onSort={requestSort}
+                    className="justify-end w-full"
+                  >
+                    Invested
+                  </SortButton>
                 </th>
-                <th className="px-6 py-4 w-[141.48px] whitespace-nowrap text-base font-semibold text-earth-brown  cursor-pointer">
-                  <div className="flex justify-end">
-                    <SortButton
-                      column="value"
-                      sortConfig={sortConfig ?? { key: '', direction: 'asc' }}
-                      onSort={requestSort}
-                    >
-                      Value
-                    </SortButton>
-                  </div>
+
+                {/* 8. Value (ชิดขวา) */}
+                <th className="px-6 py-4 w-[141.23px] whitespace-nowrap text-base font-semibold text-earth-brown">
+                  <SortButton
+                    column="value"
+                    sortConfig={sortConfig}
+                    onSort={requestSort}
+                    className="justify-end w-full"
+                  >
+                    Value
+                  </SortButton>
                 </th>
-                <th className="px-6 py-4 w-[174.14px] whitespace-nowrap text-right text-base font-semibold text-earth-brown ">
+
+                {/* 9. Allocation (ไม่มี Sort) */}
+                <th className="px-6 py-4 w-[173.88px] whitespace-nowrap text-right text-base font-semibold text-earth-brown">
                   Allocation
                 </th>
+
+                {/* 10. Actions */}
                 <th className="px-6 py-4 w-[108.92px] whitespace-nowrap text-center text-base font-semibold text-earth-brown">
                   Actions
                 </th>
