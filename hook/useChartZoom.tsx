@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 export const useChartZoom = (data: any[]) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 0 });
-  
+
   // 🔥 ใช้ Ref เก็บค่า Range ล่าสุด เพื่อไม่ต้อง Remove/Add Event Listener บ่อยๆ
   const rangeRef = useRef(range);
   const isDragging = useRef(false);
@@ -22,7 +22,7 @@ export const useChartZoom = (data: any[]) => {
       const DEFAULT_ITEMS = 30; // อยากโชว์กี่แท่งแก้เลขนี้ได้เลย
       const end = data.length - 1;
       const start = Math.max(0, end - DEFAULT_ITEMS + 1); // +1 เพื่อให้นับครบ 30 เป๊ะ
-      
+
       setRange({ start, end });
     }
   }, [data]);
@@ -32,7 +32,7 @@ export const useChartZoom = (data: any[]) => {
     if (!data || !data.length) return [];
     const s = Math.max(0, Math.min(range.start, data.length - 1));
     const e = Math.min(data.length - 1, Math.max(range.end, s + 2));
-    
+
     return data.slice(s, e + 1);
   }, [data, range]);
 
@@ -53,8 +53,8 @@ export const useChartZoom = (data: any[]) => {
 
       rAFId = requestAnimationFrame(() => {
         if (!data || data.length < 5) {
-            rAFId = null;
-            return;
+          rAFId = null;
+          return;
         }
 
         const currentRange = rangeRef.current; // อ่านจาก Ref ล่าสุด
@@ -75,7 +75,7 @@ export const useChartZoom = (data: any[]) => {
           newEnd += moveIndex;
         } else {
           // --- 🔍 Zoom ---
-          const ZOOM_SPEED = 0.001; 
+          const ZOOM_SPEED = 0.001;
           const delta = e.deltaY * currentLength * ZOOM_SPEED;
           const rect = container.getBoundingClientRect();
           const mouseRatio = (e.clientX - rect.left) / rect.width;
@@ -85,9 +85,10 @@ export const useChartZoom = (data: any[]) => {
         }
 
         // Limit Checks
-        if (newEnd - newStart < 5) { // ห้ามซูมลึกเกิน
-             rAFId = null; 
-             return; 
+        if (newEnd - newStart < 5) {
+          // ห้ามซูมลึกเกิน
+          rAFId = null;
+          return;
         }
 
         // Clamping (กันตกขอบ) - อนุญาตให้ Pan เกินได้นิดหน่อยแล้วดีดกลับ
@@ -96,7 +97,7 @@ export const useChartZoom = (data: any[]) => {
 
         // Update State
         setRange({ start: newStart, end: newEnd });
-        
+
         // Reset rAF
         rAFId = null;
       });
@@ -107,7 +108,7 @@ export const useChartZoom = (data: any[]) => {
       isDragging.current = true;
       startX.current = e.clientX;
       startRange.current = rangeRef.current;
-      container.style.cursor = "grabbing";
+      container.style.cursor = 'grabbing';
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -121,27 +122,27 @@ export const useChartZoom = (data: any[]) => {
         const moveX = e.clientX - startX.current;
         const rect = container.getBoundingClientRect();
         const totalVisible = startRange.current.end - startRange.current.start;
-        
+
         if (totalVisible > 0) {
-            const pixelsPerIndex = rect.width / totalVisible;
-            const moveIndex = moveX / pixelsPerIndex;
+          const pixelsPerIndex = rect.width / totalVisible;
+          const moveIndex = moveX / pixelsPerIndex;
 
-            let newStart = startRange.current.start - moveIndex;
-            let newEnd = startRange.current.end - moveIndex;
+          let newStart = startRange.current.start - moveIndex;
+          let newEnd = startRange.current.end - moveIndex;
 
-            // กันตกขอบ
-            if (newStart < 0) {
-                const diff = 0 - newStart;
-                newStart += diff;
-                newEnd += diff;
-            }
-            if (newEnd > data.length - 1) {
-                const diff = (data.length - 1) - newEnd;
-                newStart += diff;
-                newEnd += diff;
-            }
+          // กันตกขอบ
+          if (newStart < 0) {
+            const diff = 0 - newStart;
+            newStart += diff;
+            newEnd += diff;
+          }
+          if (newEnd > data.length - 1) {
+            const diff = data.length - 1 - newEnd;
+            newStart += diff;
+            newEnd += diff;
+          }
 
-            setRange({ start: newStart, end: newEnd });
+          setRange({ start: newStart, end: newEnd });
         }
         rAFId = null;
       });
@@ -149,7 +150,7 @@ export const useChartZoom = (data: any[]) => {
 
     const handleMouseUp = () => {
       isDragging.current = false;
-      container.style.cursor = "default";
+      container.style.cursor = 'default';
     };
 
     // Attach Events (Add only ONCE per data change)
@@ -177,13 +178,25 @@ interface WrapperProps {
   className?: string;
 }
 
-export const ZoomableChartWrapper = ({ originalData, children, className = "" }: WrapperProps) => {
+export const ZoomableChartWrapper = ({
+  originalData,
+  children,
+  className = '',
+}: WrapperProps) => {
   const { zoomedData, containerRef } = useChartZoom(originalData);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  if (!isMounted) {
+    return <div className={`w-full h-full min-h-0 ${className}`} />;
+  }
 
   return (
-    <div 
-      ref={containerRef} 
-      className={`no-focus-zone w-full h-full cursor-default relative touch-none outline-none ${className}`}
+    <div
+      ref={containerRef}
+      className={`no-focus-zone w-full h-full min-h-0 cursor-default relative touch-none outline-none ${className}`}
       tabIndex={-1}
     >
       <style>{`
@@ -204,8 +217,6 @@ export const ZoomableChartWrapper = ({ originalData, children, className = "" }:
       `}</style>
 
       {children(zoomedData)}
-
-      
     </div>
   );
 };

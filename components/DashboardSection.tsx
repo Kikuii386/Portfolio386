@@ -1648,6 +1648,12 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
       .slice(0, 5);
   }, [tokens]);
 
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const topToken = movers[0];
   const CustomYAxisTick = ({ y, payload }: any) => {
     return (
@@ -1772,58 +1778,61 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
         </h2>
         <p className="text-earth-stone text-sm">Total Gainer</p>
       </div>
-
       <div className="flex-1 w-full h-full min-h-0 ">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-          className="outline-none"
-        >
-          {/* layout="vertical" คือหัวใจสำคัญที่ทำให้กราฟเป็นแนวนอน */}
-          <BarChart
-            layout="vertical"
-            data={movers}
-            margin={{ top: 0, right: 0, left: 20, bottom: 0 }}
-            barCategoryGap={10} // ระยะห่างระหว่างแท่ง
-            className="outline-none" // ✅ ใส่ตรงนี้
-            accessibilityLayer={false}
+        {isMounted ? (
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            className="outline-none"
           >
-            {/* แกน X (ซ่อนไว้ เพราะเราดูตัวเลขใน Tooltip) */}
-            <XAxis type="number" hide />
-
-            {/* แกน Y (แสดงชื่อเหรียญ) */}
-            <YAxis
-              dataKey="symbol"
-              type="category"
-              width={60} // ✅ จองพื้นที่ว่างด้านซ้าย 60px ให้ตัวหนังสือ (ถ้าชื่อยาว เพิ่มเลขนี้ได้)
-              tick={<CustomYAxisTick />} // ✅ เรียกใช้ตัวจัดหน้าแบบบังคับ
-              axisLine={false}
-              tickLine={false}
-            />
-
-            <Tooltip
-              content={<CustomBarTooltip />}
-              cursor={{ fill: COLORS.cream, opacity: 0.5 }} // Highlight แถวอัตโนมัติ (ไม่ต้องเขียนโค้ดเอง)
-            />
-
-            <Bar
-              dataKey="absPercent" // ใช้ค่า Absolute เพื่อให้กราฟพุ่งไปทางขวาเสมอ
-              radius={[4, 4, 4, 4]} // มนมุมขวา
-              barSize={25} // ความสูงของแท่ง
-              isAnimationActive={false}
-              activeBar={false} // บอกว่าไม่ต้องทำสถานะ Active เวลาคลิก
-              tabIndex={-1} // ปิด Animation เพื่อความเร็ว (หรือเปิดก็ได้)
+           
+            <BarChart
+              layout="vertical"
+              data={movers}
+              margin={{ top: 0, right: 0, left: 20, bottom: 0 }}
+              barCategoryGap={10} // ระยะห่างระหว่างแท่ง
+              className="outline-none" // ✅ ใส่ตรงนี้
+              accessibilityLayer={false}
             >
-              {/* Map สีรายแท่ง (เขียว/แดง) */}
-              {movers.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={entry.pnlPercent >= 0 ? COLORS.stone : COLORS.red}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+              {/* แกน X (ซ่อนไว้ เพราะเราดูตัวเลขใน Tooltip) */}
+              <XAxis type="number" hide />
+
+              {/* แกน Y (แสดงชื่อเหรียญ) */}
+              <YAxis
+                dataKey="symbol"
+                type="category"
+                width={60} // ✅ จองพื้นที่ว่างด้านซ้าย 60px ให้ตัวหนังสือ (ถ้าชื่อยาว เพิ่มเลขนี้ได้)
+                tick={<CustomYAxisTick />} // ✅ เรียกใช้ตัวจัดหน้าแบบบังคับ
+                axisLine={false}
+                tickLine={false}
+              />
+
+              <Tooltip
+                content={<CustomBarTooltip />}
+                cursor={{ fill: COLORS.cream, opacity: 0.5 }} // Highlight แถวอัตโนมัติ (ไม่ต้องเขียนโค้ดเอง)
+              />
+
+              <Bar
+                dataKey="absPercent" // ใช้ค่า Absolute เพื่อให้กราฟพุ่งไปทางขวาเสมอ
+                radius={[4, 4, 4, 4]} // มนมุมขวา
+                barSize={25} // ความสูงของแท่ง
+                isAnimationActive={false}
+                activeBar={false} // บอกว่าไม่ต้องทำสถานะ Active เวลาคลิก
+                tabIndex={-1} // ปิด Animation เพื่อความเร็ว (หรือเปิดก็ได้)
+              >
+                {/* Map สีรายแท่ง (เขียว/แดง) */}
+                {movers.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.pnlPercent >= 0 ? COLORS.stone : COLORS.red}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full min-h-0" />
+        )}
       </div>
 
       <div className="mt-2 pt-4 border-t border-[#F5F2EB] text-sm">
