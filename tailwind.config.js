@@ -8,6 +8,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      transitionTimingFunction: {
+        pop: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
       colors: {
         // --- Main Colors ---
         'earth-primary': 'rgb(var(--earth-primary) / <alpha-value>)',

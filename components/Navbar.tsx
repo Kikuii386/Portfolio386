@@ -128,7 +128,7 @@ export default function Navbar() {
           ========================================================= */}
 
       {/* Wrapper ใสๆ เพื่อจัดกึ่งกลาง กันไม่ให้ CSS ตีกัน */}
-      <div className="hidden md:flex fixed top-0 left-4 h-full flex-col justify-center z-50 pointer-events-none">
+      <div className="hidden md:flex fixed top-0 left-4 h-full flex-col justify-center z-40 pointer-events-none">
         {/* ตัว Dock จริงๆ */}
         <div
           className={`
@@ -194,11 +194,11 @@ export default function Navbar() {
       {/* =========================================================
           MOBILE NAVBAR (Sticky Top)
           ========================================================= */}
-      <div className="md:hidden fixed left-0 top-0 w-full z-[100] bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
+      <div className="md:hidden fixed left-0 top-0 w-full z-40 bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2">
           <img
-            src={isChristmas ? '/logo-xmas.png' : '/logo.png'}
+            src={isChristmas ? '/logo.png' : '/logo.png'}
             alt="Logo"
             className="w-8 h-8 object-contain"
           />
@@ -226,7 +226,7 @@ export default function Navbar() {
       {/* Backdrop (พื้นหลังดำจางๆ) */}
       <div
         className={`
-          md:hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          md:hidden fixed inset-0 z-[40] bg-black/60 backdrop-blur-sm transition-opacity duration-300
           top-16 
           ${mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
         `}
@@ -236,7 +236,7 @@ export default function Navbar() {
       {/* Drawer Container */}
       <div
         className={`
-          md:hidden fixed z-[100] w-[280px] 
+          md:hidden fixed z-[40] w-[280px] 
           top-16 bottom-0 
           left-0
           bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl border-r border-white/10

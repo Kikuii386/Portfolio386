@@ -8,7 +8,7 @@ export default function ChristmasLights() {
   if (!isChristmas) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] flex justify-between pointer-events-none overflow-hidden h-6" style={{ width: '120%', marginLeft: '-10%' }}>
+    <div className="fixed top-0 left-0 right-0 z-[100] flex justify-between pointer-events-none overflow-hidden h-6" style={{ width: '120%', marginLeft: '-10%' }}>
         {/* สร้างไฟ 20 ดวงเรียงกัน */}
       {Array.from({ length: 20 }).map((_, i) => (
         <div

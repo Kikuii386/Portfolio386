@@ -77,8 +77,8 @@ export const SwipeableRow = ({
 
   const handleWheel = (e: React.WheelEvent) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      if (e.deltaX > 10 && !isExpanded) onToggle();
-      if (e.deltaX < -10 && isExpanded) onToggle();
+      if (e.deltaX > 20 && !isExpanded) onToggle();
+      if (e.deltaX < -20 && isExpanded) onToggle();
     }
   };
 
@@ -328,7 +328,7 @@ export const SwipeableRow = ({
             className="absolute right-0 top-0 bottom-0 flex items-center justify-center gap-2 bg-earth-cream/20 shadow-inner border-l border-earth-cream/40 z-0"
             style={{ width: SLIDE_WIDTH }}
           >
-            <Tooltip content="Graph">
+            <Tooltip content="Chart">
               <a
                 href={getGraphLink(t)}
                 target="_blank"

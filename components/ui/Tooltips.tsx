@@ -68,7 +68,7 @@ export default function Tooltip({
         typeof document !== 'undefined' &&
         createPortal(
           <div
-            className="fixed z-[9999] px-2 py-1 text-xs font-medium text-earth-cream bg-earth-darkbrown border border-earth-cream/10 shadow-md rounded pointer-events-none animate-in fade-in zoom-in-95 duration-500"
+            className="fixed z-[110] px-2 py-1 text-xs font-medium text-earth-cream bg-earth-darkbrown border border-earth-cream/10 shadow-md rounded pointer-events-none animate-in fade-in zoom-in-95 duration-500"
             style={{
               top: coords.top,
               left: coords.left,

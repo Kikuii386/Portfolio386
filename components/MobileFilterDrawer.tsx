@@ -37,7 +37,7 @@ const MobileFilterDrawer = ({
       {/* 2. Drawer Container */}
       <div
         className={`
-          md:hidden fixed z-[100] w-[280px] 
+          md:hidden fixed z-[40] w-[280px] 
           top-16 bottom-0 
           left-0 
           bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl 

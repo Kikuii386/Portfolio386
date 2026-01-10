@@ -727,7 +727,7 @@ export default function DashboardSection({
               </div>
             </div>
 
-            <div className="flex-1 w-full -ml-2 min-h-0">
+            <div className="flex-1 w-full -ml-2 h-full min-h-0">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -861,7 +861,7 @@ export default function DashboardSection({
                 </div>
               </div>
             </div>
-            <div className="flex-1 w-full min-h-0">
+            <div className="flex-1 w-full h-full min-h-0">
               <ZoomableChartWrapper originalData={volumeChartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -938,7 +938,7 @@ export default function DashboardSection({
               </div>
             </div>
 
-            <div className="flex-1 w-full min-h-0">
+            <div className="flex-1 w-full h-full min-h-0">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => {
                   // คำนวณจุดตัดศูนย์
@@ -1158,7 +1158,7 @@ export default function DashboardSection({
               )}
             </div>
 
-            <div className="flex-1 w-full min-h-0">
+            <div className="flex-1 w-full h-full min-h-0">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1252,7 +1252,7 @@ export default function DashboardSection({
               </div>
             </div>
 
-            <div className="flex-1 w-full relative min-h-0 ">
+            <div className="flex-1 w-full relative h-full min-h-0 ">
               <ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1773,7 +1773,7 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
         <p className="text-earth-stone text-sm">Total Gainer</p>
       </div>
 
-      <div className="flex-1 w-full ">
+      <div className="flex-1 w-full h-full min-h-0 ">
         <ResponsiveContainer
           width="100%"
           height="100%"

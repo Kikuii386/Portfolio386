@@ -40,7 +40,7 @@ export function SortButton({
       <div
         className={`
           flex items-center justify-center overflow-hidden
-          transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+          transition-all duration-300 ease-pop
           
           ${
             isActive
@@ -53,7 +53,7 @@ export function SortButton({
           size={16}
           className={`
             shrink-0 text-earth-sage
-            transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+            transition-transform duration-300 ease-pop
             ${isAsc ? 'rotate-180' : 'rotate-0'}
           `}
         />
