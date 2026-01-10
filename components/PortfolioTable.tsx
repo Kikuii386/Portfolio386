@@ -1038,27 +1038,47 @@ function PortfolioTable({
               </tr>
             </thead>
             <tbody>
-              {/* ... loading check ... */}
-              {visibleTokens.map((t) => (
-                <SwipeableRow
-                  key={t.contract}
-                  t={t}
-                  viewMode={viewMode}
-                  priceChanges={priceChanges}
-                  copy={copy}
-                  copiedText={copiedText}
-                  totalValue={totalValue}
-                  isExpanded={openRowId === t.contract}
-                  onToggle={() =>
-                    setOpenRowId((prev) =>
-                      prev === t.contract ? null : t.contract
-                    )
-                  }
-                />
-              ))}
+              {initialLoading ? (
+                // 🟡 CASE LOADING: สร้าง Row เดียว ที่กินพื้นที่ 10 คอลัมน์ (colSpan=10)
+                <tr>
+                  <td colSpan={10} className="py-20 text-center bg-white/50">
+                    <div className="flex justify-center items-center">
+                      <LoadingIndicator />
+                    </div>
+                  </td>
+                </tr>
+              ) : sortedTokens.length === 0 ? (
+                // 🔴 CASE NO DATA
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="py-20 text-center text-earth-stone text-lg bg-white/50"
+                  >
+                    No data available
+                  </td>
+                </tr>
+              ) : (
+                visibleTokens.map((t) => (
+                  <SwipeableRow
+                    key={t.contract}
+                    t={t}
+                    viewMode={viewMode}
+                    priceChanges={priceChanges}
+                    copy={copy}
+                    copiedText={copiedText}
+                    totalValue={totalValue}
+                    isExpanded={openRowId === t.contract}
+                    onToggle={() =>
+                      setOpenRowId((prev) =>
+                        prev === t.contract ? null : t.contract
+                      )
+                    }
+                  />
+                ))
+              )}
             </tbody>
           </table>
-          {visibleTokens.length < sortedTokens.length && (
+          {!initialLoading && visibleTokens.length < sortedTokens.length && (
             <div
               ref={desktopTarget}
               className="w-full h-12 flex justify-center items-center py-4"
