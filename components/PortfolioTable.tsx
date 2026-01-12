@@ -639,7 +639,7 @@ function PortfolioTable({
                             className="w-11 h-11 rounded-full bg-white shadow-sm p-0.5 border border-earth-cream/40 object-cover"
                           />
                           <div className="absolute -bottom-1 -right-1 bg-[#Fdfbf7] text-earth-darkbrown text-[9px] font-bold px-1.5 py-0.5 rounded border border-earth-cream/60 shadow-sm uppercase">
-                            {t.chain}
+                            {t.chain.slice(0, 4)}..
                           </div>
                         </div>
                         <div className="min-w-0">
@@ -769,7 +769,16 @@ function PortfolioTable({
                             <div className="text-earth-stone text-[10px] uppercase tracking-wide">
                               M.Cap
                             </div>
-                            <div className="font-medium font-mono text-earth-stone">
+                            <div
+                              className="font-medium font-mono text-earth-stone transition-all duration-300 active:scale-95"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copy(
+                                  t.marketCap.toLocaleString(),
+                                  'Market Cap'
+                                );
+                              }}
+                            >
                               {t.marketCap ? (
                                 <QtyDisplay qty={t.marketCap} prefix="$" />
                               ) : (
@@ -781,7 +790,13 @@ function PortfolioTable({
                             <div className="text-earth-stone text-[10px] uppercase tracking-wide">
                               Quantity
                             </div>
-                            <div className="font-medium text-earth-darkbrown">
+                            <div
+                              className="font-medium text-earth-darkbrown transition-all duration-300 active:scale-95"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copy(qty.toLocaleString(), 'Quantity');
+                              }}
+                            >
                               <QtyDisplay qty={qty} />
                             </div>
                           </div>
@@ -1041,7 +1056,7 @@ function PortfolioTable({
               {initialLoading ? (
                 // 🟡 CASE LOADING: สร้าง Row เดียว ที่กินพื้นที่ 10 คอลัมน์ (colSpan=10)
                 <tr>
-                  <td colSpan={10} className="py-20 text-center bg-white/50">
+                  <td colSpan={8} className="py-20 text-center bg-white/50">
                     <div className="flex justify-center items-center">
                       <LoadingIndicator />
                     </div>
@@ -1051,7 +1066,7 @@ function PortfolioTable({
                 // 🔴 CASE NO DATA
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={12}
                     className="py-20 text-center text-earth-stone text-lg bg-white/50"
                   >
                     No data available

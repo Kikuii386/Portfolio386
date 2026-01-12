@@ -12,6 +12,7 @@ import PriceDisplay from '@/components/PriceDisplay';
 import QtyDisplay from '@/components/QtyDisplay';
 import Tooltip from '@/components/ui/Tooltips';
 import { getGraphLink, getGoogleSheetLink } from './ui/RowActions';
+import { motion } from 'framer-motion';
 
 interface SwipeableRowProps {
   t: EnrichedToken;
@@ -146,9 +147,20 @@ export const SwipeableRow = ({
     // 3. M.Cap (8%)
     {
       className:
-        'w-[130.38px] flex-none px-6 py-4 text-right text-earth-stone font-mono flex-shrink-0 ',
+        'w-[130.38px] flex-none px-6 py-4 flex justify-end text-earth-stone font-mono flex-shrink-0 cursor-pointer ',
       content: t.marketCap ? (
-        <QtyDisplay qty={t.marketCap} prefix="$" />
+        <Tooltip content={`$${t.marketCap.toLocaleString()}`}>
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              copy(t.marketCap.toLocaleString(), 'Market Cap');
+            }}
+            // ✅ 2. เพิ่ม Effect เวลาเอาเมาส์ชี้/กด (ให้รู้ว่ากดได้)
+            className="hover:text-earth-darkbrown/80 transition-all duration-300 active:scale-95 select-none"
+          >
+            <QtyDisplay qty={t.marketCap} prefix="$" />
+          </div>
+        </Tooltip>
       ) : (
         <span className="text-earth-stone text-xs">-</span>
       ),
@@ -242,7 +254,7 @@ export const SwipeableRow = ({
       className:
         'w-[141.34px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0',
       content: (
-        <div className="w-full">
+        <div className="w-full flex flex-col items-end">
           <div className="w-full text-right">
             $
             {inv >= 100_000 ? (
@@ -254,30 +266,47 @@ export const SwipeableRow = ({
               })
             )}
           </div>
-          <div className="w-full text-right text-sm text-earth-stone mt-1">
-            <QtyDisplay qty={qty} />
-          </div>
+          <Tooltip content={`${qty.toFixed(2)}`}>
+            <div
+              className="w-full flex-none text-sm text-earth-stone mt-1 cursor-pointer hover:text-earth-darkbrown/80 transition-all duration-300 active:scale-95 select-none"
+              onClick={(e) => {
+                e.stopPropagation();
+                copy(qty.toString(), 'Quantity');
+              }}
+            >
+              <QtyDisplay qty={qty} />
+            </div>
+          </Tooltip>
         </div>
       ),
     },
     // 8. Value (9%)
+
     {
       className:
-        'w-[141.23px] flex-none px-6 py-4 text-right text-earth-darkbrown flex-shrink-0 font-semibold',
+        'w-[141.23px] flex-none px-6 py-4 flex justify-end text-earth-darkbrown flex-shrink-0 font-semibold',
       content: (
-        <>
-          $
-          {value >= 1_000_000 ? (
-            <QtyDisplay qty={value} />
-          ) : (
-            value.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })
-          )}
-        </>
+        <Tooltip
+          content={`$${value.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4,
+          })}`}
+        >
+          <div className="w-full text-right cursor-pointer">
+            $
+            {value >= 100_000 ? (
+              <QtyDisplay qty={value} />
+            ) : (
+              value.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+            )}
+          </div>
+        </Tooltip>
       ),
     },
+
     // 9. Allocation (13%)
     {
       className:
@@ -317,7 +346,17 @@ export const SwipeableRow = ({
   ];
 
   return (
-    <tr
+    <motion.tr
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      
+      // 5. ปรับความเร็ว (Spring จะดูเด้งดึ๋งและสมูทกว่า Linear)
+      transition={{ 
+        layout: { type: "spring", stiffness: 45, damping: 10 }, // สำหรับการย้ายที่
+        opacity: { duration: 0.2 } // สำหรับการจางเข้า/ออก
+      }}
+
       className="group hover:bg-earth-cream/40 transition-colors duration-300"
       onWheel={handleWheel}
     >
@@ -378,6 +417,6 @@ export const SwipeableRow = ({
           </div>
         </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 };
