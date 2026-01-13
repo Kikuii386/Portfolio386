@@ -661,7 +661,6 @@ export default function DashboardSection({
                   : 'text-red-600',
             },
 
-            // ฝั่งขวา: เปลี่ยนแปลง 24 ชม. (เป็นเปอร์เซ็นต์ %)
             {
               label: '24h Change (%)',
               value: `${
@@ -733,7 +732,7 @@ export default function DashboardSection({
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                       data={zoomedData}
-                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                     >
                       <defs>
                         <linearGradient
@@ -867,7 +866,7 @@ export default function DashboardSection({
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={zoomedData}
-                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
@@ -1785,7 +1784,6 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
             height="100%"
             className="outline-none"
           >
-           
             <BarChart
               layout="vertical"
               data={movers}

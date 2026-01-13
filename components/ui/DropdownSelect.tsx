@@ -52,7 +52,8 @@ export default function DropdownSelect({
 
   // ✅ 2. แก้ Click Outside ให้เช็คทั้งปุ่มและเมนูที่ลอยอยู่
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
+      // เพิ่ม TouchEvent
       const target = e.target as Node;
       if (
         buttonRef.current &&
@@ -63,8 +64,16 @@ export default function DropdownSelect({
         setOpen(false);
       }
     }
-    if (open) window.addEventListener('mousedown', handleClickOutside);
-    return () => window.removeEventListener('mousedown', handleClickOutside);
+
+    if (open) {
+      window.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('touchstart', handleClickOutside); // ✅ เพิ่มบรรทัดนี้
+    }
+
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('touchstart', handleClickOutside); // ✅ ล้างออกด้วย
+    };
   }, [open]);
 
   return (
@@ -107,6 +116,7 @@ export default function DropdownSelect({
           <AnimatePresence>
             {open && (
               <motion.div
+                ref={menuRef}
                 key="portal-dropdown"
                 // Animation States
                 initial={{ opacity: 0, scale: 0.95, y: -10 }} // เริ่ม: จาง + เล็ก + ลอยขึ้นนิดนึง

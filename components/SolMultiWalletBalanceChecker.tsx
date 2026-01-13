@@ -464,7 +464,7 @@ export default function SolMultiWalletBalanceChecker() {
       )}
 
       {!loading && !error && !hasScanned && (
-        <div className="text-center py-10 opacity-80">
+        <div className="text-center py-2 md:py-10 opacity-80">
           <div className="bg-earth-cream/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-earth-stone">
             <Earth size={30} />
           </div>

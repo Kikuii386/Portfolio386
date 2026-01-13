@@ -411,119 +411,78 @@ export default function EvmMultiWalletBalanceChecker() {
         </div>
       )}
 
-      {/* Results */}
+      {/* Results Section */}
       {!loading && !error && results.length > 0 && (
         <div className="bg-white rounded-xl border border-earth-cream/80 overflow-hidden shadow-sm">
+          {/* Header Summary (ใช้ร่วมกันทั้ง Mobile/Desktop) */}
           <div className="bg-earth-cream/50 px-5 py-3 border-b border-earth-cream/40 flex justify-between items-center">
             <div className="flex items-center gap-2 text-earth-brown font-bold">
               <CheckCircle2 size={18} className="text-earth-sage" />
-              <span>Found in {results.length} wallets</span>
+              <span className="text-sm sm:text-base">
+                Found in {results.length} wallets
+              </span>
             </div>
 
-            <div>
-              {/* คำนวณยอดรวมเตรียมไว้ก่อน */}
-              {(() => {
-                const total = results.reduce(
-                  (sum, r) => sum + Number(r.formatted.replace(/,/g, '')),
-                  0
-                );
-
-                return (
-                  <Tooltip
-                    content={`Total Balance: ${total.toLocaleString()}`}
-                    side="bottom"
+            {/* Total Balance Badge */}
+            {(() => {
+              const total = results.reduce(
+                (sum, r) => sum + Number(r.formatted.replace(/,/g, '')),
+                0
+              );
+              return (
+                <Tooltip
+                  content={`Total: ${total.toLocaleString()}`}
+                  side="bottom"
+                >
+                  <button
+                    onClick={() => copy(total.toString(), 'Total Balance')}
+                    className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm active:scale-95 transition-transform"
                   >
-                    <span
-                      className="flex items-center gap-2 text-sm font-semibold font-roboto text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm "
-                      onClick={() => copy(total.toString(), 'Total Balance')}
-                    >
-                      {/* ชื่อเหรียญ */}
-                      <span>{tokenSymbol.toLocaleUpperCase()}</span>
-
-                      {/* ขีดคั่น (Optional: ใส่เพื่อให้ดูแยกส่วนชัดเจน) */}
-                      <span className="hidden sm:block text-earth-cream/80">
-                        |
-                      </span>
-
-                      {/* ยอดรวม (ใช้ QtyDisplay ย่อเลข K, M, B ได้เลย) */}
-                      <span className="hidden sm:block text-earth-sage font-bold font-mono hover:text-earth-darkbrown cursor-pointer transition-all duration-300">
-                        <QtyDisplay qty={total} />
-                      </span>
+                    <span>{tokenSymbol.toUpperCase()}</span>
+                    <span className="text-earth-cream/80">|</span>
+                    <span className="text-earth-sage font-bold font-mono">
+                      <QtyDisplay qty={total} />
                     </span>
-                  </Tooltip>
-                );
-              })()}
-            </div>
+                  </button>
+                </Tooltip>
+              );
+            })()}
           </div>
 
-          <div className="max-h-[400px] overflow-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-white sticky top-0 z-10 border-b border-earth-cream/30 text-earth-stone text-xs font-bold uppercase tracking-wider">
+          {/* ========================================== */}
+          {/* PART 1: DESKTOP VIEW (Table)              */}
+          {/* แสดงเมื่อหน้าจอขนาด md ขึ้นไป (768px+)    */}
+          {/* ========================================== */}
+          <div className="hidden md:block max-h-[400px] overflow-auto custom-scrollbar  ">
+            <table className="w-full text-left text-sm ">
+              <thead className="bg-white sticky top-0 z-10 text-earth-stone text-xs font-bold uppercase tracking-wider  border-b border-earth-cream/50 shadow-sm">
                 <tr>
-                  {/* 1. Wallet Name: มือถือเอาไป 65%, จอใหญ่เอา 40% */}
-                  <th className="px-5 py-3 w-[65%] sm:w-[40%] text-left truncate">
-                    Wallet Name
-                  </th>
-
-                  {/* 2. Address: มือถือซ่อน, จอใหญ่เอา 35% */}
-                  <th className="px-5 py-3 w-[35%] hidden sm:table-cell text-left">
-                    Address
-                  </th>
-
-                  {/* 3. Balance: มือถือเอา 35%, จอใหญ่เอา 25% */}
-                  <th className="px-5 py-3 w-[35%] sm:w-[25%] text-right">
-                    Balance
-                  </th>
+                  <th className="px-5 py-3 w-[40%] text-left ">Wallet Name</th>
+                  <th className="px-5 py-3 w-[35%] text-left ">Address</th>
+                  <th className="px-5 py-3 w-[25%] text-right  ">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-earth-cream/30">
+              <tbody className="divide-y divide-white ">
                 {results.map((r) => (
                   <tr
                     key={r.address}
-                    className="hover:bg-earth-cream/10 transition-colors group"
+                    className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
                     <td className="px-5 py-3 font-medium text-earth-darkbrown">
-                      <div className="flex items-center gap-2">
-                        {/* ชื่อ Wallet */}
-                        <span>{r.label}</span>
-
-                        {/* ✅ ปุ่ม Copy: แสดงเฉพาะมือถือ (sm:hidden) และซ่อนใน Desktop */}
-                        <button
-                          onClick={() => copy(r.address, 'Address')}
-                          className="sm:hidden p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all duration-200"
-                        >
-                          {copiedText === r.address ? (
-                            <Check
-                              size={14}
-                              className="text-earth-sage animate-in zoom-in"
-                            />
-                          ) : (
-                            <Copy size={14} />
-                          )}
-                        </button>
-                      </div>
+                      {r.label}
                     </td>
-
-                    {/* 4.2 แก้ไขส่วน Address Cell */}
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      {/* 1. ตั้งชื่อ group ว่า 'addr' เพื่อไม่ให้ตีกับ group ของ tr */}
+                    <td className="px-5 py-3">
                       <Tooltip content="Copy address" side="right">
                         <div
-                          className="inline-flex items-center gap-2 group/addr cursor-pointer align-middle"
+                          className="inline-flex items-center gap-2 group/addr cursor-pointer"
                           onClick={() => copy(r.address, 'Address')}
                         >
-                          {/* 2. เปลี่ยน group-hover เป็น group-hover/addr */}
-                          <span className="font-mono text-xs text-earth-stone/70 group-hover/addr:text-earth-sage group-hover/addr:opacity-100 transition-all duration-200">
+                          <span className="font-mono text-xs text-earth-stone/70 group-hover/addr:text-earth-sage transition-colors">
                             {r.address.slice(0, 6)}...{r.address.slice(-4)}
                           </span>
-
-                          {/* 3. เปลี่ยน group-hover เป็น group-hover/addr */}
-                          <div className="p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all duration-200">
+                          <div className="p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all">
                             {copiedText === r.address ? (
-                              <Check
-                                size={14}
-                                className="text-earth-sage animate-in zoom-in"
-                              />
+                              <Check size={14} className="text-earth-sage" />
                             ) : (
                               <Copy size={14} />
                             )}
@@ -531,25 +490,82 @@ export default function EvmMultiWalletBalanceChecker() {
                         </div>
                       </Tooltip>
                     </td>
-
-                    <td className="px-5 py-3 text-right font-bold text-earth-sage font-mono">
-                      {/* 📱 Mobile View: ใช้ QtyDisplay (ย่อ 1.2M, 10K) */}
-                      <span className="sm:hidden">
-                        <QtyDisplay qty={Number(r.formatted)} />
-                      </span>
-
-                      {/* 💻 Desktop View: แสดงตัวเลขเต็มพร้อมทศนิยม 4 ตำแหน่ง */}
-                      <span className="hidden sm:inline">
-                        {Number(r.formatted).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 4,
-                        })}
-                      </span>
+                    <td
+                      className="px-5 py-3 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={() => {
+                        // ส่งค่า toString() ไปปกติ ส่วนเรื่องการแสดงผลแก้ที่ hook แล้ว
+                        copy(r.formatted.toString(), 'Quantity');
+                      }}
+                    >
+                      <Tooltip content="Copy balance" side="top">
+                        {/* ต้องมี span หรือ div หุ้มข้างในเพื่อให้ Tooltip จับตำแหน่งได้ถูก */}
+                        <span>
+                          {Number(r.formatted).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 4,
+                          })}
+                        </span>
+                      </Tooltip>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* ========================================== */}
+          {/* PART 2: MOBILE VIEW (Card List)           */}
+          {/* แสดงเมื่อหน้าจอเล็กกว่า md                */}
+          {/* ========================================== */}
+          <div className="md:hidden p-4 space-y-3 bg-earth-cream/10 max-h-[500px] overflow-y-auto">
+            {results.map((r) => (
+              <div
+                key={r.address}
+                className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3 transition-colors"
+              >
+                {/* Row 1: Label & Balance */}
+                <div className="flex justify-between items-start">
+                  <div className="font-bold text-earth-darkbrown text-sm  max-w-[70%]">
+                    {r.label}
+                  </div>
+                  <div className="text-right max-w-[30%]">
+                    <span
+                      className="block text-earth-sage font-bold font-mono text-lg leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copy(r.formatted, 'Quantity');
+                      }}
+                    >
+                      <QtyDisplay qty={Number(r.formatted)} />
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 2: Address Box (Copyable) */}
+                <div
+                  onClick={() => copy(r.address, 'Address')}
+                  className="flex items-center justify-between bg-earth-cream/50 border border-earth-cream/40 rounded-lg px-3 py-2 cursor-pointer "
+                >
+                  <div className="flex items-center gap-2">
+                    <Terminal size={12} className="text-earth-stone/70" />
+                    <span className="font-mono text-xs text-earth-stone/90">
+                      {r.address.slice(0, 10)}...{r.address.slice(-6)}
+                    </span>
+                  </div>
+
+                  <div className="text-earth-stone/70">
+                    {copiedText === r.address ? (
+                      <Check
+                        size={14}
+                        className="text-earth-sage animate-in zoom-in"
+                      />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -578,7 +594,7 @@ export default function EvmMultiWalletBalanceChecker() {
       )}
 
       {!loading && !error && !hasScanned && (
-        <div className="text-center py-10 opacity-80">
+        <div className="text-center py-2 md:py-10 opacity-80">
           <div className="bg-earth-cream/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-earth-stone">
             <Earth size={30} />
           </div>

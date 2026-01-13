@@ -491,9 +491,8 @@ function PortfolioTable({
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10">
                       <Tooltip content="Clear" side="bottom">
                         <button
-                          type="button" // ✅ ใส่กันเหนียวไว้ ไม่ให้ไป Trigger การ Submit form
+                          type="button"
                           onClick={() => setSearchTerm('')}
-                          // ✅ เพิ่ม flex justify-center items-center เพื่อให้ตัว X อยู่กลางวงกลมเป๊ะๆ
                           className="p-1 rounded-full bg-earth-brown/50 text-white hover:bg-red-400 transition-all duration-200 shadow-sm hover:scale-110 flex items-center justify-center text-sm"
                         >
                           <X size={10} strokeWidth={4} />
@@ -639,7 +638,9 @@ function PortfolioTable({
                             className="w-11 h-11 rounded-full bg-white shadow-sm p-0.5 border border-earth-cream/40 object-cover"
                           />
                           <div className="absolute -bottom-1 -right-1 bg-[#Fdfbf7] text-earth-darkbrown text-[9px] font-bold px-1.5 py-0.5 rounded border border-earth-cream/60 shadow-sm uppercase">
-                            {t.chain.slice(0, 4)}..
+                            {t.chain.length > 4
+                              ? `${t.chain.slice(0, 3)}..`
+                              : t.chain}
                           </div>
                         </div>
                         <div className="min-w-0">

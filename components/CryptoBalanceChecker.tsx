@@ -33,10 +33,10 @@ export default function CryptoBalanceChecker() {
   return (
     <div className="w-full max-w-3xl mx-auto mb-12 font-sans ">
       {/* Main Card Container */}
-      <div className="bg-white rounded-3xl border border-earth-cream/60 shadow-xl overflow-hidden">
+      <div className="bg-white rounded-2xl border border-earth-cream/60 shadow-xl overflow-hidden">
         {/* Tabs Navigation */}
         {/* ใช้ flex-row เสมอ เพื่อให้เรียงแนวนอนทั้ง Mobile และ Desktop */}
-        <div className="flex flex-row bg-earth-cream/10 border-b border-earth-cream/40">
+        <div className="flex flex-row bg-earth-cream/40 border-b border-earth-cream/40">
           {TABS.map((tab) => {
             const isActive = activeGroup === tab.id;
             const Icon = tab.icon;
@@ -49,18 +49,12 @@ export default function CryptoBalanceChecker() {
                   relative flex-1 flex flex-col sm:flex-row items-center justify-center 
                   gap-1.5 sm:gap-2.5 py-4 sm:py-5 px-2
                   transition-all duration-300 outline-none
-
-                  /* Typography: มือถือตัวเล็กหน่อย (xs) จอใหญ่ตัวปกติ (sm) */
-                  text-xs sm:text-sm font-semibold
-                  
-                  /* Borders: มีเส้นกั้นขวาทุกอัน ยกเว้นอันสุดท้าย */
+                  text-xs sm:text-sm font-semibold tracking-wide uppercase
                   border-r border-earth-cream/30 last:border-0
-
-                  /* Hover & Active States */
                   ${
                     isActive
                       ? 'text-earth-brown bg-earth-creamlight/20 shadow-inner'
-                      : 'text-earth-stone/60 hover:text-earth-brown hover:bg-earth-cream/30'
+                      : 'text-earth-stone/80 hover:text-earth-brown hover:bg-earth-cream/30'
                   }
                 `}
               >

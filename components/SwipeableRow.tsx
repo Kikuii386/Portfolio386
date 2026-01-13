@@ -292,7 +292,7 @@ export const SwipeableRow = ({
             maximumFractionDigits: 4,
           })}`}
         >
-          <div className="w-full text-right cursor-pointer">
+          <div className="w-full text-right">
             $
             {value >= 100_000 ? (
               <QtyDisplay qty={value} />
