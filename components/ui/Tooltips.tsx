@@ -7,12 +7,14 @@ type TooltipProps = {
   content: string;
   children: React.ReactNode;
   side?: 'top' | 'right' | 'bottom' | 'left';
+  className?: string;
 };
 
 export default function Tooltip({
   content,
   children,
   side = 'top',
+  className = '', // ✅ 2. รับค่า className มา (Default เป็นว่าง)
 }: TooltipProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -77,7 +79,7 @@ export default function Tooltip({
         ref={triggerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="relative flex items-center justify-center w-fit h-fit"
+        className={`relative flex items-center justify-center w-fit h-fit ${className}`}
       >
         {children}
       </div>
@@ -88,7 +90,7 @@ export default function Tooltip({
         createPortal(
           <div
             className={`
-              fixed z-[110] px-2 py-1 text-xs font-medium 
+              hidden sm:block fixed z-[110] px-2 py-1 text-xs font-medium 
               text-earth-cream bg-earth-darkbrown 
               border border-earth-cream/10 shadow-md rounded pointer-events-none
               

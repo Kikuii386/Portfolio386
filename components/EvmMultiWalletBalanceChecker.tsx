@@ -468,10 +468,10 @@ export default function EvmMultiWalletBalanceChecker() {
                     key={r.address}
                     className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
-                    <td className="px-5 py-3 font-medium text-earth-darkbrown">
+                    <td className="px-5 py-4 font-medium text-earth-darkbrown">
                       {r.label}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-4">
                       <Tooltip content="Copy address" side="right">
                         <div
                           className="inline-flex items-center gap-2 group/addr cursor-pointer"
@@ -491,7 +491,7 @@ export default function EvmMultiWalletBalanceChecker() {
                       </Tooltip>
                     </td>
                     <td
-                      className="px-5 py-3 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
+                      className="px-5 py-4 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
                       onClick={() => {
                         // ส่งค่า toString() ไปปกติ ส่วนเรื่องการแสดงผลแก้ที่ hook แล้ว
                         copy(r.formatted.toString(), 'Quantity');
@@ -517,23 +517,27 @@ export default function EvmMultiWalletBalanceChecker() {
           {/* PART 2: MOBILE VIEW (Card List)           */}
           {/* แสดงเมื่อหน้าจอเล็กกว่า md                */}
           {/* ========================================== */}
-          <div className="md:hidden p-4 space-y-3 bg-earth-cream/10 max-h-[500px] overflow-y-auto">
+          <div className="md:hidden bg-earth-cream/10 max-h-[500px] overflow-y-auto">
             {results.map((r) => (
               <div
                 key={r.address}
-                className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3 transition-colors"
+                className="bg-white p-4  shadow-sm flex flex-col gap-3 transition-colors"
               >
                 {/* Row 1: Label & Balance */}
                 <div className="flex justify-between items-start">
-                  <div className="font-bold text-earth-darkbrown text-sm  max-w-[70%]">
+                  <div
+                    className="font-semibold text-earth-darkbrown/70 text-sm  max-w-[70%] active:text-earth-darkbrown active:scale-95 transition-all duration-300"
+                    onClick={() => {
+                      copy(r.address.toString(), 'Quantity');
+                    }}
+                  >
                     {r.label}
                   </div>
                   <div className="text-right max-w-[30%]">
                     <span
-                      className="block text-earth-sage font-bold font-mono text-lg leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copy(r.formatted, 'Quantity');
+                      className="block text-earth-sage font-bold font-mono text-sm leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={() => {
+                        copy(r.formatted.toString(), 'Quantity');
                       }}
                     >
                       <QtyDisplay qty={Number(r.formatted)} />
@@ -542,28 +546,6 @@ export default function EvmMultiWalletBalanceChecker() {
                 </div>
 
                 {/* Row 2: Address Box (Copyable) */}
-                <div
-                  onClick={() => copy(r.address, 'Address')}
-                  className="flex items-center justify-between bg-earth-cream/50 border border-earth-cream/40 rounded-lg px-3 py-2 cursor-pointer "
-                >
-                  <div className="flex items-center gap-2">
-                    <Terminal size={12} className="text-earth-stone/70" />
-                    <span className="font-mono text-xs text-earth-stone/90">
-                      {r.address.slice(0, 10)}...{r.address.slice(-6)}
-                    </span>
-                  </div>
-
-                  <div className="text-earth-stone/70">
-                    {copiedText === r.address ? (
-                      <Check
-                        size={14}
-                        className="text-earth-sage animate-in zoom-in"
-                      />
-                    ) : (
-                      <Copy size={14} />
-                    )}
-                  </div>
-                </div>
               </div>
             ))}
           </div>
