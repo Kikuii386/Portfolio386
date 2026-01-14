@@ -214,6 +214,12 @@ function getEndpointLabel(endpoint: EvmEndpointKey): string {
   return endpoint;
 }
 
+const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11';
+const MULTICALL_ABI = [
+  'function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)',
+  'function getEthBalance(address addr) view returns (uint256 balance)',
+];
+
 /* ------------------------------ scan helper ------------------------------ */
 async function scanEvmTokenBalances(
   wallets: Wallet[],
@@ -221,47 +227,140 @@ async function scanEvmTokenBalances(
   network: NetworkConfig
 ): Promise<ScanResult> {
   const provider = new JsonRpcProvider(network.rpc);
-  const token = new Contract(tokenAddress, ERC20_ABI, provider);
+  const isNative = !tokenAddress || tokenAddress.trim() === '';
+
+  const multicallContract = new Contract(
+    MULTICALL3_ADDRESS,
+    MULTICALL_ABI,
+    provider
+  );
+  const tokenInterface = new ethers.Interface(ERC20_ABI);
 
   let decimals = 18;
   let symbol = 'TOKEN';
 
-  try {
-    decimals = await token.decimals();
-  } catch {
+  // 1. Fetch Metadata (One-time)
+  if (isNative) {
     decimals = 18;
-  }
-  try {
-    symbol = await token.symbol();
-  } catch {
-    symbol = 'TOKEN';
+    symbol = network.symbol;
+  } else {
+    try {
+      const tokenContract = new Contract(tokenAddress, ERC20_ABI, provider);
+      const [dec, sym] = await Promise.all([
+        tokenContract.decimals().catch(() => 18),
+        tokenContract.symbol().catch(() => 'TOKEN'),
+      ]);
+      decimals = Number(dec);
+      symbol = sym;
+    } catch {}
   }
 
-  const concurrency = 8;
+  // 2. Adjust Batch Size (Safe limit for public RPCs)
+  // ลดเหลือ 25-30 เพื่อความชัวร์ (60 อาจจะใหญ่ไปสำหรับบาง Chain)
+  const BATCH_SIZE = 30;
   const chunks: Wallet[][] = [];
-  for (let i = 0; i < wallets.length; i += concurrency)
-    chunks.push(wallets.slice(i, i + concurrency));
+  for (let i = 0; i < wallets.length; i += BATCH_SIZE) {
+    chunks.push(wallets.slice(i, i + BATCH_SIZE));
+  }
 
   const resultsAcc: WalletBalanceResult[] = [];
 
+  // 3. Process Chunks
   for (const chunk of chunks) {
-    await Promise.all(
-      chunk.map(async (w) => {
-        try {
-          const balance = (await token.balanceOf(w.address)) as bigint;
-          if (balance > 0n) {
-            resultsAcc.push({
-              label: w.label,
-              address: w.address,
-              rawBalance: balance,
-              formatted: ethers.formatUnits(balance, decimals),
-            });
+    try {
+      /* ---------------- TRY MULTICALL FIRST ---------------- */
+      let calls;
+
+      if (isNative) {
+        // --- CASE A: NATIVE (ETH/BNB) ---
+        // ใช้ Multicall3 เรียกฟังก์ชัน getEthBalance ของตัวเอง
+        calls = chunk.map((w) => ({
+          target: MULTICALL3_ADDRESS, // เรียกตัวเอง
+          allowFailure: true,
+          callData: multicallInterface.encodeFunctionData('getEthBalance', [
+            w.address,
+          ]),
+        }));
+      } else {
+        // --- CASE B: ERC-20 ---
+        // เรียก balanceOf ของ Token Contract
+        calls = chunk.map((w) => ({
+          target: tokenAddress,
+          allowFailure: true,
+          callData: tokenInterface.encodeFunctionData('balanceOf', [w.address]),
+        }));
+      }
+
+      // Await result
+      const response = await multicallContract.aggregate3(calls);
+      response.forEach((res: any, index: number) => {
+        const wallet = chunk[index];
+        if (res.success) {
+          try {
+            let balance = 0n;
+
+            if (isNative) {
+              // Decode Native: ผลลัพธ์คือ uint256 ก้อนเดียว
+              const decoded = multicallInterface.decodeFunctionResult(
+                'getEthBalance',
+                res.returnData
+              );
+              balance = decoded[0] as bigint;
+            } else {
+              // Decode ERC-20
+              const decoded = tokenInterface.decodeFunctionResult(
+                'balanceOf',
+                res.returnData
+              );
+              balance = decoded[0] as bigint;
+            }
+
+            if (balance > 0n) {
+              resultsAcc.push({
+                label: wallet.label,
+                address: wallet.address,
+                rawBalance: balance,
+                formatted: ethers.formatUnits(balance, decimals),
+              });
+            }
+          } catch (e) {
+            /* Ignore decode error */
           }
-        } catch (err) {
-          console.error(`Error ${w.label}`, err);
         }
-      })
-    );
+      });
+    } catch (multicallErr) {
+      await Promise.all(
+        chunk.map(async (w) => {
+          try {
+            let balance = 0n;
+
+            if (isNative) {
+              // Fallback Native: ยิง RPC ตรงๆ
+              balance = await provider.getBalance(w.address);
+            } else {
+              // Fallback ERC-20
+              const singleTokenContract = new Contract(
+                tokenAddress,
+                ERC20_ABI,
+                provider
+              );
+              balance = (await singleTokenContract.balanceOf(
+                w.address
+              )) as bigint;
+            }
+
+            if (balance > 0n) {
+              resultsAcc.push({
+                label: w.label,
+                address: w.address,
+                rawBalance: balance,
+                formatted: ethers.formatUnits(balance, decimals),
+              });
+            }
+          } catch (err) {}
+        })
+      );
+    }
   }
 
   resultsAcc.sort((a, b) => (a.rawBalance < b.rawBalance ? 1 : -1));
@@ -288,21 +387,32 @@ export default function EvmMultiWalletBalanceChecker() {
     setHasScanned(false);
 
     try {
-      if (!tokenAddress) throw new Error('Please enter token contract address');
-      if (!ethers.isAddress(tokenAddress))
+      if (tokenAddress && !ethers.isAddress(tokenAddress)) {
         throw new Error('Invalid EVM token address');
+      }
 
       const res = await fetch(`/api/wallets?type=evm`);
       if (!res.ok) throw new Error('Failed to load wallets');
       const data = (await res.json()) as { wallets: Wallet[] };
-      if (!data.wallets?.length) throw new Error('No EVM wallets found');
+      const uniqueWallets = data.wallets.reduce((acc, current) => {
+        const x = acc.find(
+          (item) => item.address.toLowerCase() === current.address.toLowerCase()
+        );
+        if (!x) {
+          return acc.concat([current]);
+        } else {
+          return acc;
+        }
+      }, [] as Wallet[]);
+
+      if (!uniqueWallets.length) throw new Error('No EVM wallets found');
 
       const networkKey = ENDPOINT_TO_NETWORK[selectedEndpoint];
       if (!networkKey) throw new Error('RPC not configured for this network.');
 
       const scanResult = await scanEvmTokenBalances(
-        data.wallets,
-        tokenAddress,
+        uniqueWallets,
+        tokenAddress.trim(),
         NETWORKS[networkKey]
       );
       setTokenSymbol(scanResult.tokenSymbol);
@@ -393,7 +503,7 @@ export default function EvmMultiWalletBalanceChecker() {
       <button
         onClick={handleScan}
         disabled={loading}
-        className="w-full py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2.5"
+        className="w-full h-[50px] py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2.5"
       >
         {loading ? (
           <Loader2 size={20} className="animate-spin" />
@@ -463,9 +573,9 @@ export default function EvmMultiWalletBalanceChecker() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white ">
-                {results.map((r) => (
+                {results.map((r, index) => (
                   <tr
-                    key={r.address}
+                    key={`${r.address}-${index}`}
                     className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
                     <td className="px-5 py-4 font-medium text-earth-darkbrown">
@@ -491,14 +601,19 @@ export default function EvmMultiWalletBalanceChecker() {
                       </Tooltip>
                     </td>
                     <td
-                      className="px-5 py-4 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
+                      className="flex justify-end px-5 py-4 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
                       onClick={() => {
                         // ส่งค่า toString() ไปปกติ ส่วนเรื่องการแสดงผลแก้ที่ hook แล้ว
                         copy(r.formatted.toString(), 'Quantity');
                       }}
                     >
-                      <Tooltip content="Copy balance" side="top">
-                        {/* ต้องมี span หรือ div หุ้มข้างในเพื่อให้ Tooltip จับตำแหน่งได้ถูก */}
+                      <Tooltip
+                        content={Number(r.formatted).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 8,
+                        })}
+                        side="top"
+                      >
                         <span>
                           {Number(r.formatted).toLocaleString(undefined, {
                             minimumFractionDigits: 2,
@@ -518,9 +633,9 @@ export default function EvmMultiWalletBalanceChecker() {
           {/* แสดงเมื่อหน้าจอเล็กกว่า md                */}
           {/* ========================================== */}
           <div className="md:hidden bg-earth-cream/10 max-h-[500px] overflow-y-auto">
-            {results.map((r) => (
+            {results.map((r, index) => (
               <div
-                key={r.address}
+                key={`${r.address}-${index}`}
                 className="bg-white p-4  shadow-sm flex flex-col gap-3 transition-colors"
               >
                 {/* Row 1: Label & Balance */}

@@ -19,12 +19,13 @@ export function useCopyToClipboard() {
 
         toast.success(`Copied ${label}`, {
           description:
-            text.length > 20
-              ? `${text.slice(0, 6)}...${text.slice(-4)}`
-              : !isNaN(Number(text))
+            // ✅ แก้ตรงนี้: เช็คว่าเป็นตัวเลขก่อน (และต้องไม่ใช่ Address)
+            !isNaN(Number(text)) && label !== 'Address'
               ? Number(text).toLocaleString(undefined, {
                   maximumFractionDigits: 6,
                 })
+              : text.length > 20
+              ? `${text.slice(0, 6)}...${text.slice(-4)}`
               : text,
           duration: 2000,
           action: {

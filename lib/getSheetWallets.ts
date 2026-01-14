@@ -1,15 +1,8 @@
 // lib/getSheetWallets.ts
 /* eslint-disable no-console */
-/**
- * Utility for loading wallet list from Google Apps Script (Google Sheets backend).
- *
- * Pattern is the same idea as `getSheetTokens.ts`:
- * - Server-side only function
- * - Fetches from Apps Script Web App URL (GSHEETS_WALLET_ENDPOINT)
- * - Maps into a typed structure for use in the app
- */
+import { getFromCache, setToCache } from '@/lib/redisCache';
 
-export type WalletType = "evm" | "sol" | "etc";
+export type WalletType = 'evm' | 'sol' | 'etc';
 
 export interface SheetWallet {
   id: number | string;
@@ -19,29 +12,34 @@ export interface SheetWallet {
 }
 
 /**
- * Fetch wallet list from Google Apps Script, routed by wallet type.
- *
- * @param type - "evm" | "sol" | "etc"
+ * 🛠️ ฟังก์ชันดึงสดจาก Google Sheets (ใช้สำหรับ Cron Job หรือตอน Cache หลุด)
  */
-export async function getSheetWallets(type: WalletType = "evm"): Promise<SheetWallet[]> {
+export async function fetchWalletsFromSheet(
+  type: WalletType
+): Promise<SheetWallet[]> {
   const baseUrl = process.env.GSHEETS_WALLET_ENDPOINT;
   if (!baseUrl) {
-    console.error("[getSheetWallets] Missing GSHEETS_WALLET_ENDPOINT env");
+    console.error(
+      '[fetchWalletsFromSheet] Missing GSHEETS_WALLET_ENDPOINT env'
+    );
     return [];
   }
 
   const url = new URL(baseUrl);
-  url.searchParams.set("type", type);
+  url.searchParams.set('type', type);
+
+  console.log(`☁️ Fetching fresh ${type} wallets from Google Sheets...`);
 
   try {
     const res = await fetch(url.toString(), {
-      // server-side fetch only; adjust caching as you like
-      // next: { revalidate: 60 }, // if you want ISR-style caching
-      cache: "no-store",
+      cache: 'no-store',
     });
 
     if (!res.ok) {
-      console.error("[getSheetWallets] Upstream error status:", res.status, res.statusText);
+      console.error(
+        '[fetchWalletsFromSheet] Upstream error status:',
+        res.status
+      );
       return [];
     }
 
@@ -51,23 +49,68 @@ export async function getSheetWallets(type: WalletType = "evm"): Promise<SheetWa
     };
 
     if (data && data.ok === false) {
-      console.error("[getSheetWallets] Upstream returned ok=false:", data);
+      console.error(
+        '[fetchWalletsFromSheet] Upstream returned ok=false:',
+        data
+      );
       return [];
     }
 
     const rawWallets = (data as any).wallets ?? [];
 
-    // Normalize / map into SheetWallet[]
-    const wallets: SheetWallet[] = rawWallets.map((w: any, index: number) => ({
-      id: w.id ?? index + 1,
-      label: String(w.label ?? w.name ?? ""),
-      address: String(w.address ?? ""),
-      type: (w.type ?? type) as WalletType,
-    }));
+    const allWallets: SheetWallet[] = rawWallets
+      .map((w: any, index: number) => ({
+        id: w.id ?? index + 1,
+        label: String(w.label ?? w.name ?? ''),
+        address: String(w.address ?? '').trim(), // trim() ช่องว่างหน้าหลังออกด้วย
+        type: (w.type ?? type) as WalletType,
+      }))
+      .filter((w: any) => !!w.address);
 
-    return wallets.filter((w) => !!w.address);
+    const uniqueWalletsMap = new Map<string, SheetWallet>();
+
+    allWallets.forEach((w) => {
+      const key = w.address.toLowerCase();
+      if (!uniqueWalletsMap.has(key)) {
+        uniqueWalletsMap.set(key, w);
+      }
+    });
+
+    // แปลงกลับเป็น Array
+    const wallets = Array.from(uniqueWalletsMap.values());
+
+    // ✅ บันทึกลง Cache แยกตาม type (อายุ 24 ชม. = 86400 วินาที)
+    // Key pattern: "sheet:wallets:evm", "sheet:wallets:sol"
+    await setToCache(`sheet:wallets:${type}`, wallets, 86400);
+
+    return wallets;
   } catch (err) {
-    console.error("[getSheetWallets] Fetch error:", err);
+    console.error('[fetchWalletsFromSheet] Fetch error:', err);
+    throw err; // โยน Error ออกไปเพื่อให้ function หลักรู้ว่าดึงไม่สำเร็จ
+  }
+}
+
+/**
+ * 🚀 ฟังก์ชันหลักที่หน้าเว็บเรียกใช้ (อ่าน Cache ก่อนเสมอ)
+ *
+ * @param type - "evm" | "sol" | "etc"
+ */
+export async function getSheetWallets(
+  type: WalletType = 'evm'
+): Promise<SheetWallet[]> {
+  const cacheKey = `sheet:wallets:${type}`;
+
+  try {
+    // 1. ลองอ่านจาก Redis
+    const cached = await getFromCache(cacheKey);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return cached as SheetWallet[];
+    }
+
+    console.log(`⚠️ Wallet Cache miss (${type}), fetching fresh...`);
+    return await fetchWalletsFromSheet(type);
+  } catch (err) {
+    console.error(`❌ getSheetWallets Error (${type}):`, err);
     return [];
   }
 }

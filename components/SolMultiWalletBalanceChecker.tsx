@@ -14,7 +14,10 @@ import {
   Terminal,
   Earth,
   X,
+  Coins, // ใช้ Icon นี้สำหรับกรณี Native
 } from 'lucide-react';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 interface Wallet {
   id: number | string;
@@ -29,101 +32,147 @@ interface WalletBalanceResult {
   formatted: string;
 }
 
-// --- Helper: Solana RPC Logic ---
-// ใช้ Alchemy Endpoint เดิมของคุณ
-const SOLANA_RPC_URLS = [
-  'https://solana-mainnet.g.alchemy.com/v2/xGT7Yqz9EMwjE8yF4pSjiO3CDG9925hj',
-] as const;
+// ใช้ Endpoint ที่แรงๆ หน่อย (ถ้าของฟรีอาจจะต้องลด Batch Size ลง)
+const SOLANA_RPC_URL =
+  'https://solana-mainnet.g.alchemy.com/v2/xGT7Yqz9EMwjE8yF4pSjiO3CDG9925hj';
 
-async function pickSolanaRpcUrl() {
-  return SOLANA_RPC_URLS[0];
-}
-
-interface SolRpcResponse {
-  result?: {
-    value: {
-      account: {
-        data: {
-          parsed: {
-            info: {
-              tokenAmount: {
-                amount: string;
-                decimals: number;
-                uiAmountString?: string;
-              };
-            };
-          };
-        };
-      };
-    }[];
-  };
-  error?: { message: string };
-}
-
-// 1. ✅ เพิ่มฟังก์ชันดึงชื่อเหรียญ (Symbol) จาก DexScreener API
+// 1. ✅ ฟังก์ชันดึงชื่อเหรียญ (DexScreener)
 async function getSolanaSymbol(mintAddress: string): Promise<string> {
   try {
-    // DexScreener API ฟรีและไม่ต้องใช้ Key
     const res = await fetch(
       `https://api.dexscreener.com/latest/dex/tokens/${mintAddress}`
     );
     if (!res.ok) return '';
-
     const data = await res.json();
-    // ถ้าเจอคู่เหรียญ ให้เอา symbol ของ baseToken มาใช้
-    if (data.pairs && data.pairs.length > 0) {
+    if (data.pairs && data.pairs.length > 0)
       return data.pairs[0].baseToken.symbol;
-    }
     return '';
-  } catch (e) {
+  } catch {
     return '';
   }
 }
 
-async function fetchSolTokenBalanceForWallet(
-  rpcUrl: string,
-  walletAddress: string,
+// 2. ✅ Main Scan Function (ฉลาดขึ้น + รองรับ Native SOL)
+async function scanSolanaBalances(
+  wallets: Wallet[],
   mintAddress: string
-): Promise<{ balance: number; decimals: number }> {
-  try {
-    const payload = {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getTokenAccountsByOwner',
-      params: [
-        walletAddress,
-        { mint: mintAddress },
-        { encoding: 'jsonParsed' },
-      ],
-    };
+): Promise<{ results: WalletBalanceResult[]; symbol: string }> {
+  const connection = new Connection(SOLANA_RPC_URL);
+  const isNative = !mintAddress || mintAddress.trim() === ''; // ถ้าว่าง = สแกน SOL
 
-    const res = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+  let results: WalletBalanceResult[] = [];
+  let symbol = 'TOKEN';
 
-    if (!res.ok) throw new Error('RPC Error');
+  if (isNative) {
+    /* ----------------------------------------------------------
+       MODE A: NATIVE SOL (เร็วมาก 🚀)
+       ใช้ getMultipleAccounts ยิงทีเดียวได้ 100 กระเป๋า
+    ---------------------------------------------------------- */
+    symbol = 'SOL';
+    const BATCH_SIZE = 100; // Solana รับได้สูงสุด 100 accounts ต่อ 1 request
+    const chunks = [];
 
-    const data = (await res.json()) as SolRpcResponse;
-    if (data.error) throw new Error(data.error.message);
-
-    const accounts = data.result?.value ?? [];
-    let total = 0;
-    let decimals = 0;
-
-    for (const acc of accounts) {
-      const info = acc.account.data.parsed.info.tokenAmount;
-      // เก็บค่า decimals ไว้ใช้ (ปกติทุก account ของ mint เดียวกันจะ decimals เท่ากัน)
-      decimals = info.decimals;
-      total += Number(info.amount) / Math.pow(10, info.decimals);
+    // แบ่งกระเป๋าเป็นกลุ่มละ 100
+    for (let i = 0; i < wallets.length; i += BATCH_SIZE) {
+      chunks.push(wallets.slice(i, i + BATCH_SIZE));
     }
 
-    return { balance: total, decimals };
-  } catch (err) {
-    // console.error(`Error fetching SOL balance for ${walletAddress}:`, err);
-    return { balance: 0, decimals: 0 };
+    for (const chunk of chunks) {
+      try {
+        // แปลง Address String -> PublicKey
+        const publicKeys = chunk.map((w) => new PublicKey(w.address));
+
+        // ยิงตูมเดียว ได้ข้อมูลครบทั้ง Chunk
+        const accountsInfo = await connection.getMultipleAccountsInfo(
+          publicKeys
+        );
+
+        accountsInfo.forEach((info, index) => {
+          if (info) {
+            const bal = info.lamports / LAMPORTS_PER_SOL;
+            if (bal > 0) {
+              results.push({
+                label: chunk[index].label,
+                address: chunk[index].address,
+                balance: bal,
+                formatted: bal.toLocaleString(undefined, {
+                  maximumFractionDigits: 4,
+                }),
+              });
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Error fetching SOL batch:', err);
+      }
+    }
+  } else {
+    /* ----------------------------------------------------------
+       MODE B: SPL TOKEN (USDC, BONK, etc.)
+       ต้องยิงแยกรายคน แต่ใช้ Parallel Batching ช่วย
+    ---------------------------------------------------------- */
+    // หา Symbol ก่อน
+    symbol = (await getSolanaSymbol(mintAddress)) || 'TOKEN';
+
+    const mintPublicKey = new PublicKey(mintAddress);
+
+    // Batch Size เล็กลงหน่อยเพราะ Request มันหนักกว่า Native
+    const CONCURRENCY = 20;
+    const chunks = [];
+    for (let i = 0; i < wallets.length; i += CONCURRENCY) {
+      chunks.push(wallets.slice(i, i + CONCURRENCY));
+    }
+
+    let decimals = 0; // เก็บ decimals ไว้ (เอาจากตัวแรกที่เจอ)
+
+    for (const chunk of chunks) {
+      // ใช้ Promise.all ยิงพร้อมกัน 20 request
+      await Promise.all(
+        chunk.map(async (w) => {
+          try {
+            // ใช้ getParsedTokenAccountsByOwner (สะดวกสุด มัน parse json ให้เลย)
+            const response = await connection.getParsedTokenAccountsByOwner(
+              new PublicKey(w.address),
+              { mint: mintPublicKey }
+            );
+
+            // รวมยอดทุก Account (บางคนมีหลาย Token Account ของเหรียญเดิม)
+            let totalBalance = 0;
+
+            for (const { account } of response.value) {
+              const parsedInfo = account.data.parsed.info.tokenAmount;
+              totalBalance += parsedInfo.uiAmount || 0;
+              decimals = parsedInfo.decimals; // เก็บ decimals
+            }
+
+            if (totalBalance > 0) {
+              results.push({
+                label: w.label,
+                address: w.address,
+                balance: totalBalance,
+                formatted: '', // เดี๋ยวมาเติมทีหลัง
+              });
+            }
+          } catch (err) {
+            // console.error(`Failed to scan ${w.label}`, err);
+          }
+        })
+      );
+    }
+
+    // Format เลขให้สวย (หลังจากรู้ decimals แล้ว)
+    results = results.map((r) => ({
+      ...r,
+      formatted: r.balance.toLocaleString(undefined, {
+        maximumFractionDigits: decimals || 6,
+      }),
+    }));
   }
+
+  // Sort มาก -> น้อย
+  results.sort((a, b) => b.balance - a.balance);
+
+  return { results, symbol };
 }
 
 /* --------------------------- Component -------------------------- */
@@ -134,10 +183,8 @@ export default function SolMultiWalletBalanceChecker() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<WalletBalanceResult[]>([]);
   const [hasScanned, setHasScanned] = useState(false);
-  const { copiedText, copy } = useCopyToClipboard();
-
-  // 2. ✅ เพิ่ม State สำหรับแสดงชื่อเหรียญ และ Copy
   const [displaySymbol, setDisplaySymbol] = useState<string>('');
+  const { copiedText, copy } = useCopyToClipboard();
 
   const handleScan = async () => {
     setError(null);
@@ -148,76 +195,28 @@ export default function SolMultiWalletBalanceChecker() {
 
     try {
       const mint = tokenMint.trim();
-      if (!mint) throw new Error('Please enter Solana Mint Address');
+      // อนุญาตให้ว่างได้ = สแกน Native SOL
 
-      // 3. ✅ ดึงชื่อเหรียญแบบ Parallel (ทำไปพร้อมกับโหลด Wallet)
-      const symbolPromise = getSolanaSymbol(mint);
-      const walletsPromise = fetch('/api/wallets?type=sol').then((res) => {
-        if (!res.ok) throw new Error('Failed to load SOL wallets');
-        return res.json();
-      });
+      // 1. กรอง Address ซ้ำ (Deduplicate)
+      const res = await fetch('/api/wallets?type=sol');
+      if (!res.ok) throw new Error('Failed to load SOL wallets');
+      const data = (await res.json()) as { wallets: Wallet[] };
 
-      const [symbol, walletsData] = await Promise.all([
-        symbolPromise,
-        walletsPromise,
-      ]);
+      const uniqueWallets = data.wallets.reduce((acc, current) => {
+        const x = acc.find((item) => item.address === current.address);
+        return !x ? acc.concat([current]) : acc;
+      }, [] as Wallet[]);
 
-      // อัปเดตชื่อเหรียญ (ถ้าหาไม่เจอใช้ค่าที่กรอกมา หรือ "TOKEN")
-      setDisplaySymbol(symbol || 'TOKEN');
+      if (!uniqueWallets.length) throw new Error('No SOL wallets found');
 
-      const wallets = (walletsData as { wallets: Wallet[] }).wallets;
-      if (!wallets?.length) throw new Error('No SOL wallets found');
+      // 2. สแกน (Batch Logic อยู่ข้างในนี้แล้ว)
+      const { results: scanResults, symbol } = await scanSolanaBalances(
+        uniqueWallets,
+        mint
+      );
 
-      const rpcUrl = await pickSolanaRpcUrl();
-
-      // Batching logic
-      const concurrency = 5;
-      const chunks = [];
-      for (let i = 0; i < wallets.length; i += concurrency)
-        chunks.push(wallets.slice(i, i + concurrency));
-
-      const acc: WalletBalanceResult[] = [];
-
-      // ตัวแปรเก็บ decimals เพื่อใช้ format (เอาจาก wallet แรกที่เจอ)
-      let foundDecimals = 0;
-
-      for (const chunk of chunks) {
-        await Promise.all(
-          chunk.map(async (w) => {
-            try {
-              const { balance, decimals } = await fetchSolTokenBalanceForWallet(
-                rpcUrl,
-                w.address,
-                mint
-              );
-
-              if (decimals > 0) foundDecimals = decimals;
-
-              if (balance > 0) {
-                acc.push({
-                  label: w.label,
-                  address: w.address,
-                  balance,
-                  formatted: '', // จะเติมทีหลังเมื่อรู้ decimals
-                });
-              }
-            } catch (e) {
-              console.error(e);
-            }
-          })
-        );
-      }
-
-      // Format Balance ด้วย Decimals ที่ถูกต้อง
-      const finalResults = acc.map((r) => ({
-        ...r,
-        formatted: r.balance.toLocaleString(undefined, {
-          maximumFractionDigits: foundDecimals || 6,
-        }),
-      }));
-
-      finalResults.sort((a, b) => (a.balance < b.balance ? 1 : -1));
-      setResults(finalResults);
+      setDisplaySymbol(symbol);
+      setResults(scanResults);
       setHasScanned(true);
     } catch (e: any) {
       setError(e.message || 'Unknown error');
