@@ -1,9 +1,7 @@
-// components/EtcMultiWalletBalanceChecker.tsx
-
 'use client';
 
 import React, { useState } from 'react';
-import QtyDisplay from '@/components/QtyDisplay';
+import QtyDisplay, { formatQtyString } from '@/components/QtyDisplay'; // ✅ Import formatQtyString
 import DropdownSelect from '@/components/ui/DropdownSelect';
 import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
 import Tooltip from '@/components/ui/Tooltips';
@@ -137,7 +135,6 @@ function isCompatibleAddress(address: string, chain: EtcNetworkKey): boolean {
 function formatBalance(amount: string | number, decimals: number): string {
   const balance = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(balance)) return '0';
-  // ถ้า decimals เป็น 0 คือแสดงเต็ม
   return (balance / Math.pow(10, decimals)).toLocaleString('en-US', {
     maximumFractionDigits: decimals,
   });
@@ -228,26 +225,21 @@ async function scanSuiBalance(
 
 /* ================== BITCOIN SCANNERS (ORDISCAN) ================== */
 
-// Helper: ดึงข้อมูล Metadata ของ Rune เพื่อหาค่า Divisibility (Decimals)
 async function getRuneInfo(runeName: string): Promise<number> {
   try {
-    // ลบจุด/ช่องว่างออกก่อนค้นหา Metadata
     const clean = cleanName(runeName);
     const url = `https://api.ordiscan.com/v1/rune/${clean}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${ORDISCAN_API_KEY}` },
     });
-    if (!res.ok) return 0; // ถ้าไม่เจอ Default 0
+    if (!res.ok) return 0;
     const data = await res.json();
-
-    // Ordiscan response: { decimals: 18, ... }
     return typeof data.data?.decimals === 'number' ? data.data.decimals : 0;
   } catch (e) {
     return 0;
   }
 }
 
-// 1. Native BTC
 async function scanBtcNativeBalance(address: string): Promise<string> {
   try {
     const res = await fetch(`https://mempool.space/api/address/${address}`);
@@ -265,7 +257,6 @@ async function scanBtcNativeBalance(address: string): Promise<string> {
   }
 }
 
-// 2. BRC-20 Scanner
 async function scanBrc20Balance(
   address: string,
   ticker: string
@@ -283,20 +274,17 @@ async function scanBrc20Balance(
       : responseData.data || [];
     const target = ticker.toLowerCase();
 
-    // ✅ แก้จุดนี้: เช็คทั้ง 'tick' (Ordiscan) และ 'ticker' (Hiro)
     const foundToken = tokens.find(
       (t: any) => (t.tick || t.ticker || '').toLowerCase() === target
     );
 
     if (foundToken) {
-      // แปลงยอดเงินเป็น String
       const rawBalance = (
         foundToken.overall_balance ||
         foundToken.balance ||
         foundToken.amount ||
         '0'
       ).toString();
-      // ถ้า API มี decimals ให้ใช้ ถ้าไม่มีใช้ 18
       const decimals =
         foundToken.decimals !== undefined ? Number(foundToken.decimals) : 0;
 
@@ -311,7 +299,6 @@ async function scanBrc20Balance(
   }
 }
 
-// 3. RUNES Scanner
 async function scanRunesBalance(
   address: string,
   searchName: string
@@ -325,20 +312,17 @@ async function scanRunesBalance(
     if (!res.ok) return { balance: '0', name: '' };
 
     const responseData = await res.json();
-    // Support structure { data: [...] } as per your JSON
     const runes = Array.isArray(responseData)
       ? responseData
       : responseData.data || [];
 
     const target = cleanName(searchName);
 
-    // Find rune by name
     const foundRune = runes.find(
       (r: any) => cleanName(r.name || r.rune || '') === target
     );
 
     if (foundRune) {
-      // Return RAW balance here. Decimals will be handled by main dispatcher using Metadata.
       return {
         balance: foundRune.balance || foundRune.amount || '0',
         name: foundRune.name || foundRune.rune,
@@ -350,21 +334,21 @@ async function scanRunesBalance(
     return { balance: '0', name: '' };
   }
 }
-// Helper: ดึงค่า Decimals ของเหรียญ TRC20
+
 async function getTronDecimals(
   tokenAddress: string,
   rpcUrl: string
 ): Promise<number> {
   try {
     const contractHex = tronAddressToHex(tokenAddress);
-    if (!contractHex) return 6; // Default fallback
+    if (!contractHex) return 6;
 
     const endpoint = rpcUrl.endsWith('/')
       ? `${rpcUrl}wallet/triggerconstantcontract`
       : `${rpcUrl}/wallet/triggerconstantcontract`;
 
     const payload = {
-      owner_address: contractHex, // ใช้ตัว Contract เป็นคนเรียก (View Function)
+      owner_address: contractHex,
       contract_address: contractHex,
       function_selector: 'decimals()',
       parameter: '',
@@ -386,7 +370,7 @@ async function getTronDecimals(
     return 6;
   }
 }
-// 2. ดึง Symbol (ชื่อย่อเหรียญ) ✅
+
 async function getTronSymbol(
   tokenAddress: string,
   rpcUrl: string
@@ -415,12 +399,10 @@ async function getTronSymbol(
     const data = await res.json();
     if (data.constant_result && data.constant_result[0]) {
       const hex = data.constant_result[0];
-      // แปลง Hex เป็น String (กรองเฉพาะตัวอักษรที่อ่านออก)
       let str = '';
       for (let i = 0; i < hex.length; i += 2) {
         const charCode = parseInt(hex.substr(i, 2), 16);
         if (charCode >= 32 && charCode <= 126) {
-          // Printable ASCII
           str += String.fromCharCode(charCode);
         }
       }
@@ -451,24 +433,16 @@ async function scanEtcTokenBalances(
   if (networkKey === 'btc') decimals = 8;
 
   if (networkKey === 'tron' && tokenIdentifier) {
-    // เรียก 2 ฟังก์ชันพร้อมกัน
     const [sym, trcDecimals] = await Promise.all([
       getTronSymbol(tokenIdentifier, network.rpc),
       getTronDecimals(tokenIdentifier, network.rpc),
     ]);
-
-    // ถ้าได้ชื่อมา ให้อัปเดต detectedSymbol
     if (sym) detectedSymbol = sym;
-
-    // ถ้าได้ทศนิยมมา ให้อัปเดต decimals
     if (trcDecimals > 0) decimals = trcDecimals;
   }
-  // --- PRE-FETCH METADATA FOR BTC TOKENS ---
-  // ถ้าเป็น BTC และมีการระบุชื่อเหรียญ ให้ไปดึงข้อมูลเหรียญมาก่อนเพื่อหา Divisibility
+
   if (networkKey === 'btc' && tokenIdentifier) {
     const metaDecimals = await getRuneInfo(tokenIdentifier);
-    // ถ้าได้ค่ามามากกว่า 0 ให้ใช้ค่านี้เป็น Default สำหรับ Runes
-    // (BRC-20 จะมี logic decimals ในตัวมันเองอีกที)
     decimals = metaDecimals;
   }
 
@@ -515,7 +489,6 @@ async function scanEtcTokenBalances(
               currentDecimals = 8;
               type = 'NATIVE';
             } else {
-              // Check both Runes and BRC-20
               const [runeRes, brcRes] = await Promise.all([
                 scanRunesBalance(w.address, tokenIdentifier),
                 scanBrc20Balance(w.address, tokenIdentifier),
@@ -526,7 +499,6 @@ async function scanEtcTokenBalances(
 
               if (runeVal > 0) {
                 raw = runeRes.balance;
-                // ใช้ decimals ที่ดึงมาจาก getRuneInfo ด้านบน (Pre-fetch)
                 currentDecimals = decimals;
                 type = 'RUNE';
                 detectedSymbol = runeRes.name;
@@ -579,16 +551,12 @@ export default function EtcMultiWalletBalanceChecker() {
   const getInputPlaceholder = () => {
     switch (selectedChain) {
       case 'tron':
-        // USDT บน Tron
         return 'e.g. TR7NH... (USDT Contract)';
       case 'aptos':
-        // Aptos Coin Struct มาตรฐาน
         return 'e.g. 0x1::aptos_coin::AptosCoin';
       case 'sui':
-        // SUI Coin Struct มาตรฐาน
         return 'e.g. 0x2::sui::SUI';
       case 'btc':
-        // เหรียญยอดฮิตของ BRC-20/Runes
         return 'e.g. ORDI, SATS or leave empty for BTC';
       default:
         return 'Token Identifier';
@@ -630,48 +598,63 @@ export default function EtcMultiWalletBalanceChecker() {
   };
 
   const handleClear = () => {
-    setTokenInput(''); // ล้างช่องกรอก
-    setResults([]); // ล้างผลลัพธ์
-    setHasScanned(false); // รีเซ็ตสถานะเป็น Ready
-    setDisplaySymbol(''); // ล้างชื่อเหรียญ
-    setError(null); // ล้าง Error
+    setTokenInput('');
+    setResults([]);
+    setHasScanned(false);
+    setDisplaySymbol('');
+    setError(null);
+  };
+
+  // 🔹 Helper สำหรับเปิด Explorer ให้ตรงกับ Chain
+  const handleOpenExplorer = (address: string) => {
+    let url = '';
+    switch (selectedChain) {
+      case 'tron':
+        url = `https://tronscan.org/#/address/${address}`;
+        break;
+      case 'aptos':
+        url = `https://explorer.aptoslabs.com/account/${address}`;
+        break;
+      case 'sui':
+        url = `https://suiscan.xyz/mainnet/account/${address}`;
+        break;
+      case 'btc':
+        url = `https://mempool.space/address/${address}`;
+        break;
+      default:
+        return;
+    }
+    window.open(url, '_blank');
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        {/* Chain Selector */}
         <div className="md:col-span-4 space-y-1.5">
           <label className="text-xs font-bold text-earth-brown uppercase tracking-wide ml-1">
             Select Network
           </label>
           <div className="relative group z-10">
             <DropdownSelect
-              // 1. แปลงรายการ NETWORKS ให้เป็น Group Format
               options={[
                 {
                   label: 'Networks',
                   items: Object.keys(NETWORKS),
                 },
               ]}
-              // 2. ค่าที่เลือกปัจจุบัน
               selected={selectedChain}
-              // 3. เมื่อเลือกให้ทำอะไร (Set State + Reset ค่าต่างๆ)
               onSelect={(val) => {
                 setSelectedChain(val as EtcNetworkKey);
                 setResults([]);
                 setTokenInput('');
                 setHasScanned(false);
               }}
-              // 4. ฟังก์ชันแสดงชื่อสวยๆ (ดึงจาก config.name เช่น "Bitcoin (BTC)")
               getLabel={(key) => NETWORKS[key as EtcNetworkKey]?.name || key}
-              // 5. ปรับสไตล์ปุ่มให้เหมือน Input (สูง 50px, สี earth-cream)
               buttonClass=" h-[50px] w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown font-medium justify-between px-4 hover:bg-earth-cream/30 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage"
             />
           </div>
         </div>
 
-        {/* Token Input */}
         <div className="md:col-span-8 space-y-1.5">
           <label className="h-[50px] text-xs font-bold text-earth-brown uppercase tracking-wide ml-1">
             Token Address / Symbol
@@ -688,7 +671,8 @@ export default function EtcMultiWalletBalanceChecker() {
               onKeyDown={(e) => e.key === 'Enter' && handleScan()}
               className="pl-10 pr-10 py-3.5 w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown placeholder-earth-stone/80 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage transition-all font-mono text-sm hover:bg-earth-cream/30"
             />
-            {tokenInput && (
+            {/* ✅ ปุ่ม Clear Logic แบบ EVM */}
+            {(tokenInput || hasScanned) && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
                 <Tooltip content="Clear" side="bottom">
                   <button
@@ -711,11 +695,10 @@ export default function EtcMultiWalletBalanceChecker() {
           : '* System automatically detects compatible wallets for selected chain.'}
       </div>
 
-      {/* Action Button */}
       <button
         onClick={handleScan}
         disabled={loading}
-        className="w-full py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2.5"
+        className="w-full  h-[50px] py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2.5"
       >
         {loading ? (
           <Loader2 size={20} className="animate-spin" />
@@ -725,7 +708,6 @@ export default function EtcMultiWalletBalanceChecker() {
         <span>{loading ? 'Scanning...' : 'Scan Balances'}</span>
       </button>
 
-      {/* Error Message */}
       {error && (
         <div className="flex items-start gap-3 p-4 bg-red-50/50 text-red-600 text-sm rounded-xl border border-red-100 animate-in slide-in-from-top-2">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
@@ -733,7 +715,6 @@ export default function EtcMultiWalletBalanceChecker() {
         </div>
       )}
 
-      {/* Results */}
       {!loading && !error && results.length > 0 && (
         <div className="bg-white rounded-xl border border-earth-cream/80 overflow-hidden shadow-sm">
           <div className="bg-earth-cream/50 px-5 py-3 border-b border-earth-cream/40 flex justify-between items-center">
@@ -742,7 +723,7 @@ export default function EtcMultiWalletBalanceChecker() {
               <span>Found in {results.length} wallets</span>
             </div>
             <div>
-              {/* คำนวณยอดรวมเตรียมไว้ก่อน */}
+              {/* ✅ Header Total Balance + Tooltip แบบ EVM */}
               {(() => {
                 const total = results.reduce(
                   (sum, r) => sum + Number(r.formatted.replace(/,/g, '')),
@@ -751,104 +732,71 @@ export default function EtcMultiWalletBalanceChecker() {
 
                 return (
                   <Tooltip
-                    content={`Total Balance: ${total.toLocaleString()}`}
+                    content={`Total: ${formatQtyString(total)}`}
                     side="bottom"
                   >
-                    <span
-                      className="flex items-center gap-2 text-sm font-semibold font-roboto text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm "
+                    <button
                       onClick={() => copy(total.toString(), 'Total Balance')}
+                      className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm active:scale-95 transition-transform"
                     >
-                      {/* ชื่อเหรียญ */}
-
-                      <span>
+                      <span className="hidden sm:inline">
                         {displaySymbol || 'TOKEN'.toLocaleUpperCase()}
                       </span>
-
-                      {/* ขีดคั่น (Optional: ใส่เพื่อให้ดูแยกส่วนชัดเจน) */}
                       <span className="hidden sm:block text-earth-cream/80">
                         |
                       </span>
-
-                      {/* ยอดรวม (ใช้ QtyDisplay ย่อเลข K, M, B ได้เลย) */}
-
-                      <span className="hidden sm:block text-earth-sage font-bold font-mono hover:text-earth-darkbrown cursor-pointer transition-all duration-300">
+                      <span className="hidden sm:block text-earth-sage font-bold font-mono">
                         <QtyDisplay qty={total} />
                       </span>
-                    </span>
+                    </button>
                   </Tooltip>
                 );
               })()}
             </div>
           </div>
 
-          <div className="max-h-[400px] overflow-auto">
+          {/* ================= DESKTOP TABLE ================= */}
+          <div className="hidden md:block max-h-[400px] overflow-auto custom-scrollbar">
             <table className="w-full text-left text-sm">
-              <thead className="bg-white sticky top-0 z-10 border-b border-earth-cream/30 text-earth-stone text-xs font-bold uppercase tracking-wider">
+              <thead className="bg-white sticky top-0 z-10 border-b border-earth-cream/50 shadow-sm text-earth-stone text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  {/* 1. Wallet Name: มือถือเอาไป 65%, จอใหญ่เอา 40% */}
-                  <th className="px-5 py-3 w-[65%] sm:w-[40%] text-left truncate">
-                    Wallet Name
-                  </th>
-
-                  {/* 2. Address: มือถือซ่อน, จอใหญ่เอา 35% */}
-                  <th className="px-5 py-3 w-[35%] hidden sm:table-cell text-left">
-                    Address
-                  </th>
-
-                  {/* 3. Balance: มือถือเอา 35%, จอใหญ่เอา 25% */}
-                  <th className="px-5 py-3 w-[35%] sm:w-[25%] text-right">
-                    Balance
-                  </th>
+                  <th className="px-5 py-3 w-[40%] text-left">Wallet Name</th>
+                  <th className="px-5 py-3 w-[35%] text-left">Address</th>
+                  <th className="px-5 py-3 w-[25%] text-right">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-earth-cream/30">
+              <tbody className="divide-y divide-white">
                 {results.map((r) => (
                   <tr
                     key={r.address}
-                    className="hover:bg-earth-cream/10 transition-colors group"
+                    className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
-                    <td className="px-5 py-3 font-medium text-earth-darkbrown">
-                      <div className="flex items-center gap-2">
-                        {/* ชื่อ Wallet */}
-                        <span>{r.label}</span>
-
-                        {/* ✅ ปุ่ม Copy: แสดงเฉพาะมือถือ (sm:hidden) และซ่อนใน Desktop */}
-                        <button
-                          onClick={() => copy(r.address, 'Address')}
-                          className="sm:hidden p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all duration-200"
+                    {/* ✅ Clickable Wallet Name -> ตาม Chain */}
+                    <td className="px-5 py-4">
+                      <Tooltip content="Open Explorer" side="top">
+                        <div
+                          className="inline-flex items-center cursor-pointer group/label"
+                          onClick={() => handleOpenExplorer(r.address)}
                         >
-                          {copiedText === r.address ? (
-                            <Check
-                              size={14}
-                              className="text-earth-sage animate-in zoom-in"
-                            />
-                          ) : (
-                            <Copy size={14} />
-                          )}
-                        </button>
-                      </div>
+                          <span className="font-medium text-earth-darkbrown group-hover/label:text-earth-sage group-hover/label:underline transition-all duration-300">
+                            {r.label}
+                          </span>
+                        </div>
+                      </Tooltip>
                     </td>
 
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      {/* 1. ตั้งชื่อ group ว่า 'addr' เพื่อไม่ให้ตีกับ group ของ tr */}
-
-                      <Tooltip content="Copy address" side="right">
+                    <td className="px-5 py-4">
+                      <Tooltip content="Copy address" side="top">
                         <div
-                          className="inline-flex items-center gap-2 group/addr cursor-pointer align-middle"
+                          className="inline-flex items-center gap-2 group/addr cursor-pointer"
                           onClick={() => copy(r.address, 'Address')}
                         >
-                          {/* 2. เปลี่ยน group-hover เป็น group-hover/addr */}
-                          <span className="font-mono text-xs text-earth-stone/70 group-hover/addr:text-earth-sage group-hover/addr:opacity-100 transition-all duration-200">
+                          <span className="font-mono text-xs text-earth-stone/70 group-hover/addr:text-earth-sage transition-colors">
                             {r.address.slice(0, 6)}...{r.address.slice(-4)}
                           </span>
-
-                          {/* 3. เปลี่ยน group-hover เป็น group-hover/addr */}
-                          <div className="p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all duration-200">
+                          <div className="p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all">
                             {copiedText === r.address ? (
-                              <Check
-                                size={14}
-                                className="text-earth-sage animate-in zoom-in"
-                              />
+                              <Check size={14} className="text-earth-sage" />
                             ) : (
                               <Copy size={14} />
                             )}
@@ -857,29 +805,90 @@ export default function EtcMultiWalletBalanceChecker() {
                       </Tooltip>
                     </td>
 
-                    <td className="px-5 py-3 text-right font-bold text-earth-sage font-mono">
-                      {/* 📱 Mobile View: ใช้ QtyDisplay (ย่อ 1.2M, 10K) */}
-                      <span className="sm:hidden">
-                        <QtyDisplay
-                          qty={Number(r.formatted.replace(/,/g, ''))}
-                        />
-                      </span>
-
-                      {/* 💻 Desktop View: แสดงตัวเลขเต็มพร้อมทศนิยม 4 ตำแหน่ง */}
-                      <span className="hidden sm:inline">
-                        {Number(r.formatted.replace(/,/g, '')).toLocaleString(
-                          undefined,
-                          {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 4,
-                          }
-                        )}
-                      </span>
+                    {/* ✅ Balance Column with QtyDisplay */}
+                    <td
+                      className="flex justify-end px-5 py-4 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={() => {
+                        copy(r.formatted.toString(), 'Quantity');
+                      }}
+                    >
+                      <Tooltip
+                        content={Number(
+                          r.formatted.replace(/,/g, '')
+                        ).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 8,
+                        })}
+                        side="top"
+                      >
+                        <span>
+                          <QtyDisplay
+                            qty={Number(r.formatted.replace(/,/g, ''))}
+                          />
+                        </span>
+                      </Tooltip>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* ================= MOBILE LIST ================= */}
+          <div className="md:hidden p-4 space-y-3 bg-earth-cream/10 max-h-[500px] overflow-y-auto">
+            {results.map((r) => (
+              <div
+                key={r.address}
+                className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3 transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  {/* ✅ Clickable Label */}
+                  <div
+                    className="font-semibold text-earth-darkbrown/70 text-sm max-w-[70%] active:text-earth-darkbrown active:scale-95 transition-all duration-300"
+                    onClick={() => handleOpenExplorer(r.address)}
+                  >
+                    {r.label}
+                  </div>
+                  <div className="text-right max-w-[30%]">
+                    {/* ✅ QtyDisplay */}
+                    <span
+                      className="p-1 block text-earth-sage font-bold font-mono text-sm leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={() => {
+                        copy(r.formatted.toString(), 'Quantity');
+                      }}
+                    >
+                      <QtyDisplay qty={Number(r.formatted.replace(/,/g, ''))} />
+                    </span>
+                    <span className="text-[10px] text-earth-stone font-bold uppercase truncate">
+                      {displaySymbol}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 2: Address Box (Copyable) */}
+                <div
+                  onClick={() => copy(r.address, 'Address')}
+                  className="flex items-center justify-between bg-earth-cream/50 border border-earth-cream/40 rounded-lg px-3 py-2 cursor-pointer active:bg-earth-cream/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <Terminal size={12} className="text-earth-stone/70" />
+                    <span className="font-mono text-xs text-earth-stone/90">
+                      {r.address.slice(0, 10)}...{r.address.slice(-6)}
+                    </span>
+                  </div>
+                  <div className="text-earth-stone/70">
+                    {copiedText === r.address ? (
+                      <Check
+                        size={14}
+                        className="text-earth-sage animate-in zoom-in"
+                      />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

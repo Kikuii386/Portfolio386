@@ -94,7 +94,7 @@ export default function Tooltip({
               text-earth-cream bg-earth-darkbrown 
               border border-earth-cream/10 shadow-md rounded pointer-events-none
               
-              /* ✅ ส่วน Animation */
+             
               transition-all duration-300 ease-in-out
               ${
                 isHovered

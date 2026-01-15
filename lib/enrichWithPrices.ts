@@ -20,7 +20,9 @@ type ApiPriceRow = {
 
 async function loadPriceMap(): Promise<Map<string, ApiPriceRow>> {
   try {
-    const res = await fetch(`${PRICE_API_BASE}/prices`);
+    const res = await fetch(`${PRICE_API_BASE}/prices`, {
+      cache: 'no-store',
+    });
     if (!res.ok) {
       console.warn(
         '[enrichWithPrices] failed to load /prices',

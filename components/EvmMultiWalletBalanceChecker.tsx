@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ethers, Contract, JsonRpcProvider } from 'ethers';
 import Tooltip from '@/components/ui/Tooltips';
-import QtyDisplay from '@/components/QtyDisplay'; // เช็ค path ให้ถูกต้อง
+import QtyDisplay, { formatQtyString } from '@/components/QtyDisplay'; // เช็ค path ให้ถูกต้อง
 import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
 import DropdownSelect from '@/components/ui/DropdownSelect';
 import {
@@ -50,17 +50,17 @@ const NETWORKS: Record<NetworkKey, NetworkConfig> = {
     symbol: 'ETH',
     chainId: 1,
   },
+  base: {
+    name: 'Base',
+    rpc: 'https://rpc.ankr.com/base/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
+    symbol: 'BASE',
+    chainId: 8453,
+  },
   bsc: {
-    name: 'Binance Smart Chain (BSC)',
+    name: 'Binance (BSC)',
     rpc: 'https://rpc.ankr.com/bsc/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
     symbol: 'BSC',
     chainId: 56,
-  },
-  polygon: {
-    name: 'Polygon (POL)',
-    rpc: 'https://rpc.ankr.com/polygon/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
-    symbol: 'POLYGON',
-    chainId: 137,
   },
   arb: {
     name: 'Arbitrum (ARB)',
@@ -74,12 +74,19 @@ const NETWORKS: Record<NetworkKey, NetworkConfig> = {
     symbol: 'AVAX',
     chainId: 43114,
   },
-  base: {
-    name: 'Base',
-    rpc: 'https://rpc.ankr.com/base/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
-    symbol: 'BASE',
-    chainId: 8453,
+  abstract: {
+    name: 'Abstract',
+    rpc: 'https://api.mainnet.abs.xyz',
+    symbol: 'ABS',
+    chainId: 2741,
   },
+  polygon: {
+    name: 'Polygon (POL)',
+    rpc: 'https://rpc.ankr.com/polygon/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
+    symbol: 'POLYGON',
+    chainId: 137,
+  },
+
   blast: {
     name: 'Blast',
     rpc: 'https://rpc.ankr.com/blast/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
@@ -121,12 +128,6 @@ const NETWORKS: Record<NetworkKey, NetworkConfig> = {
     rpc: 'https://rpc.dogechain.dog',
     symbol: 'DC',
     chainId: 2000,
-  },
-  abstract: {
-    name: 'Abstract',
-    rpc: 'https://api.mainnet.abs.xyz',
-    symbol: 'ABS',
-    chainId: 2741,
   },
 };
 
@@ -176,28 +177,28 @@ type EvmEndpointKey =
 
 const EVM_ENDPOINTS: EvmEndpointKey[] = [
   'ETH',
+  'BASE',
   'BSC',
-  'POLYGON',
   'ARB',
   'AVAX',
-  'BASE',
+  'ABSTRACT',
+  'OP',
   'BLAST',
   'LINEA',
-  'MERLIN',
-  'OP',
-  'SONIC',
   'ZK',
+  'SONIC',
   'DOGECHAIN',
-  'ABSTRACT',
+  'MERLIN',
+  'POLYGON',
 ];
 
 const ENDPOINT_TO_NETWORK: Partial<Record<EvmEndpointKey, NetworkKey>> = {
   ETH: 'eth',
+  BASE: 'base',
   BSC: 'bsc',
   POLYGON: 'polygon',
   ARB: 'arb',
   AVAX: 'avax',
-  BASE: 'base',
   BLAST: 'blast',
   LINEA: 'linea',
   MERLIN: 'merlin',
@@ -207,6 +208,33 @@ const ENDPOINT_TO_NETWORK: Partial<Record<EvmEndpointKey, NetworkKey>> = {
   DOGECHAIN: 'dogechain',
   ABSTRACT: 'abstract',
 };
+
+function getNativeSymbol(chain: string): string {
+  switch (chain.toUpperCase()) {
+    case 'ETH':
+      return 'ETH';
+    case 'BASE':
+      return 'ETH';
+    case 'BSC':
+      return 'BNB';
+    case 'POLYGON':
+      return 'POL';
+    case 'ARB':
+      return 'ETH';
+    case 'AVAX':
+      return 'AVAX';
+    case 'OP':
+      return 'ETH';
+    case 'SONIC':
+      return 'SONIC';
+    case 'FANTOM':
+      return 'FTM';
+    case 'MERLIN':
+      return 'BTC';
+    default:
+      return 'ETH';
+  }
+}
 
 function getEndpointLabel(endpoint: EvmEndpointKey): string {
   const netKey = ENDPOINT_TO_NETWORK[endpoint];
@@ -234,6 +262,8 @@ async function scanEvmTokenBalances(
     MULTICALL_ABI,
     provider
   );
+  const multicallInterface = new ethers.Interface(MULTICALL_ABI);
+
   const tokenInterface = new ethers.Interface(ERC20_ABI);
 
   let decimals = 18;
@@ -242,7 +272,7 @@ async function scanEvmTokenBalances(
   // 1. Fetch Metadata (One-time)
   if (isNative) {
     decimals = 18;
-    symbol = network.symbol;
+    symbol = getNativeSymbol(network.symbol);
   } else {
     try {
       const tokenContract = new Contract(tokenAddress, ERC20_ABI, provider);
@@ -436,27 +466,21 @@ export default function EvmMultiWalletBalanceChecker() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        {/* Endpoint Selector */}
         <div className="md:col-span-4 space-y-1.5">
           <label className="text-xs font-bold text-earth-brown uppercase tracking-wide ml-1">
             Select Network
           </label>
           <div className="relative group z-10">
             <DropdownSelect
-              // 1. แปลง options ให้เป็น format ของ DropdownSelect
               options={[
                 {
                   label: 'EVM Networks',
                   items: EVM_ENDPOINTS,
                 },
               ]}
-              // 2. ค่าที่เลือกปัจจุบัน
               selected={selectedEndpoint}
-              // 3. เมื่อเลือกให้ set state (Type casting จำเป็นนิดหน่อย)
               onSelect={(val) => setSelectedEndpoint(val as EvmEndpointKey)}
-              // 4. ฟังก์ชันแสดงชื่อสวยๆ (Label)
               getLabel={(key) => getEndpointLabel(key as EvmEndpointKey)}
-              // 5. ปรับสไตล์ปุ่มให้เหมือน Input (สูง 50px, สี earth-cream/20)
               buttonClass=" h-[50px] w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown font-medium justify-between px-4 hover:bg-earth-cream/30 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage"
             />
           </div>
@@ -479,7 +503,7 @@ export default function EvmMultiWalletBalanceChecker() {
               onKeyDown={(e) => e.key === 'Enter' && handleScan()}
               className="pl-10 pr-10 py-3.5 w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown placeholder-earth-stone/80 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage transition-all font-mono text-sm hover:bg-earth-cream/30"
             />
-            {tokenAddress && (
+            {(tokenAddress || hasScanned) && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
                 <Tooltip content="Clear" side="bottom">
                   <button
@@ -541,15 +565,19 @@ export default function EvmMultiWalletBalanceChecker() {
               );
               return (
                 <Tooltip
-                  content={`Total: ${total.toLocaleString()}`}
+                  content={`Total: ${formatQtyString(total)}`}
                   side="bottom"
                 >
                   <button
                     onClick={() => copy(total.toString(), 'Total Balance')}
                     className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm active:scale-95 transition-transform"
                   >
-                    <span>{tokenSymbol.toUpperCase()}</span>
-                    <span className="text-earth-cream/80">|</span>
+                    <span className="hidden sm:inline">
+                      {tokenSymbol.toUpperCase()}
+                    </span>
+                    <span className="hidden sm:inline text-earth-cream/80">
+                      |
+                    </span>
                     <span className="text-earth-sage font-bold font-mono">
                       <QtyDisplay qty={total} />
                     </span>
@@ -565,7 +593,7 @@ export default function EvmMultiWalletBalanceChecker() {
           {/* ========================================== */}
           <div className="hidden md:block max-h-[400px] overflow-auto custom-scrollbar  ">
             <table className="w-full text-left text-sm ">
-              <thead className="bg-white sticky top-0 z-10 text-earth-stone text-xs font-bold uppercase tracking-wider  border-b border-earth-cream/50 shadow-sm">
+              <thead className="bg-white sticky top-0 z-10 border-b border-earth-cream/50 shadow-sm text-earth-stone text-xs font-bold uppercase tracking-wider">
                 <tr>
                   <th className="px-5 py-3 w-[40%] text-left ">Wallet Name</th>
                   <th className="px-5 py-3 w-[35%] text-left ">Address</th>
@@ -578,11 +606,26 @@ export default function EvmMultiWalletBalanceChecker() {
                     key={`${r.address}-${index}`}
                     className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
-                    <td className="px-5 py-4 font-medium text-earth-darkbrown">
-                      {r.label}
-                    </td>
                     <td className="px-5 py-4">
-                      <Tooltip content="Copy address" side="right">
+                      <Tooltip content="Go to Solscan" side="top">
+                        <div
+                          className="inline-flex items-center cursor-pointer group/label"
+                          onClick={() => {
+                            window.open(
+                              `https://blockscan.com/address/${r.address}`,
+                              '_blank'
+                            );
+                          }}
+                        >
+                          <span className="font-medium text-earth-darkbrown group-hover/label:text-earth-sage group-hover/label:underline transition-all duration-300">
+                            {r.label}
+                          </span>
+                        </div>
+                      </Tooltip>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <Tooltip content="Copy address" side="top">
                         <div
                           className="inline-flex items-center gap-2 group/addr cursor-pointer"
                           onClick={() => copy(r.address, 'Address')}
@@ -600,10 +643,10 @@ export default function EvmMultiWalletBalanceChecker() {
                         </div>
                       </Tooltip>
                     </td>
+
                     <td
                       className="flex justify-end px-5 py-4 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
                       onClick={() => {
-                        // ส่งค่า toString() ไปปกติ ส่วนเรื่องการแสดงผลแก้ที่ hook แล้ว
                         copy(r.formatted.toString(), 'Quantity');
                       }}
                     >
@@ -615,10 +658,7 @@ export default function EvmMultiWalletBalanceChecker() {
                         side="top"
                       >
                         <span>
-                          {Number(r.formatted).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 4,
-                          })}
+                          <QtyDisplay qty={Number(r.formatted)} />
                         </span>
                       </Tooltip>
                     </td>
@@ -632,35 +672,63 @@ export default function EvmMultiWalletBalanceChecker() {
           {/* PART 2: MOBILE VIEW (Card List)           */}
           {/* แสดงเมื่อหน้าจอเล็กกว่า md                */}
           {/* ========================================== */}
-          <div className="md:hidden bg-earth-cream/10 max-h-[500px] overflow-y-auto">
+          <div className="md:hidden p-4 space-y-3 bg-earth-cream/10 max-h-[500px] overflow-y-auto">
             {results.map((r, index) => (
               <div
                 key={`${r.address}-${index}`}
-                className="bg-white p-4  shadow-sm flex flex-col gap-3 transition-colors"
+                className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3 transition-colors duration-300"
               >
                 {/* Row 1: Label & Balance */}
                 <div className="flex justify-between items-start">
                   <div
-                    className="font-semibold text-earth-darkbrown/70 text-sm  max-w-[70%] active:text-earth-darkbrown active:scale-95 transition-all duration-300"
+                    className=" font-semibold text-earth-darkbrown/70 text-sm  max-w-[70%] active:text-earth-darkbrown active:scale-95 transition-all duration-300"
                     onClick={() => {
-                      copy(r.address.toString(), 'Quantity');
+                      window.open(
+                        `https://blockscan.com/address/${r.address}`,
+                        '_blank'
+                      );
                     }}
                   >
                     {r.label}
                   </div>
                   <div className="text-right max-w-[30%]">
                     <span
-                      className="block text-earth-sage font-bold font-mono text-sm leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
+                      className="p-1 block text-earth-sage font-bold font-mono text-sm leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
                       onClick={() => {
                         copy(r.formatted.toString(), 'Quantity');
                       }}
                     >
                       <QtyDisplay qty={Number(r.formatted)} />
                     </span>
+                    <span className="p-10 text-[10px] text-earth-stone font-bold uppercase truncate">
+                      {tokenSymbol}
+                    </span>
                   </div>
                 </div>
 
                 {/* Row 2: Address Box (Copyable) */}
+                <div
+                  onClick={() => copy(r.address, 'Address')}
+                  className="flex items-center justify-between bg-earth-cream/50 border border-earth-cream/40 rounded-lg px-3 py-2 cursor-pointer active:bg-earth-cream/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <Terminal size={12} className="text-earth-stone/70" />
+                    <span className="font-mono text-xs text-earth-stone/90">
+                      {r.address.slice(0, 10)}...{r.address.slice(-6)}
+                    </span>
+                  </div>
+
+                  <div className="text-earth-stone/70">
+                    {copiedText === r.address ? (
+                      <Check
+                        size={14}
+                        className="text-earth-sage animate-in zoom-in"
+                      />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

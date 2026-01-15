@@ -1,8 +1,0 @@
-ignoredBuiltDependencies:
-  - es5-ext
-  - esbuild
-  - fsevents
-  - keccak
-  - secp256k1
-  - sharp
-  - uglifyjs-webpack-plugin

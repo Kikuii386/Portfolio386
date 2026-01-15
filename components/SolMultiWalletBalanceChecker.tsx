@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
-import QtyDisplay from '@/components/QtyDisplay';
+import QtyDisplay, { formatQtyString } from '@/components/QtyDisplay'; // ✅ Import formatQtyString เพิ่ม
 import Tooltip from '@/components/ui/Tooltips';
 import {
   AlertCircle,
@@ -14,10 +14,8 @@ import {
   Terminal,
   Earth,
   X,
-  Coins, // ใช้ Icon นี้สำหรับกรณี Native
 } from 'lucide-react';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 interface Wallet {
   id: number | string;
@@ -32,7 +30,7 @@ interface WalletBalanceResult {
   formatted: string;
 }
 
-// ใช้ Endpoint ที่แรงๆ หน่อย (ถ้าของฟรีอาจจะต้องลด Batch Size ลง)
+// ใช้ Endpoint ที่แรงๆ หน่อย
 const SOLANA_RPC_URL =
   'https://solana-mainnet.g.alchemy.com/v2/xGT7Yqz9EMwjE8yF4pSjiO3CDG9925hj';
 
@@ -52,37 +50,29 @@ async function getSolanaSymbol(mintAddress: string): Promise<string> {
   }
 }
 
-// 2. ✅ Main Scan Function (ฉลาดขึ้น + รองรับ Native SOL)
+// 2. ✅ Main Scan Function
 async function scanSolanaBalances(
   wallets: Wallet[],
   mintAddress: string
 ): Promise<{ results: WalletBalanceResult[]; symbol: string }> {
   const connection = new Connection(SOLANA_RPC_URL);
-  const isNative = !mintAddress || mintAddress.trim() === ''; // ถ้าว่าง = สแกน SOL
+  const isNative = !mintAddress || mintAddress.trim() === '';
 
   let results: WalletBalanceResult[] = [];
   let symbol = 'TOKEN';
 
   if (isNative) {
-    /* ----------------------------------------------------------
-       MODE A: NATIVE SOL (เร็วมาก 🚀)
-       ใช้ getMultipleAccounts ยิงทีเดียวได้ 100 กระเป๋า
-    ---------------------------------------------------------- */
     symbol = 'SOL';
-    const BATCH_SIZE = 100; // Solana รับได้สูงสุด 100 accounts ต่อ 1 request
+    const BATCH_SIZE = 100;
     const chunks = [];
 
-    // แบ่งกระเป๋าเป็นกลุ่มละ 100
     for (let i = 0; i < wallets.length; i += BATCH_SIZE) {
       chunks.push(wallets.slice(i, i + BATCH_SIZE));
     }
 
     for (const chunk of chunks) {
       try {
-        // แปลง Address String -> PublicKey
         const publicKeys = chunk.map((w) => new PublicKey(w.address));
-
-        // ยิงตูมเดียว ได้ข้อมูลครบทั้ง Chunk
         const accountsInfo = await connection.getMultipleAccountsInfo(
           publicKeys
         );
@@ -107,42 +97,30 @@ async function scanSolanaBalances(
       }
     }
   } else {
-    /* ----------------------------------------------------------
-       MODE B: SPL TOKEN (USDC, BONK, etc.)
-       ต้องยิงแยกรายคน แต่ใช้ Parallel Batching ช่วย
-    ---------------------------------------------------------- */
-    // หา Symbol ก่อน
     symbol = (await getSolanaSymbol(mintAddress)) || 'TOKEN';
-
     const mintPublicKey = new PublicKey(mintAddress);
-
-    // Batch Size เล็กลงหน่อยเพราะ Request มันหนักกว่า Native
     const CONCURRENCY = 20;
     const chunks = [];
     for (let i = 0; i < wallets.length; i += CONCURRENCY) {
       chunks.push(wallets.slice(i, i + CONCURRENCY));
     }
 
-    let decimals = 0; // เก็บ decimals ไว้ (เอาจากตัวแรกที่เจอ)
+    let decimals = 0;
 
     for (const chunk of chunks) {
-      // ใช้ Promise.all ยิงพร้อมกัน 20 request
       await Promise.all(
         chunk.map(async (w) => {
           try {
-            // ใช้ getParsedTokenAccountsByOwner (สะดวกสุด มัน parse json ให้เลย)
             const response = await connection.getParsedTokenAccountsByOwner(
               new PublicKey(w.address),
               { mint: mintPublicKey }
             );
 
-            // รวมยอดทุก Account (บางคนมีหลาย Token Account ของเหรียญเดิม)
             let totalBalance = 0;
-
             for (const { account } of response.value) {
               const parsedInfo = account.data.parsed.info.tokenAmount;
               totalBalance += parsedInfo.uiAmount || 0;
-              decimals = parsedInfo.decimals; // เก็บ decimals
+              decimals = parsedInfo.decimals;
             }
 
             if (totalBalance > 0) {
@@ -150,17 +128,14 @@ async function scanSolanaBalances(
                 label: w.label,
                 address: w.address,
                 balance: totalBalance,
-                formatted: '', // เดี๋ยวมาเติมทีหลัง
+                formatted: '',
               });
             }
-          } catch (err) {
-            // console.error(`Failed to scan ${w.label}`, err);
-          }
+          } catch (err) {}
         })
       );
     }
 
-    // Format เลขให้สวย (หลังจากรู้ decimals แล้ว)
     results = results.map((r) => ({
       ...r,
       formatted: r.balance.toLocaleString(undefined, {
@@ -169,9 +144,7 @@ async function scanSolanaBalances(
     }));
   }
 
-  // Sort มาก -> น้อย
   results.sort((a, b) => b.balance - a.balance);
-
   return { results, symbol };
 }
 
@@ -195,9 +168,7 @@ export default function SolMultiWalletBalanceChecker() {
 
     try {
       const mint = tokenMint.trim();
-      // อนุญาตให้ว่างได้ = สแกน Native SOL
 
-      // 1. กรอง Address ซ้ำ (Deduplicate)
       const res = await fetch('/api/wallets?type=sol');
       if (!res.ok) throw new Error('Failed to load SOL wallets');
       const data = (await res.json()) as { wallets: Wallet[] };
@@ -209,7 +180,6 @@ export default function SolMultiWalletBalanceChecker() {
 
       if (!uniqueWallets.length) throw new Error('No SOL wallets found');
 
-      // 2. สแกน (Batch Logic อยู่ข้างในนี้แล้ว)
       const { results: scanResults, symbol } = await scanSolanaBalances(
         uniqueWallets,
         mint
@@ -235,9 +205,6 @@ export default function SolMultiWalletBalanceChecker() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Input Section: Grid Layout */}
-
-      {/* Input Section */}
       <div className="md:col-span-8 space-y-1.5">
         <label className="h-[50px] text-xs font-bold text-earth-brown uppercase tracking-wide ml-1">
           Solana Token Address
@@ -254,7 +221,8 @@ export default function SolMultiWalletBalanceChecker() {
             onKeyDown={(e) => e.key === 'Enter' && handleScan()}
             className="pl-10 pr-10 py-3.5 w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown placeholder-earth-stone/80 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage transition-all font-mono text-sm"
           />
-          {tokenMint && (
+          {/* ✅ ปุ่ม Clear Logic แบบ EVM */}
+          {(tokenMint || hasScanned) && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
               <Tooltip content="Clear" side="bottom">
                 <button
@@ -272,11 +240,11 @@ export default function SolMultiWalletBalanceChecker() {
       <div className="text-xs text-earth-stone/70 px-1">
         * Tip: Enter the SPL Token Mint Address (e.g. EPjF... for USDC).
       </div>
-      {/* Action Button */}
+
       <button
         onClick={handleScan}
         disabled={loading}
-        className="w-full py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+        className="w-full h-[50] py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
       >
         {loading ? (
           <Loader2 size={20} className="animate-spin" />
@@ -286,7 +254,6 @@ export default function SolMultiWalletBalanceChecker() {
         <span>{loading ? 'Scanning...' : 'Scan Balances'}</span>
       </button>
 
-      {/* Error Message */}
       {error && (
         <div className="flex items-start gap-3 p-4 bg-red-50/50 text-red-600 text-sm rounded-xl border border-red-100 animate-in slide-in-from-top-2">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
@@ -294,7 +261,6 @@ export default function SolMultiWalletBalanceChecker() {
         </div>
       )}
 
-      {/* Results */}
       {!loading && !error && results.length > 0 && (
         <div className="bg-white rounded-xl border border-earth-cream/80 overflow-hidden shadow-sm">
           <div className="bg-earth-cream/50 px-5 py-3 border-b border-earth-cream/40 flex justify-between items-center">
@@ -303,108 +269,81 @@ export default function SolMultiWalletBalanceChecker() {
               <span>Found in {results.length} wallets</span>
             </div>
             <div>
-              {/* คำนวณยอดรวมเตรียมไว้ก่อน */}
+              {/* ✅ Header Total Balance + Tooltip แบบ EVM */}
               {(() => {
-                const total = results.reduce(
-                  (sum, r) => sum + Number(r.formatted.replace(/,/g, '')),
-                  0
-                );
+                const total = results.reduce((sum, r) => sum + r.balance, 0);
 
                 return (
                   <Tooltip
-                    content={`Total Balance: ${total.toLocaleString()}`}
+                    content={`Total: ${formatQtyString(total)}`}
                     side="bottom"
                   >
-                    <span
-                      className="flex items-center gap-2 text-sm font-semibold font-roboto text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm "
+                    <button
                       onClick={() => copy(total.toString(), 'Total Balance')}
+                      className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-earth-brown bg-white px-3 py-1.5 rounded-md border border-earth-cream shadow-sm active:scale-95 transition-transform"
                     >
-                      {/* ชื่อเหรียญ */}
-                      <span>{displaySymbol.toUpperCase()}</span>
-
-                      {/* ขีดคั่น (Optional: ใส่เพื่อให้ดูแยกส่วนชัดเจน) */}
-                      <span className="hidden sm:block text-earth-cream/80">
+                      <span className="hidden sm:inline">
+                        {displaySymbol.toUpperCase()}
+                      </span>
+                      <span className="hidden sm:inline text-earth-cream/80">
                         |
                       </span>
-
-                      {/* ยอดรวม (ใช้ QtyDisplay ย่อเลข K, M, B ได้เลย) */}
-                      <span className="hidden sm:block text-earth-sage font-bold font-mono hover:text-earth-darkbrown cursor-pointer transition-all duration-300">
+                      <span className="text-earth-sage font-bold font-mono">
                         <QtyDisplay qty={total} />
                       </span>
-                    </span>
+                    </button>
                   </Tooltip>
                 );
               })()}
             </div>
           </div>
 
-          <div className="max-h-[400px] overflow-auto">
+          {/* ================= DESKTOP TABLE ================= */}
+          <div className="hidden md:block max-h-[400px] overflow-auto custom-scrollbar">
             <table className="w-full text-left text-sm">
-              <thead className="bg-white sticky top-0 z-10 border-b border-earth-cream/30 text-earth-stone text-xs font-bold uppercase tracking-wider">
+              <thead className="bg-white sticky top-0 z-10 border-b border-earth-cream/50 shadow-sm text-earth-stone text-xs font-bold uppercase tracking-wider">
                 <tr>
-                  {/* 1. Wallet Name: มือถือเอาไป 65%, จอใหญ่เอา 40% */}
-                  <th className="px-5 py-3 w-[65%] sm:w-[40%] text-left truncate">
-                    Wallet Name
-                  </th>
-
-                  {/* 2. Address: มือถือซ่อน, จอใหญ่เอา 35% */}
-                  <th className="px-5 py-3 w-[35%] hidden sm:table-cell text-left">
-                    Address
-                  </th>
-
-                  {/* 3. Balance: มือถือเอา 35%, จอใหญ่เอา 25% */}
-                  <th className="px-5 py-3 w-[35%] sm:w-[25%] text-right">
-                    Balance
-                  </th>
+                  <th className="px-5 py-3 w-[40%] text-left">Wallet Name</th>
+                  <th className="px-5 py-3 w-[35%] text-left">Address</th>
+                  <th className="px-5 py-3 w-[25%] text-right">Balance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-earth-cream/30">
+              <tbody className="divide-y divide-white">
                 {results.map((r) => (
                   <tr
                     key={r.address}
-                    className="hover:bg-earth-cream/10 transition-colors group"
+                    className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
-                    <td className="px-5 py-3 font-medium text-earth-darkbrown">
-                      <div className="flex items-center gap-2">
-                        {/* ชื่อ Wallet */}
-                        <span>{r.label}</span>
-
-                        {/* ✅ ปุ่ม Copy: แสดงเฉพาะมือถือ (sm:hidden) และซ่อนใน Desktop */}
-                        <button
-                          onClick={() => copy(r.address, 'Address')}
-                          className="sm:hidden p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all duration-200"
+                    <td className="px-5 py-4">
+                      <Tooltip content="Go to Solscan" side="top">
+                        <div
+                          className="inline-flex items-center cursor-pointer group/label"
+                          onClick={() => {
+                            window.open(
+                              `https://solscan.io/account/${r.address}`,
+                              '_blank'
+                            );
+                          }}
                         >
-                          {copiedText === r.address ? (
-                            <Check
-                              size={14}
-                              className="text-earth-sage animate-in zoom-in"
-                            />
-                          ) : (
-                            <Copy size={14} />
-                          )}
-                        </button>
-                      </div>
+                          <span className="font-medium text-earth-darkbrown group-hover/label:text-earth-sage group-hover/label:underline transition-all duration-300">
+                            {r.label}
+                          </span>
+                        </div>
+                      </Tooltip>
                     </td>
 
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      {/* 1. ตั้งชื่อ group ว่า 'addr' เพื่อไม่ให้ตีกับ group ของ tr */}
-                      <Tooltip content="Copy address" side="right">
+                    <td className="px-5 py-4">
+                      <Tooltip content="Copy address" side="top">
                         <div
-                          className="inline-flex items-center gap-2 group/addr cursor-pointer align-middle"
+                          className="inline-flex items-center gap-2 group/addr cursor-pointer"
                           onClick={() => copy(r.address, 'Address')}
                         >
-                          {/* 2. เปลี่ยน group-hover เป็น group-hover/addr */}
-                          <span className="font-mono text-xs text-earth-stone/70 group-hover/addr:text-earth-sage group-hover/addr:opacity-100 transition-all duration-200">
+                          <span className="font-mono text-xs text-earth-stone/70 group-hover/addr:text-earth-sage transition-all duration-300">
                             {r.address.slice(0, 6)}...{r.address.slice(-4)}
                           </span>
-
-                          {/* 3. เปลี่ยน group-hover เป็น group-hover/addr */}
-                          <div className="p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all duration-200">
+                          <div className="p-1 rounded-md text-earth-stone/50 group-hover/addr:text-earth-sage group-hover/addr:bg-earth-cream/50 transition-all">
                             {copiedText === r.address ? (
-                              <Check
-                                size={14}
-                                className="text-earth-sage animate-in zoom-in"
-                              />
+                              <Check size={14} className="text-earth-sage" />
                             ) : (
                               <Copy size={14} />
                             )}
@@ -413,32 +352,94 @@ export default function SolMultiWalletBalanceChecker() {
                       </Tooltip>
                     </td>
 
-                    <td className="px-5 py-3 text-right font-bold text-earth-sage font-mono">
-                      {/* 📱 Mobile View: ใช้ QtyDisplay (ย่อ 1.2M, 10K) */}
-                      <span className="sm:hidden">
-                        <QtyDisplay
-                          qty={Number(r.formatted.replace(/,/g, ''))}
-                        />
-                      </span>
-
-                      {/* 💻 Desktop View: แสดงตัวเลขเต็มพร้อมทศนิยม 4 ตำแหน่ง */}
-                      <span className="hidden sm:inline">
-                        {Number(r.formatted.replace(/,/g, '')).toLocaleString(
-                          undefined,
-                          {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 4,
-                          }
-                        )}
-                      </span>
+                    {/* ✅ Balance Column with QtyDisplay */}
+                    <td
+                      className="flex justify-end px-5 py-4 text-right font-bold text-earth-sage font-mono cursor-pointer active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={() => {
+                        copy(r.balance.toString(), 'Quantity');
+                      }}
+                    >
+                      <Tooltip
+                        content={Number(r.balance).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 8,
+                        })}
+                        side="top"
+                      >
+                        <span>
+                          <QtyDisplay qty={r.balance} />
+                        </span>
+                      </Tooltip>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* ================= MOBILE LIST ================= */}
+          <div className="md:hidden p-4 space-y-3 bg-earth-cream/10 max-h-[500px] overflow-y-auto">
+            {results.map((r) => (
+              <div
+                key={r.address}
+                className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3 transition-colors duration-300"
+              >
+                <div className="flex justify-between items-start">
+                  {/* ✅ Clickable Label */}
+                  <div
+                    className="font-semibold text-earth-darkbrown/70 text-sm max-w-[70%] active:text-earth-darkbrown active:scale-95 transition-all duration-300"
+                    onClick={() => {
+                      window.open(
+                        `https://solscan.io/account/${r.address}`,
+                        '_blank'
+                      );
+                    }}
+                  >
+                    {r.label}
+                  </div>
+                  <div className="text-right max-w-[30%]">
+                    <span
+                      className="p-1 block text-earth-sage font-bold font-mono text-sm leading-none active:scale-95 active:text-earth-moss transition-all duration-300"
+                      onClick={() => {
+                        copy(r.balance.toString(), 'Quantity');
+                      }}
+                    >
+                      <QtyDisplay qty={r.balance} />
+                    </span>
+                    <span className="text-[10px] text-earth-stone font-bold uppercase truncate">
+                      {displaySymbol}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 2: Address Box (Copyable) */}
+                <div
+                  onClick={() => copy(r.address, 'Address')}
+                  className="flex items-center justify-between bg-earth-cream/50 border border-earth-cream/40 rounded-lg px-3 py-2 cursor-pointer active:bg-earth-cream/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <Terminal size={12} className="text-earth-stone/70" />
+                    <span className="font-mono text-xs text-earth-stone/90">
+                      {r.address.slice(0, 10)}...{r.address.slice(-6)}
+                    </span>
+                  </div>
+                  <div className="text-earth-stone/70">
+                    {copiedText === r.address ? (
+                      <Check
+                        size={14}
+                        className="text-earth-sage animate-in zoom-in"
+                      />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
       {!loading && !error && hasScanned && results.length === 0 && (
         <div className="bg-white rounded-xl border border-earth-cream/50 overflow-hidden shadow-sm">
           <div className="bg-earth-cream/50 px-5 py-3 border-b border-earth-cream/40 flex justify-between items-center">

@@ -1366,7 +1366,7 @@ export default function DashboardSection({
           </div>
         </div>
       </div>
-      {/* 🟢 เริ่ม: วางโค้ดส่วนใหม่ตรงนี้ (ต่อท้ายกราฟชุดใหญ่) */}
+     
     </div>
   );
 }
