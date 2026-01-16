@@ -51,8 +51,6 @@ async function loadPriceMap(): Promise<Map<string, ApiPriceRow>> {
   }
 }
 
-const enrichCache = new Map<string, any>();
-
 export type EnrichedToken = TokenRow & {
   currentPrice: number;
   symbol: string;
@@ -82,6 +80,8 @@ export async function enrichWithPrices(
 ): Promise<EnrichedToken[]> {
   console.log('🧩 ENRICH START');
   console.log('📦 input length:', tokens.length);
+
+  const enrichCache = new Map<string, any>();
 
   const CHUNK_SIZE = 100;
   const DELAY_MS = 1000;
@@ -210,8 +210,8 @@ export async function enrichWithPrices(
     }
   }
 
-  await setToCache('sheet:enrichedTokens', results, 21600);
-  await setToCache('sheet:hash', currentHash, 21600);
+  await setToCache('sheet:enrichedTokens', results, 86400);
+  await setToCache('sheet:hash', currentHash, 86400);
 
   console.log(`✅ Enriched tokens: ${results.length}`);
   console.log(`❌ Not found or failed: ${filtered.length - results.length}`);

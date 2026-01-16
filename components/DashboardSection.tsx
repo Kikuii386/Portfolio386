@@ -1366,7 +1366,6 @@ export default function DashboardSection({
           </div>
         </div>
       </div>
-     
     </div>
   );
 }
@@ -1533,7 +1532,7 @@ function AllocationChart({ tokens }: { tokens: EnrichedToken[] }) {
   };
 
   return (
-    <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl sm:min-h-[300px] flex flex-col">
+    <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl sm:min-h-[300px] flex flex-col overflow-hidden">
       <h2 className="text-earth-darkbrown font-bold text-lg mb-4 flex items-center gap-2">
         Allocation
       </h2>
@@ -1550,7 +1549,12 @@ function AllocationChart({ tokens }: { tokens: EnrichedToken[] }) {
               TOTAL
             </span>
           </div>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minWidth={100}
+            minHeight={100}
+          >
             <PieChart
               className="outline-none" // ✅ ใส่ Class นี้แทน style ครับ
               accessibilityLayer={false} // ✅ (Optional) ปิด Layer การเข้าถึงถ้าไม่จำเป็น ช่วยแก้เรื่อง Focus ได้เหมือนกัน
@@ -1650,7 +1654,8 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => setIsMounted(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const topToken = movers[0];
@@ -1782,6 +1787,8 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
           <ResponsiveContainer
             width="100%"
             height="100%"
+            minWidth={100}
+            minHeight={100}
             className="outline-none"
           >
             <BarChart
