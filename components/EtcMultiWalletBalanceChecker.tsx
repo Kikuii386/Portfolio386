@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import QtyDisplay, { formatQtyString } from '@/components/QtyDisplay'; // ✅ Import formatQtyString
+import QtyDisplay, { formatQtyString } from '@/components/QtyDisplay';
 import DropdownSelect from '@/components/ui/DropdownSelect';
 import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
 import Tooltip from '@/components/ui/Tooltips';
@@ -143,12 +143,35 @@ function formatBalance(amount: string | number, decimals: number): string {
 // --- TRON ---
 async function scanTronBalance(
   address: string,
-  tokenAddress: string,
+  tokenAddress: string, // ถ้าว่าง = Native
   rpcUrl: string
 ): Promise<string> {
   if (!address.startsWith('T')) return '0';
   try {
     const ownerHex = tronAddressToHex(address);
+
+    // ✅ กรณีที่ 1: Native TRX
+    if (!tokenAddress) {
+      const endpoint = rpcUrl.endsWith('/')
+        ? `${rpcUrl}wallet/getaccount`
+        : `${rpcUrl}/wallet/getaccount`;
+
+      const payload = {
+        address: ownerHex,
+        visible: false,
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      return data.balance ? data.balance.toString() : '0';
+    }
+
+    // ✅ กรณีที่ 2: TRC-20
     const contractHex = tronAddressToHex(tokenAddress);
     const paramAddress = ownerHex.padStart(64, '0');
     const endpoint = rpcUrl.endsWith('/')
@@ -423,41 +446,79 @@ async function scanEtcTokenBalances(
   const resultsAcc: WalletBalanceResult[] = [];
   const network = NETWORKS[networkKey];
 
-  let detectedSymbol = tokenIdentifier
-    ? tokenIdentifier.toUpperCase()
-    : 'TOKEN';
+  // ✅ 1. เตรียมตัวแปรสำหรับ Native/Token Logic
+  let targetToken = tokenIdentifier.trim();
+  let isNative = !targetToken; // ถ้าว่างถือว่า Native
 
-  let decimals = 6;
-  if (networkKey === 'tron') decimals = 6;
-  if (networkKey === 'aptos' || networkKey === 'sui') decimals = 8;
-  if (networkKey === 'btc') decimals = 8;
+  let detectedSymbol = 'TOKEN';
+  let decimals = 0;
 
-  if (networkKey === 'tron' && tokenIdentifier) {
-    const [sym, trcDecimals] = await Promise.all([
-      getTronSymbol(tokenIdentifier, network.rpc),
-      getTronDecimals(tokenIdentifier, network.rpc),
-    ]);
-    if (sym) detectedSymbol = sym;
-    if (trcDecimals > 0) decimals = trcDecimals;
+  // ✅ 2. ตั้งค่า Default สำหรับแต่ละ Chain (Native)
+  if (networkKey === 'tron') {
+    decimals = 6;
+    if (isNative) detectedSymbol = 'TRX';
+  } else if (networkKey === 'aptos') {
+    decimals = 8;
+    if (isNative) {
+      targetToken = '0x1::aptos_coin::AptosCoin'; // ID ของ Native APT
+      detectedSymbol = 'APT';
+    }
+  } else if (networkKey === 'sui') {
+    decimals = 9;
+    if (isNative) {
+      targetToken = '0x2::sui::SUI'; // ID ของ Native SUI
+      detectedSymbol = 'SUI';
+    }
+  } else if (networkKey === 'btc') {
+    decimals = 8;
+    if (isNative) detectedSymbol = 'BTC';
   }
 
-  if (networkKey === 'btc' && tokenIdentifier) {
-    const metaDecimals = await getRuneInfo(tokenIdentifier);
-    decimals = metaDecimals;
+  // ถ้า User กรอก Token มา ให้ไปหา Symbol จริงๆ (ยกเว้น Aptos/Sui ที่ใช้ Struct ID เลย)
+  if (!isNative) {
+    // 1. ค่าเริ่มต้น: เอาสิ่งที่กรอกมาเป็นชื่อไปก่อน
+    detectedSymbol = targetToken.toUpperCase();
+
+    // 2. 🟢 Tron: วิ่งไปถามชื่อจริงจาก Contract
+    if (networkKey === 'tron') {
+      const [sym, trcDecimals] = await Promise.all([
+        getTronSymbol(targetToken, network.rpc),
+        getTronDecimals(targetToken, network.rpc),
+      ]);
+      if (sym) detectedSymbol = sym; // ถ้าเจอชื่อจริง ให้ทับเลย
+      if (trcDecimals > 0) decimals = trcDecimals;
+    }
+
+    // 3. 🟠 Bitcoin: หา Decimals ของ Runes (ส่วนชื่อใช้ที่กรอกมาถูกแล้ว)
+    if (networkKey === 'btc') {
+      const metaDecimals = await getRuneInfo(targetToken);
+      decimals = metaDecimals;
+    }
+
+    // 4. 🔵 Aptos / Sui: ตัดชื่อออกจาก Struct ID ยาวๆ
+    // เช่น "0x...::coin::USDT" -> ตัดเอาแค่ "USDT"
+    if (
+      (networkKey === 'aptos' || networkKey === 'sui') &&
+      targetToken.includes('::')
+    ) {
+      const parts = targetToken.split('::');
+      detectedSymbol = parts[parts.length - 1].toUpperCase();
+    }
+  }
+
+  // ... ส่วน Concurrency แยกตาม Chain (แก้ให้ส่ง targetToken เข้าไป)
+  if (
+    (networkKey === 'sui' || networkKey === 'aptos') &&
+    targetToken.includes('::')
+  ) {
+    const parts = targetToken.split('::');
+    detectedSymbol = parts[parts.length - 1].toUpperCase();
   }
 
   const concurrency = 5;
   const chunks: Wallet[][] = [];
   for (let i = 0; i < wallets.length; i += concurrency)
     chunks.push(wallets.slice(i, i + concurrency));
-
-  if (
-    (networkKey === 'sui' || networkKey === 'aptos') &&
-    tokenIdentifier.includes('::')
-  ) {
-    const parts = tokenIdentifier.split('::');
-    detectedSymbol = parts[parts.length - 1].toUpperCase();
-  }
 
   for (const chunk of chunks) {
     await Promise.all(
@@ -472,26 +533,32 @@ async function scanEtcTokenBalances(
           if (networkKey === 'tron') {
             raw = await scanTronBalance(
               w.address,
-              tokenIdentifier,
+              // ถ้า Native (isNative=true), targetToken จะว่างเปล่าอยู่แล้ว ซึ่งถูกต้อง
+              // ถ้า Token, targetToken จะมีค่า
+              isNative ? '' : targetToken,
               network.rpc
             );
           } else if (networkKey === 'aptos') {
             raw = await scanAptosBalance(
               w.address,
-              tokenIdentifier,
+              targetToken, // ใช้ ID ที่เตรียมไว้ (Native หรือ Custom)
               network.rpc
             );
           } else if (networkKey === 'sui') {
-            raw = await scanSuiBalance(w.address, tokenIdentifier, network.rpc);
+            raw = await scanSuiBalance(
+              w.address,
+              targetToken, // ใช้ ID ที่เตรียมไว้
+              network.rpc
+            );
           } else if (networkKey === 'btc') {
-            if (!tokenIdentifier) {
+            if (isNative) {
               raw = await scanBtcNativeBalance(w.address);
               currentDecimals = 8;
               type = 'NATIVE';
             } else {
               const [runeRes, brcRes] = await Promise.all([
-                scanRunesBalance(w.address, tokenIdentifier),
-                scanBrc20Balance(w.address, tokenIdentifier),
+                scanRunesBalance(w.address, targetToken),
+                scanBrc20Balance(w.address, targetToken),
               ]);
 
               const runeVal = parseFloat(runeRes.balance.replace(/,/g, ''));
@@ -526,7 +593,9 @@ async function scanEtcTokenBalances(
     );
   }
 
-  if (networkKey === 'btc' && !tokenIdentifier) detectedSymbol = 'BTC';
+  if (isNative && networkKey !== 'tron') {
+    // Tron มี logic symbol แยกด้านบนแล้ว
+  }
 
   resultsAcc.sort(
     (a, b) =>
@@ -551,13 +620,13 @@ export default function EtcMultiWalletBalanceChecker() {
   const getInputPlaceholder = () => {
     switch (selectedChain) {
       case 'tron':
-        return 'e.g. TR7NH... (USDT Contract)';
+        return 'e.g. TR7NH... (USDT) or empty for TRX';
       case 'aptos':
-        return 'e.g. 0x1::aptos_coin::AptosCoin';
+        return 'e.g. 0x1::... (Coin) or empty for APT';
       case 'sui':
-        return 'e.g. 0x2::sui::SUI';
+        return 'e.g. 0x2::... (Coin) or empty for SUI';
       case 'btc':
-        return 'e.g. ORDI, SATS or leave empty for BTC';
+        return 'e.g. ORDI, SATS or empty for BTC';
       default:
         return 'Token Identifier';
     }
@@ -570,8 +639,8 @@ export default function EtcMultiWalletBalanceChecker() {
     setHasScanned(false);
 
     try {
-      if (selectedChain !== 'btc' && !tokenInput)
-        throw new Error('Please enter token identifier');
+      // ✅ อนุญาตให้ช่องว่างผ่านได้ (ถือว่าเป็น Native Scan)
+      // if (selectedChain !== 'btc' && !tokenInput) throw ... (ลบทิ้ง)
 
       const res = await fetch(`/api/wallets?type=etc`);
       if (!res.ok) throw new Error('Failed to load wallets');
@@ -605,7 +674,6 @@ export default function EtcMultiWalletBalanceChecker() {
     setError(null);
   };
 
-  // 🔹 Helper สำหรับเปิด Explorer ให้ตรงกับ Chain
   const handleOpenExplorer = (address: string) => {
     let url = '';
     switch (selectedChain) {
@@ -626,7 +694,6 @@ export default function EtcMultiWalletBalanceChecker() {
     }
     window.open(url, '_blank');
   };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
