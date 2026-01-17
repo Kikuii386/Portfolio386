@@ -13,20 +13,23 @@ import MarketTable from '@/components/markets/MarketTable';
 
 export default function MarketPage() {
   return (
-    <div className="min-h-screen bg-[#F5F2EB]/20 p-4 md:p-8 space-y-6 animate-in fade-in duration-500">
-      {/* 1. Header: ภาพรวมตลาด */}
-      <MarketHeader />
-
-      {/* 2. Highlight: การ์ด Top 3 */}
-      <MarketStatsCards />
-
-      {/* 3. Main Table: ตารางราคา */}
-      <div>
-        <h2 className="text-[#4A4A48] font-bold text-xl mb-4 flex items-center gap-2">
-          Cryptocurrency Prices by Market Cap
-        </h2>
+    <section className="py-12" id="dashboard">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
+          <div>
+            <h2 className="text-3xl font-bold mb-2 section-heading">
+              Markets
+            </h2>
+            <p className="text-earth-brown mt-4 text-base md:text-lg">
+              Cryptocurrency Prices by Market Cap
+            </p>
+          </div>
+        </div>
+        <MarketHeader />
+        <MarketStatsCards />
         <MarketTable />
       </div>
-    </div>
+    </section>
+
   );
 }

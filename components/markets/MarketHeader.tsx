@@ -17,26 +17,25 @@ export default function MarketHeader() {
       {stats.map((stat, i) => (
         <div
           key={i}
-          className="bg-white border border-[#F5F2EB] rounded-xl p-4 shadow-sm flex items-center gap-3 transition-transform hover:-translate-y-1 duration-300"
+          className="bg-white border border-earth-cream/60 rounded-xl p-4 shadow-sm flex items-center gap-3 transition-transform hover:-translate-y-1 duration-300"
         >
-          <div className="p-2 bg-[#F5F2EB] rounded-lg text-[#4A4A48]">
+          <div className="p-2 bg-earth-cream/40 rounded-lg text-earth-sage">
             <stat.icon size={18} />
           </div>
           <div>
-            <p className="text-xs text-[#C7BFB1] uppercase font-bold tracking-wider">
+            <p className="text-xs text-earth-stone uppercase font-bold tracking-wider">
               {stat.label}
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-[#4A4A48] font-mono">
+              <span className="text-sm font-bold text-earth-darkbrown font-mono">
                 {stat.value}
               </span>
               {stat.change && (
                 <span
-                  className={`text-xs font-bold ${
-                    stat.change.startsWith('+')
-                      ? 'text-[#606c38]'
-                      : 'text-[#bc4749]'
-                  }`}
+                  className={`text-xs font-bold ${stat.change.startsWith('+')
+                      ? 'text-green-600'
+                      : 'text-red-500'
+                    }`}
                 >
                   {stat.change}
                 </span>

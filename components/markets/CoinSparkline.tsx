@@ -14,7 +14,7 @@ export default function CoinSparkline({
 }: CoinSparklineProps) {
   const isPositive = priceChange >= 0;
   const chartData = data.map((val, i) => ({ i, val }));
-  const color = isPositive ? '#606c38' : '#bc4749'; // Earth Green / Earth Red
+  const color = isPositive ? '#16a34a' : '#dc2626'; // green-600 / red-600
 
   return (
     <div className="w-[100px] h-[35px]">
