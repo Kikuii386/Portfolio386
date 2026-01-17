@@ -34,6 +34,7 @@ type NetworkKey =
   | 'sonic'
   | 'zk'
   | 'dogechain'
+  | 'sei'
   | 'abstract';
 
 interface NetworkConfig {
@@ -89,7 +90,7 @@ const NETWORKS: Record<NetworkKey, NetworkConfig> = {
 
   blast: {
     name: 'Blast',
-    rpc: 'https://rpc.ankr.com/blast/7b341fb9dfbaaa72b31a587788026541506adb75461c257e9bec0aaa3b418f50',
+    rpc: 'https://rpc.blast.io',
     symbol: 'BLAST',
     chainId: 81457,
   },
@@ -128,6 +129,12 @@ const NETWORKS: Record<NetworkKey, NetworkConfig> = {
     rpc: 'https://rpc.dogechain.dog',
     symbol: 'DC',
     chainId: 2000,
+  },
+  sei: {
+    name: 'Sei',
+    rpc: 'https://sei-evm-rpc.stakeme.pro',
+    symbol: 'SEI',
+    chainId: 1329,
   },
 };
 
@@ -173,7 +180,8 @@ type EvmEndpointKey =
   | 'SONIC'
   | 'ZK'
   | 'DOGECHAIN'
-  | 'ABSTRACT';
+  | 'ABSTRACT'
+  | 'SEI';
 
 const EVM_ENDPOINTS: EvmEndpointKey[] = [
   'ETH',
@@ -190,6 +198,7 @@ const EVM_ENDPOINTS: EvmEndpointKey[] = [
   'DOGECHAIN',
   'MERLIN',
   'POLYGON',
+  'SEI',
 ];
 
 const ENDPOINT_TO_NETWORK: Partial<Record<EvmEndpointKey, NetworkKey>> = {
@@ -207,6 +216,7 @@ const ENDPOINT_TO_NETWORK: Partial<Record<EvmEndpointKey, NetworkKey>> = {
   ZK: 'zk',
   DOGECHAIN: 'dogechain',
   ABSTRACT: 'abstract',
+  SEI: 'sei',
 };
 
 function getNativeSymbol(chain: string): string {
@@ -231,6 +241,8 @@ function getNativeSymbol(chain: string): string {
       return 'FTM';
     case 'MERLIN':
       return 'BTC';
+    case 'SEI':
+      return 'SEI';
     default:
       return 'ETH';
   }
@@ -282,7 +294,7 @@ async function scanEvmTokenBalances(
       ]);
       decimals = Number(dec);
       symbol = sym;
-    } catch {}
+    } catch { }
   }
 
   // 2. Adjust Batch Size (Safe limit for public RPCs)
@@ -387,7 +399,7 @@ async function scanEvmTokenBalances(
                 formatted: ethers.formatUnits(balance, decimals),
               });
             }
-          } catch (err) {}
+          } catch (err) { }
         })
       );
     }
