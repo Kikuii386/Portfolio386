@@ -7,9 +7,7 @@ import {
   SwipeAction,
   TrailingActions,
 } from 'react-swipeable-list';
-import MarketHeader from '@/components/markets/MarketHeader';
-import MarketStatsCards from '@/components/markets/MarketStatsCards';
-import MarketTable from '@/components/markets/MarketTable';
+import MarketDashboard from '@/components/MarketDashboard';
 
 export default function MarketPage() {
   return (
@@ -25,9 +23,8 @@ export default function MarketPage() {
             </p>
           </div>
         </div>
-        <MarketHeader />
-        <MarketStatsCards />
-        <MarketTable />
+        <MarketDashboard />
+
       </div>
     </section>
 

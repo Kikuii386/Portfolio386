@@ -20,17 +20,22 @@
 
     /* --- 🌿 Green Tones (ปรับใหม่: ให้เขียวแห้งลง เข้ากับ Sage) --- */
     /* Moss: เข้มขึ้นและอมเทา เหมาะสำหรับปุ่ม Secondary */
-    --earth-moss: 105 115 95; /* ปรับจากเขียวสดเป็นเขียวขี้ม้าเข้ม */
+    --earth-moss: 105 115 95;
+    /* ปรับจากเขียวสดเป็นเขียวขี้ม้าเข้ม */
     /* Olive: ปรับให้อุ่นขึ้น เข้ากับสี Earth-Brown */
-    --earth-olive: 135 140 110; /* ปรับให้ละมุนขึ้น */
+    --earth-olive: 135 140 110;
+    /* ปรับให้ละมุนขึ้น */
     /* Mist: ลดความเขียวนีออนลง เป็นสีขาวอมเขียวจางๆ */
-    --earth-mist: 225 230 215; /* ปรับให้ใกล้เคียง Cream แต่ติดเขียว */
+    --earth-mist: 225 230 215;
+    /* ปรับให้ใกล้เคียง Cream แต่ติดเขียว */
     /* Sageleaf: เป็นสีเชื่อมระหว่าง Sage กับ Cream */
-    --earth-sageleaf: 190 195 170; /* ปรับให้ตุ่นลง */
+    --earth-sageleaf: 190 195 170;
+    /* ปรับให้ตุ่นลง */
 
     /* --- 🧱 Earth/Brown Tones (ปรับใหม่: ลดสีส้มจัดจ้านลง) --- */
     /* Clay: ลดความแดง/ส้ม ให้เป็นสีอิฐมอญเก่า */
-    --earth-clay: 145 100 75; /* ลดความสดลงเยอะพอสมควร */
+    --earth-clay: 145 100 75;
+    /* ลดความสดลงเยอะพอสมควร */
     /* BrownMedium: สีน้ำตาลกลาง เชื่อมระหว่าง Darkbrown กับ Brown */
     --earth-brownmedium: 115 95 75;
     /* TanLight: ปรับให้เหมือนสีทรายเปียก ไม่เหลืองโดด */
@@ -105,6 +110,7 @@
 .nav-link {
   position: relative;
 }
+
 .nav-link::after {
   content: '';
   position: absolute;
@@ -116,6 +122,7 @@
   background-color: rgb(var(--earth-sage));
   transition: width 0.3s ease;
 }
+
 .nav-link:hover::after,
 .active::after {
   width: 100%;
@@ -127,6 +134,7 @@
   /* ✅ แก้เป็น Variable */
   color: rgb(var(--earth-primary));
 }
+
 .section-heading::after {
   content: '';
   position: absolute;
@@ -141,6 +149,7 @@
 .crypto-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
 .crypto-card:hover {
   transform: translateY(-5px);
   /* เงาใช้ rgb manual เพื่อให้กึ่งโปร่งแสง */
@@ -155,11 +164,13 @@
 .tab {
   transition: all 0.3s ease;
 }
+
 .tab.active {
   /* ✅ แก้เป็น Variable */
   background-color: rgb(var(--earth-sage));
   color: white;
 }
+
 .tab:hover:not(.active) {
   /* ✅ แก้เป็น Variable */
   background-color: rgb(var(--earth-tan));
@@ -171,11 +182,13 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .animate-fadeIn {
   animation: fadeIn 0.8s ease forwards;
 }
@@ -184,6 +197,7 @@
   position: relative;
   display: inline-block;
 }
+
 .tooltip .tooltip-text {
   visibility: hidden;
   width: 120px;
@@ -201,6 +215,7 @@
   opacity: 0;
   transition: opacity 0.3s;
 }
+
 .tooltip:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
@@ -210,6 +225,7 @@
 .price-up {
   color: #4caf50;
 }
+
 .price-down {
   color: #f44336;
 }
@@ -228,10 +244,12 @@
   margin: 0 auto;
   animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -254,12 +272,14 @@
   --color2: rgb(var(--earth-darkbrown));
   transform: scale(0.75);
 }
+
 .capybara {
   width: 100%;
   height: 7.5em;
   position: relative;
   z-index: 1;
 }
+
 .capy {
   width: 85%;
   height: 100%;
@@ -269,6 +289,7 @@
   z-index: 1;
   animation: movebody 1s linear infinite;
 }
+
 .capyhead {
   width: 7.5em;
   height: 7em;
@@ -281,6 +302,7 @@
   box-shadow: -1em 0em var(--color2);
   animation: movebody 1s linear infinite;
 }
+
 .capyear {
   width: 2em;
   height: 2em;
@@ -292,10 +314,12 @@
   overflow: hidden;
   z-index: 3;
 }
+
 .capyear:nth-child(2) {
   left: 5em;
   background: linear-gradient(25deg, var(--color), 90%, var(--color2));
 }
+
 .capyear2 {
   width: 100%;
   height: 1em;
@@ -306,6 +330,7 @@
   position: absolute;
   transform: rotate(-45deg);
 }
+
 .capymouth {
   width: 3.5em;
   height: 2em;
@@ -319,6 +344,7 @@
   align-items: center;
   padding: 0.5em;
 }
+
 .capylips {
   width: 0.25em;
   height: 0.75em;
@@ -326,9 +352,11 @@
   transform: rotate(-45deg);
   background-color: var(--color);
 }
+
 .capylips:nth-child(2) {
   transform: rotate(45deg);
 }
+
 .capyeye {
   width: 2em;
   height: 0.5em;
@@ -339,11 +367,13 @@
   border-radius: 5em;
   transform: rotate(45deg);
 }
+
 .capyeye:nth-child(4) {
   transform: rotate(-45deg);
   left: 5.5em;
   width: 1.75em;
 }
+
 .capyleg {
   width: 6em;
   height: 5em;
@@ -355,6 +385,7 @@
   border-radius: 2em;
   animation: movebody 1s linear infinite;
 }
+
 .capyleg2 {
   width: 1.75em;
   height: 3em;
@@ -367,62 +398,77 @@
   box-shadow: inset 0em -0.5em var(--color2);
   animation: moveleg 1s linear infinite;
 }
+
 .capyleg2:nth-child(3) {
   width: 1.25em;
   left: 0.5em;
   height: 2em;
   animation: moveleg2 1s linear infinite 0.075s;
 }
+
 @keyframes moveleg {
   0% {
     transform: rotate(-45deg) translateX(-5%);
   }
+
   50% {
     transform: rotate(45deg) translateX(5%);
   }
+
   100% {
     transform: rotate(-45deg) translateX(-5%);
   }
 }
+
 @keyframes moveleg2 {
   0% {
     transform: rotate(45deg);
   }
+
   50% {
     transform: rotate(-45deg);
   }
+
   100% {
     transform: rotate(45deg);
   }
 }
+
 @keyframes movebody {
   0% {
     transform: translateX(0%);
   }
+
   50% {
     transform: translateX(2%);
   }
+
   100% {
     transform: translateX(0%);
   }
 }
+
 .loaderline {
   width: 50em;
   height: 0.5em;
   border-top: 0.5em dashed var(--color2);
   animation: moveline 10s linear infinite;
 }
+
 @keyframes moveline {
   0% {
     transform: translateX(0%);
     opacity: 0%;
   }
+
   5% {
     opacity: 100%;
   }
+
   95% {
     opacity: 100%;
   }
+
   100% {
     opacity: 0%;
     transform: translateX(-70%);
@@ -439,6 +485,7 @@
       background-color: rgb(var(--earth-sage) / 0.6);
       box-shadow: inset 0 0 0 2px rgb(var(--earth-sage));
     }
+
     100% {
       background-color: transparent;
       box-shadow: none;
@@ -454,10 +501,12 @@
       color: rgb(22, 163, 74);
       transform: scale(1);
     }
+
     20% {
       color: rgb(22, 163, 74);
       transform: scale(1.05);
     }
+
     100% {
       color: inherit;
       transform: scale(1);
@@ -469,10 +518,12 @@
       color: rgb(220, 38, 38);
       transform: scale(1);
     }
+
     20% {
       color: rgb(220, 38, 38);
       transform: scale(1.05);
     }
+
     100% {
       color: inherit;
       transform: scale(1);
@@ -482,18 +533,26 @@
   .animate-text-pop-green {
     animation: text-pop-green 2s ease-out forwards;
   }
+
   .animate-text-pop-red {
     animation: text-pop-red 2s ease-out forwards;
   }
 }
+
 body.theme-christmas {
   /* --- 🎄 Main Colors (ชุดหลักที่คุณกำหนด) --- */
-  --earth-primary: 26 71 42; /* Pine Green (เขียวสนเข้ม) */
-  --earth-cream: 255 253 245; /* Snow White (ขาวหิมะ) */
-  --earth-sage: 201 42 42; /* Christmas Red (แดงคริสต์มาส) - ใช้แทน Sage เดิม */
-  --earth-tan: 212 163 115; /* Gold (ทองด้าน) */
-  --earth-darkbrown: 45 90 39; /* Deep Green (เขียวเข้มมาก) - ใช้แทน Darkbrown เดิม */
-  --earth-brown: 176 137 104; /* Reindeer Brown (น้ำตาลกวางเรนเดียร์) */
+  --earth-primary: 26 71 42;
+  /* Pine Green (เขียวสนเข้ม) */
+  --earth-cream: 255 253 245;
+  /* Snow White (ขาวหิมะ) */
+  --earth-sage: 201 42 42;
+  /* Christmas Red (แดงคริสต์มาส) - ใช้แทน Sage เดิม */
+  --earth-tan: 212 163 115;
+  /* Gold (ทองด้าน) */
+  --earth-darkbrown: 45 90 39;
+  /* Deep Green (เขียวเข้มมาก) - ใช้แทน Darkbrown เดิม */
+  --earth-brown: 176 137 104;
+  /* Reindeer Brown (น้ำตาลกวางเรนเดียร์) */
 
   /* --- 🌿 Green Tones (ปรับเป็นโทน Mistletoe & Ivy) --- */
   /* Moss -> Mistletoe: เขียวที่สว่างกว่า Primary นิดหน่อย ไว้ทำปุ่มรอง */
@@ -529,26 +588,35 @@ body.theme-christmas {
   /* Haze -> Vanilla: สีวานิลลาจางๆ */
   --earth-haze: 245 240 225;
 }
+
 html {
   scroll-behavior: smooth;
 }
+
 @keyframes fall {
   0% {
     transform: translateY(-20px) translateX(0px);
   }
+
   25% {
-    transform: translateY(25vh) translateX(15px); /* ปลิวขวา */
+    transform: translateY(25vh) translateX(15px);
+    /* ปลิวขวา */
   }
+
   50% {
-    transform: translateY(50vh) translateX(-15px); /* ปลิวซ้าย */
+    transform: translateY(50vh) translateX(-15px);
+    /* ปลิวซ้าย */
   }
+
   75% {
     transform: translateY(75vh) translateX(15px);
   }
+
   100% {
     transform: translateY(110vh) translateX(0px);
   }
 }
+
 .snowflake {
   position: fixed;
   top: -10px;
@@ -560,4 +628,15 @@ html {
   animation-name: fall;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
