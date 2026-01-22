@@ -1,85 +1,96 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { ResponsiveContainer, AreaChart, Area, YAxis } from 'recharts';
 import {
-    LineChart,
-    Line,
-    ResponsiveContainer,
-    YAxis,
-    AreaChart,
-    Area
-} from 'recharts';
-import {
-    Search,
-    Globe,
-    Zap,
-    TrendingUp,
-    TrendingDown,
-    Flame,
-    ArrowUpRight,
-    ArrowDownRight,
-    Star,
-    ChevronRight,
-    Filter,
-    Coins,
-    ArrowRightLeft,
-    Bitcoin,
-    Fuel
+    Search, Star, ChevronRight, Coins, ArrowRightLeft, Bitcoin, Fuel,
+    TrendingUp, TrendingDown, Zap, ArrowUpRight, ArrowDownRight, Flame, X
 } from 'lucide-react';
-import GlobalMarketHeader from '@/components/markets/GlobalMarketHeader';
+// import Tooltip from '@/components/ui/Tooltips'; // ⚠️ ตรวจสอบว่ามีไฟล์นี้จริง ถ้าไม่มีให้ comment ไว้ก่อน
 
 // --- 🎨 Palette (Earth Tone Theme) ---
 const COLORS = {
-    primary: '#4A4A48',
-    sage: '#A4AC86',
     green: '#606c38',
     red: '#bc4749',
-    gold: '#D4A373',
-    stone: '#C7BFB1',
-    cream: '#F5F2EB',
-    white: '#FFFFFF',
 };
 
 interface MarketData {
     marketCap: number;
     marketCapChange: number;
     volume: number;
-    volumeChange: number; // CoinGecko Free ไม่ค่อยให้ค่านี้มา อาจต้อง Mock หรือคำนวณเอง
     btcDominance: number;
-    gasPrice: number;
+    gasPrice: {
+        eth: number;
+        sol: number;
+    };
 }
 
 
+function ChainGasCard({
+    chain,
+    value,
+    unit,
+    price,
+    icon: Icon,
+    colorClass,
+    textColor
+}: {
+    chain: string,
+    value: number,
+    unit: string,
+    price: number,
+    icon: any,
+    colorClass: string,
+    textColor: string
+}) {
+    // 🧮 คำนวณต้นทุน USD
+    let costUsd = 0;
+    if (chain === 'ETH') {
+        // ETH Standard Transfer = 21,000 units
+        costUsd = ((value * 21000) / 1e9) * price;
+    } else {
+        // SOL (Value is already in SOL)
+        costUsd = value * price;
+    }
 
-const CATEGORIES = ['All', 'Favorites', 'Meme', 'AI', 'DeFi', 'Gaming', 'Layer 1', 'Solana Eco'];
+    const formatCost = (cost: number) => {
+        if (isNaN(cost)) return '$-.--';
+        if (cost < 0.01) return '<$0.01';
+        return `$${cost.toFixed(2)}`;
+    };
 
-const getCoinCategory = (symbol: string) => {
-    if (['BTC', 'ETH', 'SOL'].includes(symbol)) return 'Layer 1';
-    if (['PEPE', 'BONK'].includes(symbol)) return 'Meme';
-    if (['RNDR'].includes(symbol)) return 'AI';
-    if (['ONDO'].includes(symbol)) return 'DeFi';
-    if (['JUP'].includes(symbol)) return 'Solana Eco';
-    return 'Others';
-};
+    return (
+        <div className="min-w-[240px] md:min-w-0 h-full px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300 bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10 border border-earth-cream/60 md:border-none snap-center">
+            {/* Icon */}
+            <div className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 ${colorClass}`}>
+                <Icon size={20} strokeWidth={1.5} />
+            </div>
 
-// ข้อมูลเหรียญพร้อมหมวดหมู่ (Category)
-const COINS_DATA = [
-    { id: 1, rank: 1, name: 'Bitcoin', symbol: 'BTC', price: 64230, change24h: 2.5, change7d: 5.2, mcap: 1.2, vol: 35, category: 'Layer 1', sparkline: [60000, 61000, 60500, 62000, 63000, 62500, 64230] },
-    { id: 2, rank: 2, name: 'Ethereum', symbol: 'ETH', price: 3450, change24h: 1.8, change7d: 3.1, mcap: 0.4, vol: 15, category: 'Layer 1', sparkline: [3200, 3300, 3250, 3400, 3420, 3380, 3450] },
-    { id: 3, rank: 3, name: 'Solana', symbol: 'SOL', price: 145, change24h: 8.5, change7d: 12.4, mcap: 0.065, vol: 4, category: 'Layer 1', sparkline: [120, 125, 130, 128, 135, 140, 145] },
-    { id: 4, rank: 4, name: 'Pepe', symbol: 'PEPE', price: 0.000012, change24h: 15.2, change7d: 40.5, mcap: 0.005, vol: 1.2, category: 'Meme', sparkline: [10, 11, 10, 12, 14, 13, 15] },
-    { id: 5, rank: 5, name: 'Render', symbol: 'RNDR', price: 10.2, change24h: -2.1, change7d: 8.4, mcap: 0.004, vol: 0.3, category: 'AI', sparkline: [9, 9.5, 9.2, 9.8, 10.5, 10.1, 10.2] },
-    { id: 6, rank: 6, name: 'Bonk', symbol: 'BONK', price: 0.000024, change24h: -5.4, change7d: -1.2, mcap: 0.001, vol: 0.1, category: 'Meme', sparkline: [25, 24, 26, 25, 24, 23, 24] },
-    { id: 7, rank: 7, name: 'Jupiter', symbol: 'JUP', price: 1.12, change24h: 5.4, change7d: 10.2, mcap: 0.001, vol: 0.2, category: 'Solana Eco', sparkline: [1.0, 1.05, 1.02, 1.08, 1.1, 1.11, 1.12] },
-    { id: 8, rank: 8, name: 'Ondo', symbol: 'ONDO', price: 0.98, change24h: 1.2, change7d: 3.5, mcap: 0.001, vol: 0.1, category: 'DeFi', sparkline: [0.9, 0.92, 0.91, 0.95, 0.96, 0.97, 0.98] },
-];
+            {/* Info */}
+            <div className="w-full pr-2">
+                <p className="text-[10px] uppercase font-bold tracking-wider mb-0.5 transition-colors duration-300 text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">
+                    {chain} Gas
+                </p>
+                <div className="flex flex-col">
+                    {/* Gas Price in Native Unit */}
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight leading-none">
+                            {chain === 'ETH' ? Math.round(value) : value.toFixed(5)}
+                        </span>
+                        <span className="text-[10px] font-sans font-bold text-earth-stone/70">{unit}</span>
+                    </div>
 
-// ข้อมูลสำหรับ Highlight Cards (Top Movers / Trending)
-const HIGHLIGHTS = {
-    hot: COINS_DATA.filter(c => c.category === 'Meme' || c.symbol === 'SOL').slice(0, 3),
-    gainers: [...COINS_DATA].sort((a, b) => b.change24h - a.change24h).slice(0, 3),
-    volume: [...COINS_DATA].sort((a, b) => b.vol - a.vol).slice(0, 3),
-};
+                    {/* Real Cost in USD */}
+                    <span className={`text-[10px] font-bold mt-1 ${textColor}`}>
+                        ~{formatCost(costUsd)} <span className="text-earth-stone/60 font-medium">per tx</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+const TABS = ['All', 'Top Gainers', 'Top Losers'];
 
 // --- 🧩 Sub-Component: Sparkline Chart (Small Graph) ---
 const Sparkline = ({ data, isPositive }: { data: number[], isPositive: boolean }) => {
@@ -96,15 +107,7 @@ const Sparkline = ({ data, isPositive }: { data: number[], isPositive: boolean }
                             <stop offset="95%" stopColor={color} stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <Area
-                        type="monotone"
-                        dataKey="val"
-                        stroke={color}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill={`url(#gradient-${isPositive ? 'up' : 'down'})`}
-                        isAnimationActive={false}
-                    />
+                    <Area type="monotone" dataKey="val" stroke={color} strokeWidth={2} fillOpacity={1} fill={`url(#gradient-${isPositive ? 'up' : 'down'})`} isAnimationActive={false} />
                     <YAxis domain={['dataMin', 'dataMax']} hide />
                 </AreaChart>
             </ResponsiveContainer>
@@ -114,50 +117,28 @@ const Sparkline = ({ data, isPositive }: { data: number[], isPositive: boolean }
 
 // --- 🚀 Main Component: MarketDashboard ---
 export default function MarketDashboard() {
-    const [activeCategory, setActiveCategory] = useState('All');
+    const [activeTab, setActiveTab] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [globalData, setGlobalData] = useState<MarketData | null>(null);
     const [headerLoading, setHeaderLoading] = useState(true);
-    const [coins, setCoins] = useState<any[]>(COINS_DATA);
-
-    // 🔎 Filter Logic
-    const filteredCoins = useMemo(() => {
-        return coins.filter(coin => {
-            const matchesSearch =
-                coin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                coin.symbol.toLowerCase().includes(searchTerm.toLowerCase());
-
-            const matchesCategory =
-                activeCategory === 'All' ||
-                (activeCategory === 'Favorites' ? false : coin.category === activeCategory) || // Mock Fav logic
-                (activeCategory === 'Solana Eco' ? coin.category === 'Solana Eco' || coin.symbol === 'SOL' : false);
-
-            return matchesSearch && matchesCategory;
-        });
-    }, [searchTerm, activeCategory]);
+    const [coins, setCoins] = useState<any[]>([]);
 
     useEffect(() => {
         async function fetchAllData() {
             try {
                 setHeaderLoading(true);
-
-                // เรียก API ที่เรารวมร่างแล้ว
                 const res = await fetch('/api/market/global');
                 if (!res.ok) throw new Error('Failed to fetch API');
-
                 const data = await res.json();
 
-                // 1. Set Header Data
                 setGlobalData({
                     marketCap: data.marketCap || 0,
                     marketCapChange: data.marketCapChange || 0,
                     volume: data.volume || 0,
-                    volumeChange: 0, // API ไม่ส่งมา
                     btcDominance: data.btcDominance || 0,
-                    gasPrice: data.gasPrice || 0,
+                    gasPrice: typeof data.gasPrice === 'object' ? data.gasPrice : { eth: data.gasPrice || 0, sol: 0 },
                 });
 
-                // 2. Set Coins List & Map Data
                 if (Array.isArray(data.coins)) {
                     const mappedCoins = data.coins.map((coin: any) => ({
                         id: coin.id,
@@ -171,11 +152,9 @@ export default function MarketDashboard() {
                         vol: coin.total_volume,
                         sparkline: coin.sparkline_in_7d?.price || [],
                         image: coin.image,
-                        category: getCoinCategory(coin.symbol) // ฟังก์ชันเดิมที่เราเขียนไว้
                     }));
                     setCoins(mappedCoins);
                 }
-
             } catch (error) {
                 console.error('Fetch error:', error);
             } finally {
@@ -185,200 +164,160 @@ export default function MarketDashboard() {
         fetchAllData();
     }, []);
 
-    const formatPrice = (num: number) => {
-        return num < 1
-            ? `$${num.toFixed(6)}`
-            : `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    };
+    const ethPrice = useMemo(() => coins.find(c => c.symbol === 'ETH')?.price || 0, [coins]);
+    const solPrice = useMemo(() => coins.find(c => c.symbol === 'SOL')?.price || 0, [coins]);
 
+    const filteredCoins = useMemo(() => {
+        let result = coins.filter(coin =>
+            coin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            coin.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        if (activeTab === 'Top Gainers') {
+            result.sort((a, b) => b.change24h - a.change24h);
+        } else if (activeTab === 'Top Losers') {
+            result.sort((a, b) => a.change24h - b.change24h);
+        } else {
+            result.sort((a, b) => a.rank - b.rank);
+        }
+        return result;
+    }, [searchTerm, activeTab, coins]);
+
+    // 🏆 Dynamic Highlights (เก็บอันนี้ไว้ ลบอันเก่าออกแล้ว)
+    const highlights = useMemo(() => {
+        if (coins.length === 0) return { hot: [], gainers: [], volume: [] };
+
+        const sortedByChange = [...coins].sort((a, b) => b.change24h - a.change24h);
+        const sortedByVol = [...coins].sort((a, b) => b.vol - a.vol);
+
+        return {
+            hot: coins.filter(c => ['BTC', 'ETH', 'SOL', 'PEPE', 'DOGE'].includes(c.symbol) || Math.abs(c.change24h) > 10).slice(0, 3),
+            gainers: sortedByChange.slice(0, 3),
+            volume: sortedByVol.slice(0, 3),
+        };
+    }, [coins]);
+
+    // Helpers
     const formatCurrency = (num: number) => {
         if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
         if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
+        if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
         return `$${num.toLocaleString()}`;
     };
+    const formatPercent = (num: number) => `${Math.abs(num).toFixed(2)}%`;
 
-    const formatPercent = (num: number) => {
-        return `${Math.abs(num).toFixed(2)}%`;
-    };
-
-    const getGasStatus = (gwei: number) => {
-        if (gwei < 15) return { label: 'Low', color: 'text-green-700', bg: 'bg-green-500' };
-        if (gwei < 30) return { label: 'Standard', color: 'text-yellow-700', bg: 'bg-yellow-500' };
-        return { label: 'High', color: 'text-red-700', bg: 'bg-red-500' };
-    };
 
     if (headerLoading || !globalData) {
         return (
-            <div className="mb-6 animate-pulse">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-[88px] bg-earth-darkbrown/5 rounded-xl"></div>
-                    ))}
+            <div className="mb-6 animate-pulse p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-earth-darkbrown/5 rounded-xl" />)}
                 </div>
+                <div className="h-96 bg-earth-darkbrown/5 rounded-2xl" />
             </div>
         );
     }
 
-    // ✅ 4. คำนวณ Gas Status ก่อน Render
-    const gasStatus = getGasStatus(globalData.gasPrice);
-
     return (
         <div className="space-y-6 animate-in fade-in duration-700 pb-10">
-            {/* 1️⃣ Global Market Header (Mobile: Active Style / Desktop: Hover Style) */}
-            <div className="mb-6 animate-in fade-in duration-700">
-                <div className="rounded-xl">
-                    <div className="flex md:grid md:grid-cols-4 gap-3 overflow-x-auto md:overflow-visible pb-4 md:pb-0 snap-x snap-mandatory no-scrollbar">
+            {/* 1️⃣ HEADER */}
+            <div className="mb-6 rounded-xl">
+                {/* ✅ เปลี่ยนเป็น md:grid-cols-5 เพื่อวาง 5 ใบ */}
+                <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto md:overflow-visible pb-4 md:pb-0 snap-x snap-mandatory no-scrollbar">
 
-                        {/* --- Stat 1: Market Cap --- */}
-                        <div className="min-w-[260px] md:min-w-0 snap-center px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300
-                bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10">
-                            {/* 👆 Mobile: พื้นหลังสีเข้มเลย / Desktop: ใสก่อน Hover แล้วค่อยเข้ม */}
+                    {/* 1. Global Market Cap */}
+                    <HeaderCard
+                        title="Market Cap"
+                        value={formatCurrency(globalData.marketCap)}
+                        icon={Coins}
+                        change={globalData.marketCapChange}
+                    />
 
-                            <div className="p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0
-                    bg-earth-darkbrown text-white md:bg-earth-darkbrown/5 md:text-earth-darkbrown md:group-hover:bg-earth-darkbrown md:group-hover:text-white">
-                                {/* 👆 Mobile: ไอคอนสีขาวพื้นน้ำตาลเลย / Desktop: สลับสีเมื่อ Hover */}
-                                <Coins size={20} strokeWidth={1.5} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase font-bold tracking-wider mb-0.5 transition-colors duration-300
-                        text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">
-                                    {/* 👆 Mobile: ตัวหนังสือสีเข้มเลย */}
-                                    Global Market Cap
-                                </p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight whitespace-nowrap">
-                                        {formatCurrency(globalData.marketCap)}
-                                    </span>
-                                    <span
-                                        className={`text-[10px] font-bold flex items-center px-1.5 py-0.5 rounded-md border ${globalData.marketCapChange >= 0
-                                            ? 'text-green-700 bg-green-500/10 border-green-500/20'
-                                            : 'text-red-700 bg-red-500/10 border-red-500/20'
-                                            }`}
-                                    >
-                                        {globalData.marketCapChange >= 0 ? (
-                                            <ArrowUpRight size={10} className="mr-0.5" />
-                                        ) : (
-                                            <ArrowDownRight size={10} className="mr-0.5" />
-                                        )}
-                                        {formatPercent(globalData.marketCapChange)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                    {/* 2. 24h Volume */}
+                    <HeaderCard
+                        title="24h Volume"
+                        value={formatCurrency(globalData.volume)}
+                        icon={ArrowRightLeft}
+                        staticLabel="24h"
+                    />
 
-                        {/* --- Stat 2: 24h Volume --- */}
-                        <div className="min-w-[260px] md:min-w-0 snap-center px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300
-                bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10">
+                    {/* 3. BTC Dominance */}
+                    <HeaderCard
+                        title="BTC Dom"
+                        value={`${globalData.btcDominance.toFixed(1)}%`}
+                        icon={Bitcoin}
+                        progress={globalData.btcDominance}
+                    />
 
-                            <div className="p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0
-                    bg-earth-darkbrown text-white md:bg-earth-darkbrown/5 md:text-earth-darkbrown md:group-hover:bg-earth-darkbrown md:group-hover:text-white">
-                                <ArrowRightLeft size={20} strokeWidth={1.5} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase font-bold tracking-wider mb-0.5 transition-colors duration-300
-                        text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">
-                                    24h Volume
-                                </p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight whitespace-nowrap">
-                                        {formatCurrency(globalData.volume)}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-earth-stone/70 flex items-center bg-earth-stone/10 px-1.5 py-0.5 rounded-md border border-earth-stone/20">
-                                        24h
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                    {/* 4. ✅ ETH Gas Card (แยกออกมา) */}
+                    <ChainGasCard
+                        chain="ETH"
+                        value={globalData.gasPrice.eth}
+                        unit="Gwei"
+                        price={ethPrice}
+                        icon={Fuel}
+                        colorClass="bg-blue-500 text-white md:bg-blue-500/10 md:text-blue-600 md:group-hover:bg-blue-500 md:group-hover:text-white"
+                        textColor="text-blue-600"
+                    />
 
-                        {/* --- Stat 3: BTC Dominance --- */}
-                        <div className="min-w-[260px] md:min-w-0 snap-center px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300
-                bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10">
-
-                            <div className="p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0
-                    bg-earth-darkbrown text-white md:bg-earth-darkbrown/5 md:text-earth-darkbrown md:group-hover:bg-earth-darkbrown md:group-hover:text-white">
-                                <Bitcoin size={20} strokeWidth={1.5} />
-                            </div>
-                            <div className="w-full pr-2">
-                                <p className="text-[10px] uppercase font-bold tracking-wider mb-0.5 transition-colors duration-300
-                        text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">
-                                    BTC Dominance
-                                </p>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight leading-none whitespace-nowrap">
-                                        {globalData.btcDominance.toFixed(1)}%
-                                    </span>
-                                    <div className="w-full h-1 bg-earth-darkbrown/10 rounded-full overflow-hidden mt-1">
-                                        <div
-                                            className="h-full rounded-full transition-colors duration-300
-                                bg-earth-darkbrown md:bg-earth-gold md:group-hover:bg-earth-darkbrown"
-                                            style={{ width: `${globalData.btcDominance}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* --- Stat 4: ETH Gas --- */}
-                        <div className="min-w-[260px] md:min-w-0 snap-center px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300
-                bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10">
-
-                            <div className="p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0
-                    bg-earth-darkbrown text-white md:bg-earth-darkbrown/5 md:text-earth-darkbrown md:group-hover:bg-earth-darkbrown md:group-hover:text-white">
-                                <Fuel size={16} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] uppercase font-bold tracking-wider mb-0.5 transition-colors duration-300
-                        text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">
-                                    ETH Gas
-                                </p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight whitespace-nowrap">
-                                        {globalData.gasPrice < 10 ? globalData.gasPrice.toFixed(2) : Math.round(globalData.gasPrice)}{' '}
-                                        <span className="text-xs font-sans font-medium text-earth-stone/80">
-                                            Gwei
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${gasStatus.bg} animate-pulse`}></div>
-                                    <span className={`text-[9px] font-bold uppercase ${gasStatus.color}`}>
-                                        {gasStatus.label} Traffic
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
+                    {/* 5. ✅ SOL Gas Card (แยกออกมา) */}
+                    <ChainGasCard
+                        chain="SOL"
+                        value={globalData.gasPrice.sol}
+                        unit="SOL"
+                        price={solPrice}
+                        icon={Zap}
+                        colorClass="bg-purple-500 text-white md:bg-purple-500/10 md:text-purple-600 md:group-hover:bg-purple-500 md:group-hover:text-white"
+                        textColor="text-purple-600"
+                    />
                 </div>
             </div>
 
-            {/* 2️⃣ Highlight Cards (Data from API) */}
+            {/* 2️⃣ HIGHLIGHTS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <HighlightCard title="Trending / Hot" icon={Flame} data={HIGHLIGHTS.hot} iconColor="text-orange-500" />
-                <HighlightCard title="Top Gainers (24h)" icon={TrendingUp} data={HIGHLIGHTS.gainers} iconColor="text-green-700" />
-                <HighlightCard title="Top Volume (24h)" icon={Zap} data={HIGHLIGHTS.volume} iconColor="text-blue-500" />
+                <HighlightCard title="Trending / Hot" icon={Flame} data={highlights.hot} iconColor="text-orange-500" />
+                <HighlightCard title="Top Gainers (24h)" icon={TrendingUp} data={highlights.gainers} iconColor="text-green-700" />
+                <HighlightCard title="Top Volume (24h)" icon={Zap} data={highlights.volume} iconColor="text-blue-500" />
             </div>
 
-            {/* 3️⃣ Main Table */}
+            {/* 3️⃣ MAIN TABLE */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
                 <h2 className="text-earth-darkbrown font-bold text-xl flex items-center gap-2">Crypto Market</h2>
                 <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
-                    {/* Category Tabs */}
+                    {/* Tabs */}
                     <div className="flex overflow-x-auto pb-2 md:pb-0 gap-1 no-scrollbar w-full md:w-auto">
-                        {CATEGORIES.map((cat) => (
+                        {TABS.map((tab) => (
                             <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-4 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all border ${activeCategory === cat ? 'bg-earth-darkbrown text-white border-earth-darkbrown shadow-md' : 'bg-transparent text-earth-stone border-transparent hover:bg-earth-cream/50 hover:text-earth-darkbrown'}`}
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all border ${activeTab === tab
+                                    ? 'bg-earth-darkbrown text-white border-earth-darkbrown shadow-md'
+                                    : 'bg-transparent text-earth-stone border-transparent hover:bg-earth-cream/50 hover:text-earth-darkbrown'
+                                    }`}
                             >
-                                {cat}
+                                {tab}
                             </button>
                         ))}
                     </div>
                     {/* Search */}
                     <div className="relative group w-full md:w-[220px] shrink-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-earth-stone group-focus-within:text-earth-sage transition-colors" size={16} />
-                        <input type="text" placeholder="Search Coin..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-sm text-earth-darkbrown focus:outline-none focus:border-earth-sage focus:ring-1 focus:ring-earth-sage transition-all placeholder:text-earth-stone/70" />
+                        <input
+                            type="text"
+                            placeholder="Search Coin..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-sm text-earth-darkbrown focus:outline-none focus:border-earth-sage focus:ring-1 focus:ring-earth-sage transition-all placeholder:text-earth-stone/70"
+                        />
+                        {searchTerm && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full bg-earth-stone/20 text-earth-stone hover:bg-red-400 hover:text-white transition-all"
+                            >
+                                <X size={10} />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -405,22 +344,22 @@ export default function MarketDashboard() {
                                     <td className="py-4">
                                         <div className="flex items-center gap-3">
                                             <span className="text-xs font-mono text-earth-stone w-4">{coin.rank}</span>
-                                            {/* Image from API */}
                                             <img src={coin.image} alt={coin.symbol} className="w-8 h-8 rounded-full shadow-sm" />
                                             <div>
                                                 <div className="text-sm font-bold text-earth-darkbrown group-hover:text-earth-sage transition-colors">{coin.name}</div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[10px] text-earth-stone font-mono bg-earth-cream/30 px-1 rounded">{coin.symbol}</span>
-                                                    {coin.category !== 'Others' && <span className="text-[9px] text-earth-stone/80 bg-earth-cream/30 px-1 rounded">{coin.category}</span>}
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-4 text-right font-mono text-sm font-bold text-earth-darkbrown">{formatPrice(coin.price)}</td>
+                                    <td className="py-4 text-right font-mono text-sm font-bold text-earth-darkbrown">
+                                        {coin.price < 1 ? `$${coin.price.toFixed(6)}` : `$${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                                    </td>
                                     <td className={`py-4 text-right font-mono text-sm font-medium ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                                         <div className="flex items-center justify-end gap-1">
                                             {coin.change24h >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                            {formatPercent(coin.change24h)}
+                                            {Math.abs(coin.change24h).toFixed(2)}%
                                         </div>
                                     </td>
                                     <td className="py-4 text-right font-mono text-sm text-earth-primary hidden lg:table-cell">{formatCurrency(coin.mcap)}</td>
@@ -441,7 +380,6 @@ export default function MarketDashboard() {
                         <div className="text-center py-20">
                             <div className="bg-earth-cream/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-earth-stone"><Search size={32} /></div>
                             <p className="text-earth-darkbrown font-bold">No assets found</p>
-                            <p className="text-sm text-earth-stone mt-1">Try adjusting your search or filters.</p>
                         </div>
                     )}
                 </div>
@@ -450,7 +388,43 @@ export default function MarketDashboard() {
     );
 }
 
-// Sub-Component: Highlight Card (รับ Data จริงแล้ว)
+// Sub-Component: Header Card
+function HeaderCard({ title, value, icon: Icon, change, progress, staticLabel }: any) {
+    const isPositive = change >= 0;
+    return (
+        <div className="min-w-[240px] md:min-w-0 h-full px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300 bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10 border border-earth-cream/60 md:border-none snap-center">
+            <div className="p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 bg-earth-darkbrown text-white md:bg-earth-darkbrown/5 md:text-earth-darkbrown md:group-hover:bg-earth-darkbrown md:group-hover:text-white">
+                <Icon size={20} strokeWidth={1.5} />
+            </div>
+            <div className="w-full pr-2">
+                <p className="text-[10px] uppercase font-bold tracking-wider mb-0.5 transition-colors duration-300 text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">{title}</p>
+                {progress ? (
+                    <div className="flex flex-col gap-1">
+                        <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight leading-none whitespace-nowrap">{value}</span>
+                        <div className="w-full h-1 bg-earth-darkbrown/10 rounded-full overflow-hidden mt-1">
+                            <div className="h-full rounded-full transition-colors duration-300 bg-earth-darkbrown md:bg-earth-gold md:group-hover:bg-earth-darkbrown" style={{ width: `${progress}%` }} />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight whitespace-nowrap">{value}</span>
+                        {change !== undefined && (
+                            <span className={`text-[10px] font-bold flex items-center px-1.5 py-0.5 rounded-md border ${isPositive ? 'text-green-700 bg-green-500/10 border-green-500/20' : 'text-red-700 bg-red-500/10 border-red-500/20'}`}>
+                                {isPositive ? <ArrowUpRight size={10} className="mr-0.5" /> : <ArrowDownRight size={10} className="mr-0.5" />}
+                                {Math.abs(change).toFixed(2)}%
+                            </span>
+                        )}
+                        {staticLabel && (
+                            <span className="text-[10px] font-bold text-earth-stone/70 flex items-center bg-earth-stone/10 px-1.5 py-0.5 rounded-md border border-earth-stone/20">{staticLabel}</span>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// Sub-Component: Highlight Card
 function HighlightCard({ title, icon: Icon, data, iconColor }: any) {
     return (
         <div className="bg-white border border-earth-cream/60 rounded-2xl p-5 shadow-xl flex flex-col h-[200px]">
