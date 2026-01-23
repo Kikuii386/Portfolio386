@@ -57,9 +57,8 @@ function DashboardSkeleton() {
     style?: React.CSSProperties;
   }) => (
     <div
-      className={`bg-earth-brown/30 animate-pulse rounded-xl ${
-        className || ''
-      }`}
+      className={`bg-earth-brown/30 animate-pulse rounded-xl ${className || ''
+        }`}
       style={style}
     />
   );
@@ -522,8 +521,8 @@ export default function DashboardSection({
                 {isSentiment
                   ? entry.payload.f_g // ถ้าเป็น Sentiment ให้โชว์ค่าจริง (f_g) ไม่ใช่ความสูงแท่ง (1)
                   : Number(entry.value).toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })}
+                    maximumFractionDigits: 0,
+                  })}
               </span>
             </div>
           ))}
@@ -552,16 +551,14 @@ export default function DashboardSection({
           <div className="flex justify-between items-center text-xs mb-3 gap-4">
             <span className="flex items-center gap-1 text-earth-stone">
               <span
-                className={`w-2 h-2 rounded-full ${
-                  isPositive ? 'bg-green-600' : 'bg-red-600'
-                }`}
+                className={`w-2 h-2 rounded-full ${isPositive ? 'bg-green-600' : 'bg-red-600'
+                  }`}
               ></span>
               Daily PnL:
             </span>
             <span
-              className={`font-mono font-bold ${
-                isPositive ? 'text-green-700' : 'text-red-700'
-              }`}
+              className={`font-mono font-bold ${isPositive ? 'text-green-700' : 'text-red-700'
+                }`}
             >
               {isPositive ? '+' : '-'}$
               {Math.abs(currentPnL).toLocaleString(undefined, {
@@ -663,9 +660,8 @@ export default function DashboardSection({
 
             {
               label: '24h Change (%)',
-              value: `${
-                latestData.dayChangePercent >= 0 ? '+' : ''
-              }${latestData.dayChangePercent.toFixed(2)}%`,
+              value: `${latestData.dayChangePercent >= 0 ? '+' : ''
+                }${latestData.dayChangePercent.toFixed(2)}%`,
               color:
                 latestData.dayChangePercent >= 0
                   ? 'text-green-600'
@@ -848,11 +844,10 @@ export default function DashboardSection({
                     <button
                       key={tf}
                       onClick={() => setVolTimeframe(tf as any)}
-                      className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${
-                        volTimeframe === tf
+                      className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${volTimeframe === tf
                           ? 'bg-white text-earth-darkbrown shadow-sm'
                           : 'text-earth-stone hover:bg-earth-cream/50'
-                      }`}
+                        }`}
                     >
                       {tf}
                     </button>
@@ -1387,11 +1382,10 @@ function SplitStatCard({ title, total, items, icon: Icon, trend }: any) {
         {/* Trend Badge (Optional) */}
         {trend && (
           <div
-            className={`flex items-center text-xs font-bold px-2 py-1 rounded-full ${
-              trend === 'up'
+            className={`flex items-center text-xs font-bold px-2 py-1 rounded-full ${trend === 'up'
                 ? 'bg-green-100 text-green-700'
                 : 'bg-red-100 text-red-700'
-            }`}
+              }`}
           >
             {trend === 'up' ? '▲' : '▼'}
           </div>
@@ -1411,9 +1405,8 @@ function SplitStatCard({ title, total, items, icon: Icon, trend }: any) {
               {item.label}
             </p>
             <p
-              className={`text-sm font-bold ${
-                item.color || 'text-earth-darkbrown'
-              }`}
+              className={`text-sm font-bold ${item.color || 'text-earth-darkbrown'
+                }`}
             >
               {item.value}
             </p>
@@ -1742,9 +1735,8 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
               PnL:
             </span>
             <span
-              className={`font-mono font-bold ${
-                isPositive ? 'text-green-700' : 'text-red-700'
-              }`}
+              className={`font-mono font-bold ${isPositive ? 'text-green-700' : 'text-red-700'
+                }`}
             >
               {isPositive ? '+' : ''}$
               {Math.abs(data.pnl).toLocaleString(undefined, {
@@ -1760,9 +1752,8 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
               ROI:
             </span>
             <span
-              className={`font-mono font-bold ${
-                isPositive ? 'text-green-700' : 'text-red-700'
-              }`}
+              className={`font-mono font-bold ${isPositive ? 'text-green-700' : 'text-red-700'
+                }`}
             >
               {isPositive ? '+' : ''}
               {data.pnlPercent.toFixed(1)}%

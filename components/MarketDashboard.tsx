@@ -55,8 +55,7 @@ function ChainGasCard({
 
     const formatCost = (cost: number) => {
         if (isNaN(cost)) return '$-.--';
-        if (cost < 0.01) return '<$0.01';
-        return `$${cost.toFixed(2)}`;
+        return `$${cost.toFixed(4)}`;
     };
 
     return (
@@ -75,7 +74,7 @@ function ChainGasCard({
                     {/* Gas Price in Native Unit */}
                     <div className="flex items-baseline gap-1">
                         <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight leading-none">
-                            {chain === 'ETH' ? Math.round(value) : value.toFixed(5)}
+                            {chain === 'ETH' ? value.toFixed(4) : value.toFixed(6)}
                         </span>
                         <span className="text-[10px] font-sans font-bold text-earth-stone/70">{unit}</span>
                     </div>
@@ -114,6 +113,47 @@ const Sparkline = ({ data, isPositive }: { data: number[], isPositive: boolean }
         </div>
     );
 };
+
+function MarketSkeleton() {
+    return (
+        <div className="w-full space-y-6 animate-pulse">
+            {/* 1. Header (5 Cards) */}
+            <div className="mb-6 rounded-xl">
+                <div className="flex md:grid md:grid-cols-5 gap-3 overflow-hidden">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="h-[88px] min-w-[240px] md:min-w-0 bg-earth-darkbrown/5 rounded-xl border border-earth-cream/60" />
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Highlights (3 Cards) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-[200px] bg-earth-darkbrown/5 rounded-2xl border border-earth-cream/60" />
+                ))}
+            </div>
+
+            {/* 3. Main Table Area */}
+            <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl min-h-[600px] flex flex-col gap-6">
+                {/* Tabs & Search */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex gap-2">
+                        {[1, 2, 3].map(i => <div key={i} className="h-8 w-20 bg-earth-darkbrown/5 rounded-lg" />)}
+                    </div>
+                    <div className="h-10 w-full md:w-64 bg-earth-darkbrown/5 rounded-xl" />
+                </div>
+                {/* Table Header */}
+                <div className="h-10 w-full bg-earth-darkbrown/5 rounded-lg" />
+                {/* Table Rows */}
+                <div className="space-y-4">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                        <div key={i} className="h-16 w-full bg-earth-darkbrown/5 rounded-xl" />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // --- 🚀 Main Component: MarketDashboard ---
 export default function MarketDashboard() {
@@ -208,22 +248,15 @@ export default function MarketDashboard() {
 
 
     if (headerLoading || !globalData) {
-        return (
-            <div className="mb-6 animate-pulse p-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-earth-darkbrown/5 rounded-xl" />)}
-                </div>
-                <div className="h-96 bg-earth-darkbrown/5 rounded-2xl" />
-            </div>
-        );
+        return <MarketSkeleton />;
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-700 pb-10">
+        <div className="w-full animate-in fade-in duration-700 space-y-6">
             {/* 1️⃣ HEADER */}
             <div className="mb-6 rounded-xl">
                 {/* ✅ เปลี่ยนเป็น md:grid-cols-5 เพื่อวาง 5 ใบ */}
-                <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto md:overflow-visible pb-4 md:pb-0 snap-x snap-mandatory no-scrollbar">
+                <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto md:overflow-visible  md:pb-0 snap-x snap-mandatory no-scrollbar">
 
                     {/* 1. Global Market Cap */}
                     <HeaderCard
@@ -245,7 +278,14 @@ export default function MarketDashboard() {
                     <HeaderCard
                         title="BTC Dom"
                         value={`${globalData.btcDominance.toFixed(1)}%`}
-                        icon={Bitcoin}
+                        icon={({ size, className }: any) => (
+                            <img
+                                src="https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=040"
+                                alt="BTC"
+                                className={className}
+                                style={{ width: size, height: size }}
+                            />
+                        )} ก
                         progress={globalData.btcDominance}
                     />
 
@@ -255,8 +295,15 @@ export default function MarketDashboard() {
                         value={globalData.gasPrice.eth}
                         unit="Gwei"
                         price={ethPrice}
-                        icon={Fuel}
-                        colorClass="bg-blue-500 text-white md:bg-blue-500/10 md:text-blue-600 md:group-hover:bg-blue-500 md:group-hover:text-white"
+                        icon={({ size, className }: any) => (
+                            <img
+                                src="https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=040"
+                                alt="ETH"
+                                className={className}
+                                style={{ width: size, height: size }}
+                            />
+                        )}
+                        colorClass="bg-blue-500/50 text-white md:bg-blue-500/10 md:text-blue-600 md:group-hover:bg-blue-500/50 md:group-hover:text-white"
                         textColor="text-blue-600"
                     />
 
@@ -266,8 +313,15 @@ export default function MarketDashboard() {
                         value={globalData.gasPrice.sol}
                         unit="SOL"
                         price={solPrice}
-                        icon={Zap}
-                        colorClass="bg-purple-500 text-white md:bg-purple-500/10 md:text-purple-600 md:group-hover:bg-purple-500 md:group-hover:text-white"
+                        icon={({ size, className }: any) => (
+                            <img
+                                src="https://cryptologos.cc/logos/solana-sol-logo.svg?v=040"
+                                alt="SOL"
+                                className={className}
+                                style={{ width: size, height: size }}
+                            />
+                        )}
+                        colorClass="bg-purple-500/50 text-white md:bg-purple-500/10 md:text-purple-600 md:group-hover:bg-purple-500/50 md:group-hover:text-white"
                         textColor="text-purple-600"
                     />
                 </div>
@@ -392,7 +446,7 @@ export default function MarketDashboard() {
 function HeaderCard({ title, value, icon: Icon, change, progress, staticLabel }: any) {
     const isPositive = change >= 0;
     return (
-        <div className="min-w-[240px] md:min-w-0 h-full px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300 bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10 border border-earth-cream/60 md:border-none snap-center">
+        <div className="min-w-[250px] md:min-w-0 min-h-[89px] h-full px-4 py-4 flex items-center gap-4 group rounded-xl cursor-pointer transition-colors duration-300 bg-earth-darkbrown/10 md:bg-transparent md:hover:bg-earth-darkbrown/10 border border-earth-cream/60 md:border-none snap-center">
             <div className="p-2.5 rounded-xl transition-all duration-300 shadow-sm shrink-0 bg-earth-darkbrown text-white md:bg-earth-darkbrown/5 md:text-earth-darkbrown md:group-hover:bg-earth-darkbrown md:group-hover:text-white">
                 <Icon size={20} strokeWidth={1.5} />
             </div>

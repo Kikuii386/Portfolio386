@@ -2,14 +2,12 @@
 import { getFromCache, setToCache } from '@/lib/redisCache';
 
 const CACHE_KEY = 'market:global-data';
-const CACHE_TTL = 1800; // 30 นาที
+const CACHE_TTL = 21600; // 6 ชั่วโมง
 
 // 🛠️ Header พิเศษเพื่อแก้ปัญหา CoinGecko ส่ง HTML กลับมา
 const CG_HEADERS = {
     'Accept': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    // ถ้าคุณมี Demo API Key ของ CoinGecko ให้ใส่บรรทัดล่างนี้ (ถ้าไม่มีก็ลบออก)
-    // 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY 
 };
 
 export interface MarketData {
