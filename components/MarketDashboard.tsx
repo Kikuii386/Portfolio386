@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { ResponsiveContainer, AreaChart, Area, YAxis } from 'recharts';
 import {
     Search, Star, ChevronRight, Coins, ArrowRightLeft, Bitcoin, Fuel,
     TrendingUp, TrendingDown, Zap, ArrowUpRight, ArrowDownRight, Flame, X
 } from 'lucide-react';
+import Tooltip from '@/components/ui/Tooltips';
+import { SortButton } from '@/components/ui/SortButton';
+import { motion, AnimatePresence } from 'framer-motion';
 // import Tooltip from '@/components/ui/Tooltips'; // ⚠️ ตรวจสอบว่ามีไฟล์นี้จริง ถ้าไม่มีให้ comment ไว้ก่อน
 
 // --- 🎨 Palette (Earth Tone Theme) ---
@@ -155,6 +158,82 @@ function MarketSkeleton() {
     );
 }
 
+// ✅ 1. แยก Component แถวออกมา เพื่อความลื่น (Memoized)
+const MarketRow = React.memo(({ coin, formatCurrency, Sparkline }: any) => {
+    return (
+        <motion.tr
+            initial={{ opacity: 0, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1 }}
+
+            // 5. ปรับความเร็ว (Spring จะดูเด้งดึ๋งและสมูทกว่า Linear)
+            transition={{
+                layout: { type: "spring", stiffness: 45, damping: 10 }, // สำหรับการย้ายที่
+                opacity: { duration: 0.2 } // สำหรับการจางเข้า/ออก
+            }}
+            className="hover:bg-earth-cream/20 transition-colors group cursor-pointer"
+        >
+            {/* 1. Rank */}
+            <td className="py-4 pl-2 w-[50px] text-center">
+                <Star size={16} className="mx-auto text-earth-stone/40 hover:text-yellow-400 hover:fill-yellow-400 transition-colors" />
+            </td>
+
+            {/* 2. Asset */}
+            <td className="py-4 w-[240px]">
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-earth-stone w-6 text-right shrink-0">{coin.rank}</span>
+                    <img src={coin.image} alt={coin.symbol} className="w-8 h-8 rounded-full shadow-sm shrink-0" />
+                    <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-earth-darkbrown group-hover:text-earth-sage transition-colors truncate" title={coin.name}>
+                            {coin.name.length > 20 ? `${coin.name.slice(0, 20)}...` : coin.name}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-earth-stone font-mono bg-earth-cream/30 px-1 rounded">{coin.symbol}</span>
+                        </div>
+                    </div>
+                </div>
+            </td>
+
+            {/* 3. Price */}
+            <td className="py-4 text-right w-[120px] font-mono text-sm font-bold text-earth-darkbrown">
+                {coin.price < 1 ? `$${coin.price.toFixed(6)}` : `$${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+            </td>
+
+            {/* 4. Change */}
+            <td className={`py-4 text-right w-[120px] font-mono text-sm font-medium ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                <div className="flex items-center justify-end gap-1">
+                    {coin.change24h >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                    {Math.abs(coin.change24h).toFixed(2)}%
+                </div>
+            </td>
+
+            {/* 5. M.Cap */}
+            <td className="py-4 text-right w-[140px] font-mono text-sm text-earth-primary hidden lg:table-cell truncate">
+                {formatCurrency(coin.mcap)}
+            </td>
+
+            {/* 6. Volume */}
+            <td className="py-4 text-right w-[140px] font-mono text-sm text-earth-primary hidden xl:table-cell truncate">
+                {formatCurrency(coin.vol)}
+            </td>
+
+            {/* 7. Graph */}
+            <td className="py-4 w-[120px]">
+                <div className="flex justify-end items-center h-full opacity-80 group-hover:opacity-100 transition-opacity">
+                    <Sparkline data={coin.sparkline} isPositive={coin.change7d >= 0} />
+                </div>
+            </td>
+
+            {/* 8. Action */}
+            <td className="py-4 text-right pr-2 w-[80px]">
+                <button className="text-xs font-bold text-earth-stone border border-earth-cream/60 px-3 py-1.5 rounded-lg hover:bg-earth-darkbrown hover:text-white hover:border-earth-darkbrown transition-all">
+                    Details
+                </button>
+            </td>
+        </motion.tr>
+    );
+});
+
 // --- 🚀 Main Component: MarketDashboard ---
 export default function MarketDashboard() {
     const [activeTab, setActiveTab] = useState('All');
@@ -162,6 +241,55 @@ export default function MarketDashboard() {
     const [globalData, setGlobalData] = useState<MarketData | null>(null);
     const [headerLoading, setHeaderLoading] = useState(true);
     const [coins, setCoins] = useState<any[]>([]);
+    const [visibleCount, setVisibleCount] = useState(50); // เริ่มต้นแสดงแค่ 50 เหรียญ
+    const loadMoreRef = React.useRef(null); // ตัวจับตำแหน่งล่างสุด
+    const deferredSearch = useDeferredValue(searchTerm);
+    const deferredTab = useDeferredValue(activeTab);
+
+
+
+    // ✅ 3. คำนวณข้อมูล: Filter -> Sort -> Slice (แก้จาก filteredCoins เดิม)
+    const processedCoins = useMemo(() => {
+        // 3.1 Filter ตาม Search และ Tab
+        let result = coins.filter(coin =>
+            coin.name.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+            coin.symbol.toLowerCase().includes(deferredSearch.toLowerCase())
+        );
+
+        if (deferredTab === 'Top Gainers') {
+            // กรองเอาเฉพาะกำไร และเรียงจากมากไปน้อย
+            result = result.filter(c => c.change24h > 0);
+            result.sort((a, b) => b.change24h - a.change24h);
+        } else if (deferredTab === 'Top Losers') {
+            // กรองเอาเฉพาะขาดทุน และเรียงจากติดลบเยอะสุดขึ้นก่อน (Ascending)
+            result = result.filter(c => c.change24h < 0);
+            result.sort((a, b) => a.change24h - b.change24h);
+        } else {
+            // Tab: All -> เรียงตาม Rank ปกติ
+            result.sort((a, b) => a.rank - b.rank);
+        }
+        return result;
+    }, [coins, deferredSearch, deferredTab]);
+
+    // ✅ 4. ตัดข้อมูลมาแสดงเฉพาะส่วนที่มองเห็น (แก้หน่วง)
+    const visibleCoins = useMemo(() => {
+        return processedCoins.slice(0, visibleCount);
+    }, [processedCoins, visibleCount]);
+
+    // ✅ 6. Auto Load เมื่อเลื่อนถึงล่างสุด
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setVisibleCount((prev) => Math.min(prev + 50, processedCoins.length));
+                }
+            },
+            { threshold: 0.1 }
+        );
+        if (loadMoreRef.current) observer.observe(loadMoreRef.current);
+        return () => observer.disconnect();
+    }, [processedCoins]);
+
 
     useEffect(() => {
         async function fetchAllData() {
@@ -223,7 +351,6 @@ export default function MarketDashboard() {
         return result;
     }, [searchTerm, activeTab, coins]);
 
-    // 🏆 Dynamic Highlights (เก็บอันนี้ไว้ ลบอันเก่าออกแล้ว)
     const highlights = useMemo(() => {
         if (coins.length === 0) return { hot: [], gainers: [], volume: [] };
 
@@ -328,25 +455,28 @@ export default function MarketDashboard() {
             </div>
 
             {/* 2️⃣ HIGHLIGHTS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex flex-col">
                 <HighlightCard title="Trending / Hot" icon={Flame} data={highlights.hot} iconColor="text-orange-500" />
                 <HighlightCard title="Top Gainers (24h)" icon={TrendingUp} data={highlights.gainers} iconColor="text-green-700" />
                 <HighlightCard title="Top Volume (24h)" icon={Zap} data={highlights.volume} iconColor="text-blue-500" />
             </div>
 
             {/* 3️⃣ MAIN TABLE */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
-                <h2 className="text-earth-darkbrown font-bold text-xl flex items-center gap-2">Crypto Market</h2>
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 px-4">
+                <h2 className="text-earth-darkbrown font-bold text-xl flex items-center gap-2 h-[42px]">Crypto Market</h2>
                 <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
                     {/* Tabs */}
-                    <div className="flex overflow-x-auto pb-2 md:pb-0 gap-1 no-scrollbar w-full md:w-auto">
+                    {/* ✅ ลบ h-[42px] ออก, ปรับ gap-2 */}
+                    <div className="flex overflow-x-auto md:pb-0 gap-2 h-[42px] w-full md:w-auto">
                         {TABS.map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all border ${activeTab === tab
+                                // ✅ ปรับ py-2.5 (ให้เท่า Search), text-sm (อ่านง่ายขึ้น), rounded-xl (โค้งเท่ากัน)
+                                className={`px-5 py-2.5 text-sm font-semibold rounded-xl whitespace-nowrap transition-all duration-300 border flex-shrink-0 ${activeTab === tab
                                     ? 'bg-earth-darkbrown text-white border-earth-darkbrown shadow-md'
-                                    : 'bg-transparent text-earth-stone border-transparent hover:bg-earth-cream/50 hover:text-earth-darkbrown'
+
+                                    : ' bg-white/80 text-earth-stone/80 border-earth-stone/40 hover:bg-earth-sage hover:text-white hover:border-earth-sage'
                                     }`}
                             >
                                 {tab}
@@ -354,83 +484,100 @@ export default function MarketDashboard() {
                         ))}
                     </div>
                     {/* Search */}
-                    <div className="relative group w-full md:w-[220px] shrink-0">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-earth-stone group-focus-within:text-earth-sage transition-colors" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Search Coin..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-sm text-earth-darkbrown focus:outline-none focus:border-earth-sage focus:ring-1 focus:ring-earth-sage transition-all placeholder:text-earth-stone/70"
-                        />
-                        {searchTerm && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full bg-earth-stone/20 text-earth-stone hover:bg-red-400 hover:text-white transition-all"
-                            >
-                                <X size={10} />
-                            </button>
-                        )}
+                    <div className="w-full md:w-auto flex items-center gap-4 bg-white rounded-xl border border-earth-stone/40">
+                        <div className="relative w-full group">
+                            <div className=" absolute left-3.5 top-1/2 -translate-y-1/2 text-earth-stone/80 group-focus-within:text-earth-sage transition-colors">
+                                <Search size={18} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search tokens or addresses..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 pr-10 py-2.5 w-full bg-earth-cream/20 border border-earth-cream/60 rounded-xl text-earth-darkbrown placeholder-earth-stone/80 focus:outline-none focus:ring-2 focus:ring-earth-sage/50 focus:border-earth-sage transition-all text-sm font-mono hover:bg-earth-cream/30"
+                            />
+
+                            {searchTerm && (
+
+                                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10">
+                                    <Tooltip content="Clear" side="bottom">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchTerm('')}
+                                            className="p-1 rounded-full bg-earth-brown/50 text-white hover:bg-red-400 transition-all duration-200 shadow-sm hover:scale-110 flex items-center justify-center text-sm"
+                                        >
+                                            <X size={10} strokeWidth={4} />
+                                        </button>
+                                    </Tooltip>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl min-h-[600px] flex flex-col">
                 <div className="overflow-x-auto custom-scrollbar flex-1 -mx-6 px-6">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
-                        <thead className="sticky top-0 bg-white z-10">
+                    <table className="w-full text-left border-collapse min-w-[800px] table-fixed">
+                        <thead className="sticky top-0 bg-white z-10 shadow-sm">
                             <tr className="text-[11px] text-earth-stone font-bold uppercase tracking-wider border-b border-earth-cream/60">
-                                <th className="py-4 pl-2 w-10"><Star size={14} /></th>
-                                <th className="py-4">Asset</th>
-                                <th className="py-4 text-right">Price</th>
-                                <th className="py-4 text-right">24h Change</th>
-                                <th className="py-4 text-right hidden lg:table-cell">Market Cap</th>
-                                <th className="py-4 text-right hidden xl:table-cell">Volume (24h)</th>
-                                <th className="py-4 text-right w-[140px]">Last 7 Days</th>
-                                <th className="py-4 text-right pr-2">Action</th>
+                                {/* 1. Rank: กว้าง 60px */}
+                                <th className="py-4 pl-2 w-[75.2px] text-center">#</th>
+
+                                {/* 2. Asset: กว้าง 260px */}
+                                <th className="px-2 py-4 text-left w-[325.8px]">
+                                    Asset
+                                </th>
+
+                                {/* 3. Price: กว้าง 140px */}
+                                <th className="px-2 py-4 text-right w-[175.2px]">
+                                    Price
+                                </th>
+
+                                {/* 4. Change: กว้าง 140px */}
+                                <th className="px-2 py-4 text-right w-[175.2px]">
+                                    24h Change
+                                </th>
+
+                                {/* 5. M.Cap: กว้าง 160px (ซ่อนบนจอเล็กเหมือนเดิม) */}
+                                <th className="px-2 py-4 text-right hidden lg:table-cell w-[200px]">
+                                    Market Cap
+                                </th>
+
+                                {/* 6. Volume: กว้าง 160px (ซ่อนบนจอเล็กเหมือนเดิม) */}
+                                <th className="px-2 py-4 text-right hidden xl:table-cell w-[200px]">
+                                    Volume (24h)
+                                </th>
+
+                                {/* 7. Last 7 Days: กว้าง 140px */}
+                                <th className="py-4 text-right w-[175.2px]">Last 7 Days</th>
+
+                                {/* 8. Action: กว้าง 100px */}
+                                <th className="py-4 text-right pr-2 w-[125px]">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-earth-cream/40">
-                            {filteredCoins.map((coin) => (
-                                <tr key={coin.id} className="hover:bg-earth-cream/20 transition-colors group cursor-pointer">
-                                    <td className="py-4 pl-2"><Star size={16} className="text-earth-stone/40 hover:text-yellow-400 hover:fill-yellow-400 transition-colors" /></td>
-                                    <td className="py-4">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs font-mono text-earth-stone w-4">{coin.rank}</span>
-                                            <img src={coin.image} alt={coin.symbol} className="w-8 h-8 rounded-full shadow-sm" />
-                                            <div>
-                                                <div className="text-sm font-bold text-earth-darkbrown group-hover:text-earth-sage transition-colors">{coin.name}</div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] text-earth-stone font-mono bg-earth-cream/30 px-1 rounded">{coin.symbol}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="py-4 text-right font-mono text-sm font-bold text-earth-darkbrown">
-                                        {coin.price < 1 ? `$${coin.price.toFixed(6)}` : `$${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-                                    </td>
-                                    <td className={`py-4 text-right font-mono text-sm font-medium ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                        <div className="flex items-center justify-end gap-1">
-                                            {coin.change24h >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                            {Math.abs(coin.change24h).toFixed(2)}%
-                                        </div>
-                                    </td>
-                                    <td className="py-4 text-right font-mono text-sm text-earth-primary hidden lg:table-cell">{formatCurrency(coin.mcap)}</td>
-                                    <td className="py-4 text-right font-mono text-sm text-earth-primary hidden xl:table-cell">{formatCurrency(coin.vol)}</td>
-                                    <td className="py-4 w-[140px]">
-                                        <div className="flex justify-end items-center h-full opacity-80 group-hover:opacity-100 transition-opacity">
-                                            <Sparkline data={coin.sparkline} isPositive={coin.change7d >= 0} />
-                                        </div>
-                                    </td>
-                                    <td className="py-4 text-right pr-2">
-                                        <button className="text-xs font-bold text-earth-stone border border-earth-cream/60 px-3 py-1.5 rounded-lg hover:bg-earth-darkbrown hover:text-white hover:border-earth-darkbrown transition-all">Details</button>
-                                    </td>
-                                </tr>
-                            ))}
+                            <AnimatePresence>
+                                {visibleCoins.map((coin) => (
+                                    <MarketRow
+                                        key={coin.id}
+                                        coin={coin}
+                                        formatCurrency={formatCurrency}
+                                        Sparkline={Sparkline}
+                                    />
+                                ))}
+                            </AnimatePresence>
                         </tbody>
                     </table>
-                    {filteredCoins.length === 0 && (
+                    {/* ✅ 9. ตัว Loading More */}
+                    {visibleCoins.length < processedCoins.length && (
+                        <div ref={loadMoreRef} className="py-6 text-center text-earth-stone text-xs animate-pulse">
+                            Loading more assets...
+                        </div>
+                    )}
+
+                    {/* ✅ 10. แก้ filteredCoins -> processedCoins */}
+                    {processedCoins.length === 0 && (
                         <div className="text-center py-20">
                             <div className="bg-earth-cream/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-earth-stone"><Search size={32} /></div>
                             <p className="text-earth-darkbrown font-bold">No assets found</p>
@@ -481,24 +628,58 @@ function HeaderCard({ title, value, icon: Icon, change, progress, staticLabel }:
 // Sub-Component: Highlight Card
 function HighlightCard({ title, icon: Icon, data, iconColor }: any) {
     return (
-        <div className="bg-white border border-earth-cream/60 rounded-2xl p-5 shadow-xl flex flex-col h-[200px]">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-earth-darkbrown font-bold text-sm flex items-center gap-2"><Icon size={16} className={iconColor} />{title}</h3>
-                <button className="text-[10px] text-earth-stone hover:text-earth-sage flex items-center gap-0.5 transition-colors">More <ChevronRight size={12} /></button>
+        // 1️⃣ ปรับความสูงเป็น h-[240px] เพื่อรองรับ logo และ font ที่ใหญ่ขึ้น
+        <div className="bg-white border border-earth-cream/60 rounded-2xl p-5 shadow-xl flex flex-col h-[240px]">
+
+            {/* Header */}
+            <div className="flex justify-between items-center mb-3">
+                <h3 className="text-earth-darkbrown font-bold text-md flex items-center gap-2">
+                    <Icon size={16} className={iconColor} />
+                    {title}
+                </h3>
+                <button className="text-xs text-earth-stone hover:text-earth-sage flex items-center gap-0.5 transition-colors">
+                    More <ChevronRight size={12} />
+                </button>
             </div>
+
+            {/* List Items */}
             <div className="flex-1 flex flex-col justify-between">
                 {data.map((coin: any, i: number) => (
-                    <div key={coin.id || i} className="flex justify-between items-center group cursor-pointer hover:bg-earth-cream/20 p-1.5 -mx-1.5 rounded-lg transition-colors">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[10px] text-earth-stone font-mono w-3">{i + 1}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-earth-darkbrown">{coin.symbol}</span>
-                                <span className="text-[10px] text-earth-stone hidden sm:inline truncate max-w-[80px]">{coin.name}</span>
+                    <div key={coin.id || i} className="flex justify-between items-center group cursor-pointer hover:bg-earth-cream/40 p-2 rounded-xl transition-colors duration-300">
+
+                        {/* LEFT: Rank + Logo + Symbol */}
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            {/* Rank */}
+                            <span className="text-xs font-mono font-bold text-earth-stone/60 w-4 shrink-0 text-center">
+                                {i + 1}
+                            </span>
+
+                            {/* ✅ Logo Image */}
+                            <img
+                                src={coin.image}
+                                alt={coin.symbol}
+                                className="w-6 h-6 rounded-full shadow-sm shrink-0"
+                            />
+
+                            {/* Symbol & Name */}
+                            <div className="flex flex-col truncate pr-2">
+                                <span className="text-sm font-semibold text-earth-darkbrown leading-tight">
+                                    {coin.symbol}
+                                </span>
+                                <span className="text-[10px] text-earth-stone truncate leading-tight hidden sm:block">
+                                    {coin.name}
+                                </span>
                             </div>
                         </div>
-                        <div className="text-right flex items-center gap-4">
-                            <span className="text-xs font-mono text-earth-darkbrown">{coin.price < 1 ? `$${coin.price.toFixed(6)}` : `$${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</span>
-                            <span className={`text-[10px] font-bold w-12 text-right ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>{coin.change24h >= 0 ? '+' : ''}{Math.abs(coin.change24h).toFixed(2)}%</span>
+
+                        {/* RIGHT: Price & Percent (Stack บนล่างเพื่อให้ตัวใหญ่ได้) */}
+                        <div className="text-right flex flex-col items-end shrink-0">
+                            <span className="text-sm text-earth-darkbrown leading-tight">
+                                {coin.price < 1 ? `$${coin.price.toFixed(6)}` : `$${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                            </span>
+                            <span className={`text-xs font-semibold leading-tight mt-0.5 ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                {coin.change24h >= 0 ? '▲' : '▼'} {Math.abs(coin.change24h).toFixed(2)}%
+                            </span>
                         </div>
                     </div>
                 ))}

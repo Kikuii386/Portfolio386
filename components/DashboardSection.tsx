@@ -175,7 +175,7 @@ function DashboardSkeleton() {
         {/* Right Column (PnL + Sentiment) */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
           {/* PnL Trend */}
-          <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 min-h-[200px] shadow-xl flex flex-col justify-between">
+          <div className="bg-white border border-earth-cream/60 rounded-xl p-6 min-h-[200px] shadow-xl flex flex-col justify-between">
             <ShimmerBlock className="h-5 w-32" />
             <div className="h-[100px] w-full border-b border-earth-cream/30 relative mt-4">
               <div className="absolute bottom-0 w-full h-[60%] bg-earth-brown/30 rounded-t-lg"></div>
@@ -845,8 +845,8 @@ export default function DashboardSection({
                       key={tf}
                       onClick={() => setVolTimeframe(tf as any)}
                       className={`px-3 py-1 text-[10px] font-medium rounded-md transition-all ${volTimeframe === tf
-                          ? 'bg-white text-earth-darkbrown shadow-sm'
-                          : 'text-earth-stone hover:bg-earth-cream/50'
+                        ? 'bg-white text-earth-darkbrown shadow-sm'
+                        : 'text-earth-stone hover:bg-earth-cream/50'
                         }`}
                     >
                       {tf}
@@ -1383,8 +1383,8 @@ function SplitStatCard({ title, total, items, icon: Icon, trend }: any) {
         {trend && (
           <div
             className={`flex items-center text-xs font-bold px-2 py-1 rounded-full ${trend === 'up'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
               }`}
           >
             {trend === 'up' ? '▲' : '▼'}
