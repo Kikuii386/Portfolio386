@@ -23,6 +23,7 @@ interface SwipeableRowProps {
   isExpanded: boolean;
   onToggle: () => void;
   totalValue?: number;
+  onSelect: (token: EnrichedToken) => void;
 }
 
 export const SwipeableRow = ({
@@ -34,38 +35,39 @@ export const SwipeableRow = ({
   isExpanded,
   onToggle,
   totalValue = 0,
+  onSelect,
 }: SwipeableRowProps) => {
   // --- Calculation Logic (เหมือนเดิม) ---
   const entry =
     viewMode === 'high'
       ? t.highEntry
       : viewMode === 'low'
-      ? t.lowEntry
-      : viewMode === 'other'
-      ? t.otherEntry
-      : viewMode === 'free'
-      ? t.freeEntry
-      : t.totalEntry;
+        ? t.lowEntry
+        : viewMode === 'other'
+          ? t.otherEntry
+          : viewMode === 'free'
+            ? t.freeEntry
+            : t.totalEntry;
   const qty =
     viewMode === 'high'
       ? t.highQty
       : viewMode === 'low'
-      ? t.lowQty
-      : viewMode === 'other'
-      ? t.otherQty
-      : viewMode === 'free'
-      ? t.freeQty
-      : t.totalQty;
+        ? t.lowQty
+        : viewMode === 'other'
+          ? t.otherQty
+          : viewMode === 'free'
+            ? t.freeQty
+            : t.totalQty;
   const inv =
     viewMode === 'high'
       ? t.highInv
       : viewMode === 'low'
-      ? t.lowInv
-      : viewMode === 'other'
-      ? t.otherInv
-      : viewMode === 'free'
-      ? t.freeInv
-      : t.totalInv;
+        ? t.lowInv
+        : viewMode === 'other'
+          ? t.otherInv
+          : viewMode === 'free'
+            ? t.freeInv
+            : t.totalInv;
   const value = t.currentPrice * qty;
   const pnl = entry > 0 ? ((t.currentPrice - entry) / entry) * 100 : 0;
   const allocation = totalValue > 0 ? (value / totalValue) * 100 : 0;
@@ -178,13 +180,12 @@ export const SwipeableRow = ({
       content: (
         <div className="w-full">
           <div
-            className={`inline-block transition-all duration-300 origin-right ${
-              priceChanges[t.contract] === 'up'
-                ? 'animate-text-pop-green'
-                : priceChanges[t.contract] === 'down'
+            className={`inline-block transition-all duration-300 origin-right ${priceChanges[t.contract] === 'up'
+              ? 'animate-text-pop-green'
+              : priceChanges[t.contract] === 'down'
                 ? 'animate-text-pop-red '
                 : ''
-            }`}
+              }`}
           >
             <PriceDisplay price={t.currentPrice} />
           </div>
@@ -198,9 +199,8 @@ export const SwipeableRow = ({
     },
     // 6. PnL (9%)
     {
-      className: `w-[133.05px] flex-none px-6 py-4 text-right font-semibold flex-shrink-0 transition-colors duration-300 ${
-        pnl >= 0 ? 'text-green-600' : 'text-red-600'
-      }`,
+      className: `w-[133.05px] flex-none px-6 py-4 text-right font-semibold flex-shrink-0 transition-colors duration-300 ${pnl >= 0 ? 'text-green-600' : 'text-red-600'
+        }`,
       content: (
         <div className="w-full">
           {/* ส่วนเปอร์เซ็นต์ + SVG */}
@@ -315,9 +315,8 @@ export const SwipeableRow = ({
         <div className="w-full flex flex-col justify-center gap-1">
           <div className="w-full bg-earth-cream/70 rounded-full h-2.5 overflow-hidden border border-earth-cream/30">
             <div
-              className={`h-full rounded-full transition-all duration-300 ease-out ${
-                allocation > 30 ? 'bg-earth-olive/90' : 'bg-earth-sage/90'
-              }`}
+              className={`h-full rounded-full transition-all duration-300 ease-out ${allocation > 30 ? 'bg-earth-olive/90' : 'bg-earth-sage/90'
+                }`}
               style={{ width: `${Math.max(allocation, 1)}%` }}
             ></div>
           </div>
@@ -347,12 +346,12 @@ export const SwipeableRow = ({
 
   return (
     <motion.tr
-      initial={{ opacity: 0, y: 10 }} 
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      
+
       // 5. ปรับความเร็ว (Spring จะดูเด้งดึ๋งและสมูทกว่า Linear)
-      transition={{ 
+      transition={{
         layout: { type: "spring", stiffness: 45, damping: 10 }, // สำหรับการย้ายที่
         opacity: { duration: 0.2 } // สำหรับการจางเข้า/ออก
       }}
@@ -368,14 +367,15 @@ export const SwipeableRow = ({
             style={{ width: SLIDE_WIDTH }}
           >
             <Tooltip content="Chart">
-              <a
-                href={getGraphLink(t)}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // กันไม่ให้ไปตีกับ event อื่น
+                  onSelect(t);       // สั่งเปิด Drawer
+                }}
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm text-earth-stone hover:text-earth-olive border border-earth-cream/60 transition-transform hover:scale-110"
               >
                 <LineChart size={16} />
-              </a>
+              </button>
             </Tooltip>
             <Tooltip content="Sheet">
               <a

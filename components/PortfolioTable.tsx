@@ -22,6 +22,7 @@ import Tooltip from '@/components/ui/Tooltips';
 import { SwipeableRow } from './SwipeableRow';
 import { getGraphLink, getGoogleSheetLink } from './ui/RowActions';
 import MobileFilterDrawer from '@/components/MobileFilterDrawer';
+import CoinDrawer from '@/components/CoinDrawer';
 
 type Props = {
   tokens: EnrichedToken[];
@@ -40,6 +41,7 @@ function PortfolioTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
   const { copiedText, copy } = useCopyToClipboard();
+  const [selectedToken, setSelectedToken] = useState<EnrichedToken | null>(null);
 
   useEffect(() => {
     // ใช้สำหรับให้ทั้งตาราง fade-in ตอนเปิดหน้านี้ครั้งแรกเท่านั้น
@@ -255,12 +257,12 @@ function PortfolioTable({
         viewMode === 'high'
           ? row.highQty
           : viewMode === 'low'
-          ? row.lowQty
-          : viewMode === 'other'
-          ? row.otherQty
-          : viewMode === 'free'
-          ? row.freeQty
-          : row.totalQty;
+            ? row.lowQty
+            : viewMode === 'other'
+              ? row.otherQty
+              : viewMode === 'free'
+                ? row.freeQty
+                : row.totalQty;
 
       // ถ้าไม่มีจำนวน ไม่ต้องบวก
       if (qty <= 0) return sum;
@@ -279,22 +281,22 @@ function PortfolioTable({
           viewMode === 'high'
             ? a.highQty
             : viewMode === 'low'
-            ? a.lowQty
-            : viewMode === 'other'
-            ? a.otherQty
-            : viewMode === 'free'
-            ? a.freeQty
-            : a.totalQty;
+              ? a.lowQty
+              : viewMode === 'other'
+                ? a.otherQty
+                : viewMode === 'free'
+                  ? a.freeQty
+                  : a.totalQty;
         const bQty =
           viewMode === 'high'
             ? b.highQty
             : viewMode === 'low'
-            ? b.lowQty
-            : viewMode === 'other'
-            ? b.otherQty
-            : viewMode === 'free'
-            ? b.freeQty
-            : b.totalQty;
+              ? b.lowQty
+              : viewMode === 'other'
+                ? b.otherQty
+                : viewMode === 'free'
+                  ? b.freeQty
+                  : b.totalQty;
         aVal = a.currentPrice * aQty;
         bVal = b.currentPrice * bQty;
       } else if (sortConfig.key === 'allocation') {
@@ -302,22 +304,22 @@ function PortfolioTable({
           viewMode === 'high'
             ? a.highQty
             : viewMode === 'low'
-            ? a.lowQty
-            : viewMode === 'other'
-            ? a.otherQty
-            : viewMode === 'free'
-            ? a.freeQty
-            : a.totalQty;
+              ? a.lowQty
+              : viewMode === 'other'
+                ? a.otherQty
+                : viewMode === 'free'
+                  ? a.freeQty
+                  : a.totalQty;
         const bQty =
           viewMode === 'high'
             ? b.highQty
             : viewMode === 'low'
-            ? b.lowQty
-            : viewMode === 'other'
-            ? b.otherQty
-            : viewMode === 'free'
-            ? b.freeQty
-            : b.totalQty;
+              ? b.lowQty
+              : viewMode === 'other'
+                ? b.otherQty
+                : viewMode === 'free'
+                  ? b.freeQty
+                  : b.totalQty;
         const aValue = a.currentPrice * aQty;
         const bValue = b.currentPrice * bQty;
         aVal = totalValue > 0 ? (aValue / totalValue) * 100 : 0;
@@ -327,63 +329,63 @@ function PortfolioTable({
           viewMode === 'high'
             ? a.highInv
             : viewMode === 'low'
-            ? a.lowInv
-            : viewMode === 'other'
-            ? a.otherInv
-            : viewMode === 'free'
-            ? a.freeInv
-            : a.totalInv;
+              ? a.lowInv
+              : viewMode === 'other'
+                ? a.otherInv
+                : viewMode === 'free'
+                  ? a.freeInv
+                  : a.totalInv;
         bVal =
           viewMode === 'high'
             ? b.highInv
             : viewMode === 'low'
-            ? b.lowInv
-            : viewMode === 'other'
-            ? b.otherInv
-            : viewMode === 'free'
-            ? b.freeInv
-            : b.totalInv;
+              ? b.lowInv
+              : viewMode === 'other'
+                ? b.otherInv
+                : viewMode === 'free'
+                  ? b.freeInv
+                  : b.totalInv;
       } else if (sortConfig.key === 'pnlPercentage') {
         const aQty =
           viewMode === 'high'
             ? a.highQty
             : viewMode === 'low'
-            ? a.lowQty
-            : viewMode === 'other'
-            ? a.otherQty
-            : viewMode === 'free'
-            ? a.freeQty
-            : a.totalQty;
+              ? a.lowQty
+              : viewMode === 'other'
+                ? a.otherQty
+                : viewMode === 'free'
+                  ? a.freeQty
+                  : a.totalQty;
         const bQty =
           viewMode === 'high'
             ? b.highQty
             : viewMode === 'low'
-            ? b.lowQty
-            : viewMode === 'other'
-            ? b.otherQty
-            : viewMode === 'free'
-            ? b.freeQty
-            : b.totalQty;
+              ? b.lowQty
+              : viewMode === 'other'
+                ? b.otherQty
+                : viewMode === 'free'
+                  ? b.freeQty
+                  : b.totalQty;
         const aEntry =
           viewMode === 'high'
             ? a.highEntry
             : viewMode === 'low'
-            ? a.lowEntry
-            : viewMode === 'other'
-            ? a.otherEntry
-            : viewMode === 'free'
-            ? a.freeEntry
-            : a.totalEntry;
+              ? a.lowEntry
+              : viewMode === 'other'
+                ? a.otherEntry
+                : viewMode === 'free'
+                  ? a.freeEntry
+                  : a.totalEntry;
         const bEntry =
           viewMode === 'high'
             ? b.highEntry
             : viewMode === 'low'
-            ? b.lowEntry
-            : viewMode === 'other'
-            ? b.otherEntry
-            : viewMode === 'free'
-            ? b.freeEntry
-            : b.totalEntry;
+              ? b.lowEntry
+              : viewMode === 'other'
+                ? b.otherEntry
+                : viewMode === 'free'
+                  ? b.freeEntry
+                  : b.totalEntry;
         aVal = aEntry > 0 ? ((a.currentPrice - aEntry) / aEntry) * 100 : 0;
         bVal = bEntry > 0 ? ((b.currentPrice - bEntry) / bEntry) * 100 : 0;
       } else if (sortConfig.key === 'marketCap') {
@@ -462,7 +464,7 @@ function PortfolioTable({
     >
       <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85dvh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
-        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-30 shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
+        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-[60] shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-4">
             {/* Title */}
             <div className="flex justify-between items-center w-full md:w-auto">
@@ -570,34 +572,34 @@ function PortfolioTable({
                   viewMode === 'high'
                     ? t.highEntry
                     : viewMode === 'low'
-                    ? t.lowEntry
-                    : viewMode === 'other'
-                    ? t.otherEntry
-                    : viewMode === 'free'
-                    ? t.freeEntry
-                    : t.totalEntry;
+                      ? t.lowEntry
+                      : viewMode === 'other'
+                        ? t.otherEntry
+                        : viewMode === 'free'
+                          ? t.freeEntry
+                          : t.totalEntry;
 
                 const qty =
                   viewMode === 'high'
                     ? t.highQty
                     : viewMode === 'low'
-                    ? t.lowQty
-                    : viewMode === 'other'
-                    ? t.otherQty
-                    : viewMode === 'free'
-                    ? t.freeQty
-                    : t.totalQty;
+                      ? t.lowQty
+                      : viewMode === 'other'
+                        ? t.otherQty
+                        : viewMode === 'free'
+                          ? t.freeQty
+                          : t.totalQty;
 
                 const inv =
                   viewMode === 'high'
                     ? t.highInv
                     : viewMode === 'low'
-                    ? t.lowInv
-                    : viewMode === 'other'
-                    ? t.otherInv
-                    : viewMode === 'free'
-                    ? t.freeInv
-                    : t.totalInv;
+                      ? t.lowInv
+                      : viewMode === 'other'
+                        ? t.otherInv
+                        : viewMode === 'free'
+                          ? t.freeInv
+                          : t.totalInv;
 
                 const value = t.currentPrice * qty;
                 const profitAmount = value - inv;
@@ -610,8 +612,8 @@ function PortfolioTable({
                   chg > 0
                     ? 'text-green-600'
                     : chg < 0
-                    ? 'text-red-600'
-                    : 'text-earth-stone';
+                      ? 'text-red-600'
+                      : 'text-earth-stone';
 
                 const isProfit = profitAmount >= 0;
                 const pnlColor = isProfit ? 'text-green-700' : 'text-red-700';
@@ -689,11 +691,10 @@ function PortfolioTable({
 
                         {/* 1. Percentage Line: มีลูกศร + พื้นหลังสี */}
                         <div
-                          className={`flex items-center justify-end gap-1 font-semibold px-2 py-0.5 rounded-md ml-auto w-fit ${
-                            isProfit
-                              ? 'text-green-700 bg-green-50'
-                              : 'text-red-700 bg-red-50'
-                          }`}
+                          className={`flex items-center justify-end gap-1 font-semibold px-2 py-0.5 rounded-md ml-auto w-fit ${isProfit
+                            ? 'text-green-700 bg-green-50'
+                            : 'text-red-700 bg-red-50'
+                            }`}
                         >
                           {isProfit ? (
                             <svg
@@ -727,11 +728,10 @@ function PortfolioTable({
 
                     {/* --- Collapsible Area: Stats Grid (ส่วนที่ซ่อน) --- */}
                     <div
-                      className={`transition-all duration-300 ease-in-out overflow-hidden border-earth-cream/20 ${
-                        isExpanded
-                          ? 'max-h-[500px] opacity-100 border-t'
-                          : 'max-h-0 opacity-0 border-none'
-                      }`}
+                      className={`transition-all duration-300 ease-in-out overflow-hidden border-earth-cream/20 ${isExpanded
+                        ? 'max-h-[500px] opacity-100 border-t'
+                        : 'max-h-0 opacity-0 border-none'
+                        }`}
                     >
                       <div className="px-4 py-2 bg-earth-cream/10">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm bg-earth-cream/50 p-3 rounded-xl border border-earth-cream/40">
@@ -872,7 +872,7 @@ function PortfolioTable({
                             allocation > 30
                               ? 'bg-earth-olive/90'
                               : 'bg-earth-sage/90'
-                          }`}
+                            }`}
                           style={{
                             // บังคับความกว้างขั้นต่ำ 2% แก้ปัญหาขีดแหว่งๆ
                             width: `${Math.max(allocation, 1)}%`,
@@ -894,9 +894,8 @@ function PortfolioTable({
                         {isExpanded ? 'Hide Stats' : 'Show Stats'}
                         <ChevronDown
                           size={14}
-                          className={`transition-transform duration-300 ease-in-out ${
-                            isExpanded ? 'rotate-180' : ''
-                          }`}
+                          className={`transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''
+                            }`}
                         />
                       </button>
 
@@ -949,9 +948,9 @@ function PortfolioTable({
         />
 
         {/* ----------- Desktop/Tablet Table View ----------- */}
-        <div className="hidden md:block relative z-0 overflow-y-auto max-h-[85vh] transition-opacity duration-300">
+        <div className="hidden md:block relative z-[0] overflow-y-auto max-h-[85vh] transition-opacity duration-300">
           <table className="w-full border-collapse border-earth-cream/60 text-sm md:text-base">
-            <thead className="hidden sm:table-header-group sticky top-0 z-20 bg-earth-cream/80 backdrop-blur-md">
+            <thead className="hidden sm:table-header-group sticky top-0 z-[20] bg-earth-cream/80 backdrop-blur-md">
               <tr>
                 {/* 1. Asset (ชิดซ้าย) */}
                 <th className="px-6 py-4 w-[260.25px] text-left text-base font-semibold text-earth-brown">
@@ -959,7 +958,7 @@ function PortfolioTable({
                     column="name"
                     sortConfig={sortConfig}
                     onSort={requestSort}
-                    // ไม่ต้องใส่ className เพราะ default คือชิดซ้าย
+                  // ไม่ต้องใส่ className เพราะ default คือชิดซ้าย
                   >
                     Asset
                   </SortButton>
@@ -1084,6 +1083,7 @@ function PortfolioTable({
                     copiedText={copiedText}
                     totalValue={totalValue}
                     isExpanded={openRowId === t.contract}
+                    onSelect={(token) => setSelectedToken(token)}
                     onToggle={() =>
                       setOpenRowId((prev) =>
                         prev === t.contract ? null : t.contract
@@ -1102,6 +1102,11 @@ function PortfolioTable({
               <span className="text-earth-stone text-base animate-pulse">
                 Loading more assets...
               </span>
+              <CoinDrawer
+                isOpen={!!selectedToken}
+                onClose={() => setSelectedToken(null)}
+                coin={selectedToken}
+              />
             </div>
           )}
         </div>
