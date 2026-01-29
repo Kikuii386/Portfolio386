@@ -343,4 +343,3 @@ export default function CoinDrawer({ isOpen, onClose, coin }: any) {
         document.body
     );
 }
-}

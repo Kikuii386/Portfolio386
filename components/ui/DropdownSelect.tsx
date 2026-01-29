@@ -7,12 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // 1. สร้าง Type ใหม่สำหรับ "กลุ่ม" ของตัวเลือก
 export type DropdownGroup = {
-  label?: string; // ชื่อหัวข้อกลุ่ม (เช่น "การแสดงผล", "ตั้งค่า") - ใส่หรือไม่ใส่ก็ได้
-  items: string[]; // รายการตัวเลือกในกลุ่มนั้น
+  label?: string;
+  items: string[];
 };
 
 type DropdownSelectProps = {
-  // 2. เปลี่ยน options ให้รับเป็น Array ของกลุ่มแทน
   options: DropdownGroup[];
   selected: string;
   onSelect: (value: string) => void;
@@ -118,18 +117,16 @@ export default function DropdownSelect({
               <motion.div
                 ref={menuRef}
                 key="portal-dropdown"
-                // Animation States
-                initial={{ opacity: 0, scale: 0.95, y: -10 }} // เริ่ม: จาง + เล็ก + ลอยขึ้นนิดนึง
-                animate={{ opacity: 1, scale: 1, y: 0 }} // จบ: ชัด + เต็ม + ตรงตำแหน่ง
-                exit={{ opacity: 0, scale: 0.95, y: -10 }} // ออก: กลับไปท่าเดิม
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                // Positioning (สำคัญมาก)
                 style={{
                   position: 'absolute',
                   top: coords.top,
                   left: coords.left,
-                  minWidth: Math.max(coords.width, 180), // กว้างเท่าปุ่ม หรืออย่างน้อย 200px
-                  transformOrigin: 'top center', // ✅ สำคัญ: บอกให้ขยายจากมุมซ้ายบน (จุดที่ปุ่มอยู่)
+                  minWidth: Math.max(coords.width, 180),
+                  transformOrigin: 'top center',
                   zIndex: 30,
                 }}
                 className={`
@@ -161,11 +158,10 @@ export default function DropdownSelect({
                             className={`
                             group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm 
                             transition-all duration-300 ease-in-out text-left
-                            ${
-                              isSelected
+                            ${isSelected
                                 ? 'bg-earth-brown/80 text-white font-semibold'
                                 : 'text-earth-brown hover:bg-earth-sage/80 hover:text-white'
-                            }
+                              }
                           `}
                           >
                             <span className="truncate">
@@ -190,7 +186,7 @@ export default function DropdownSelect({
               </motion.div>
             )}
           </AnimatePresence>,
-          document.body // ส่งไป render ที่ Body เพื่อหนี Table
+          document.body
         )}
     </div>
   );
