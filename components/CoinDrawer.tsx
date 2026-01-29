@@ -7,6 +7,7 @@ import { X, TrendingUp, TrendingDown, Activity, ArrowRightLeft, Wallet, Percent 
 import {
     AreaChart, Area, YAxis, XAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
+import PriceDisplay from '@/components/PriceDisplay';
 
 // ฟังก์ชันดึงกราฟ (เหมือนเดิม)
 const fetchChartFromApi = async (params: string) => {

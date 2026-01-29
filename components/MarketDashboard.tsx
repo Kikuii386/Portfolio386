@@ -3,11 +3,10 @@
 import React, { useState, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { ResponsiveContainer, AreaChart, Area, YAxis } from 'recharts';
 import {
-    Search, Star, ChevronRight, Coins, ArrowRightLeft, Bitcoin, Fuel,
+    Search, Star, ChevronRight, Coins, ArrowRightLeft,
     TrendingUp, TrendingDown, Zap, ArrowUpRight, ArrowDownRight, Flame, X
 } from 'lucide-react';
 import Tooltip from '@/components/ui/Tooltips';
-import { SortButton } from '@/components/ui/SortButton';
 import { motion, AnimatePresence } from 'framer-motion';
 // import Tooltip from '@/components/ui/Tooltips'; // ⚠️ ตรวจสอบว่ามีไฟล์นี้จริง ถ้าไม่มีให้ comment ไว้ก่อน
 
