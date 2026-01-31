@@ -4,7 +4,7 @@ import QtyDisplay from './QtyDisplay';
 
 const PriceDisplay = ({ price }) => {
 
-  
+
   // 2. เพิ่ม Logic: ถ้าราคาเกิน 1,000 ให้ใช้ QtyDisplay ย่อเลข (K, M, B)
   if (price >= 10000) {
     return (
@@ -19,22 +19,34 @@ const PriceDisplay = ({ price }) => {
 
   // --- ตั้งแต่ตรงนี้ลงไปคือ Logic เดิมสำหรับเหรียญเล็ก ---
 
+  // 2. กรณีราคาปกติ (0.01 ถึง 9,999)
   if (price >= 0.01) {
-    const match = price.toString().match(/^(\d+\.\d{0,5})/);
-    const displayPrice = match ? match[1] : price.toFixed(4);
+    let formattedPrice;
+    if (price >= 1) {
+      // เกิน $1 ให้มีทศนิยม 2 ตำแหน่งเสมอ
+      formattedPrice = price.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    } else {
+      // ต่ำกว่า $1 ให้มีทศนิยม 4 ตำแหน่งเสมอ (เช่น 0.5432)
+      formattedPrice = price.toLocaleString('en-US', {
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4
+      });
+    }
 
     return (
       <div className="BasePopover_base__T5yOf popover-base">
-        <span className="PriceDisplay_sub__WDANn">${displayPrice}</span>
+        <span className="PriceDisplay_sub__WDANn">${formattedPrice}</span>
       </div>
     );
   }
 
-  let priceStr = price.toString();
-  if (priceStr.includes('e') || !priceStr.includes('.')) {
-    priceStr = price.toFixed(40);
-  }
-  const [, decimals] = priceStr.split('.');
+  let priceStr = price.toFixed(100);
+
+  const parts = priceStr.split('.');
+  const decimals = parts[1] || "";
 
   const firstNonZeroIndex = decimals.search(/[^0]/);
 

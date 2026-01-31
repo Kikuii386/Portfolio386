@@ -901,15 +901,17 @@ function PortfolioTable({
 
                       {/* ปุ่ม Link (Chart / Sheet) */}
                       <div className="flex gap-2">
-                        <a
-                          href={getGraphLink(t)}
-                          target="_blank"
-                          rel="noreferrer"
+                        {/* ✅ แก้ไข: เปลี่ยนจาก <a> เป็น <button> เพื่อเรียก CoinDrawer */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // กันไม่ให้ไปกวน Accordion
+                            setSelectedToken(t); // ✅ สั่งเปิด CoinDrawer โดยส่ง token ตัวนี้เข้าไป
+                          }}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
                         >
                           <LineChart size={14} />
                           Chart
-                        </a>
+                        </button>
                         <a
                           href={getGoogleSheetLink()}
                           target="_blank"
@@ -1102,13 +1104,14 @@ function PortfolioTable({
               <span className="text-earth-stone text-base animate-pulse">
                 Loading more assets...
               </span>
-              <CoinDrawer
-                isOpen={!!selectedToken}
-                onClose={() => setSelectedToken(null)}
-                coin={selectedToken}
-              />
             </div>
           )}
+          <CoinDrawer
+            isOpen={!!selectedToken}
+            onClose={() => setSelectedToken(null)}
+            coin={selectedToken}
+            viewMode={viewMode}
+          />
         </div>
       </div>
     </div>
