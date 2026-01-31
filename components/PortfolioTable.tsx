@@ -464,7 +464,7 @@ function PortfolioTable({
     >
       <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85dvh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
-        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-[60] shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
+        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-60 shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-4">
             {/* Title */}
             <div className="flex justify-between items-center w-full md:w-auto">
