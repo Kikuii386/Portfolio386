@@ -17,19 +17,15 @@ const CHAIN_MAP: Record<string, string> = {
   // เพิ่ม chain อื่นๆ ได้ที่นี่
 };
 
-export const getGraphLink = (token: any): string => {
-  if (!token || !token.chain || !token.contract) return '#';
-
-  // แปลงชื่อ Chain
-  const chainSlug =
-    CHAIN_MAP[token.chain.toUpperCase()] || token.chain.toLowerCase();
-
-  return `https://dexscreener.com/${chainSlug}/${token.contract}`;
-};
-
 /**
  * สร้าง Link ไปยัง Google Sheet
  */
-export const getGoogleSheetLink = (): string => {
+export const getGoogleSheetLink = (specificLink?: string): string => {
+  // 1. ถ้ามีลิงก์เฉพาะเจาะจงส่งมา (และไม่ใช่ข้อความว่าง) ให้ใช้ลิงก์นั้น
+  if (specificLink && specificLink.trim() !== '') {
+    return specificLink;
+  }
+
+  // 2. ถ้าไม่มี ให้ใช้ลิงก์ Default เดิม (Main Sheet)
   return `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit`;
 };

@@ -20,7 +20,7 @@ import { useCopyToClipboard } from '@/hook/useCopyToClipboard';
 import React from 'react';
 import Tooltip from '@/components/ui/Tooltips';
 import { SwipeableRow } from './SwipeableRow';
-import { getGraphLink, getGoogleSheetLink } from './ui/RowActions';
+import { getGoogleSheetLink } from './ui/RowActions';
 import MobileFilterDrawer from '@/components/MobileFilterDrawer';
 import CoinDrawer from '@/components/CoinDrawer';
 
@@ -42,6 +42,8 @@ function PortfolioTable({
   const [mounted, setMounted] = useState(false);
   const { copiedText, copy } = useCopyToClipboard();
   const [selectedToken, setSelectedToken] = useState<EnrichedToken | null>(null);
+
+
 
   useEffect(() => {
     // ใช้สำหรับให้ทั้งตาราง fade-in ตอนเปิดหน้านี้ครั้งแรกเท่านั้น
@@ -231,6 +233,8 @@ function PortfolioTable({
   const [viewMode, setViewMode] = useState<
     'total' | 'high' | 'low' | 'other' | 'free'
   >('total');
+
+
 
   // New filteredTokens useMemo: filter by searchTerm (name/symbol), then filter by viewMode
   const filteredTokens = useMemo(() => {
@@ -457,6 +461,8 @@ function PortfolioTable({
     { key: 'priceChangeH24', label: '24h Change' },
   ];
 
+
+
   return (
     <div
       className="w-full px-0 transition-opacity duration-300"
@@ -464,7 +470,7 @@ function PortfolioTable({
     >
       <div className="w-full overflow-x-auto overflow-y-auto md:overflow-y-visible max-h-[85dvh] md:max-h-none bg-white rounded-xl shadow-xl border border-earth-cream/60 max-w-screen-2xl mx-auto">
         {/* Header Controls */}
-        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-60 shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
+        <div className="w-full bg-white p-6 rounded-t-xl sticky top-0 z-[60] shadow-md border-b border-earth-cream/80 md:border-none md:shadow-none md:relative ">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-4">
             {/* Title */}
             <div className="flex justify-between items-center w-full md:w-auto">
@@ -490,7 +496,7 @@ function PortfolioTable({
 
                   {searchTerm && (
                     // 2. ❌ Wrapper: แค่กำหนดตำแหน่งก็พอ (ตัด flex ออก เพราะ Tooltip จัดการตัวเองได้แล้ว)
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10">
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 z-[10]">
                       <Tooltip content="Clear" side="bottom">
                         <button
                           type="button"
@@ -618,6 +624,11 @@ function PortfolioTable({
                 const isProfit = profitAmount >= 0;
                 const pnlColor = isProfit ? 'text-green-700' : 'text-red-700';
                 const isExpanded = expandedTokens[t.contract];
+
+                const targetSheetLink =
+                  viewMode === 'free' && t.freeGsLink ? t.freeGsLink : // ถ้าโหมด Free
+                    t.gsLink ? t.gsLink :                                // ถ้าโหมดอื่น
+                      getGoogleSheetLink();
 
                 return (
                   <div
@@ -913,7 +924,7 @@ function PortfolioTable({
                           Chart
                         </button>
                         <a
-                          href={getGoogleSheetLink()}
+                          href={targetSheetLink}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"

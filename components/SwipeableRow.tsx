@@ -11,7 +11,7 @@ import { EnrichedToken } from '@/lib/enrichWithPrices';
 import PriceDisplay from '@/components/PriceDisplay';
 import QtyDisplay from '@/components/QtyDisplay';
 import Tooltip from '@/components/ui/Tooltips';
-import { getGraphLink, getGoogleSheetLink } from './ui/RowActions';
+import { getGoogleSheetLink } from './ui/RowActions';
 import { motion } from 'framer-motion';
 
 interface SwipeableRowProps {
@@ -77,6 +77,11 @@ export const SwipeableRow = ({
     chg > 0 ? 'text-green-700 ' : chg < 0 ? 'text-red-700' : 'text-earth-stone';
 
   const SLIDE_WIDTH = 160;
+
+  const targetSheetLink =
+    viewMode === 'free' && t.freeGsLink ? t.freeGsLink : // ถ้าโหมด Free
+      t.gsLink ? t.gsLink :                                // ถ้าโหมดอื่น
+        getGoogleSheetLink();
 
   const handleWheel = (e: React.WheelEvent) => {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
@@ -379,7 +384,7 @@ export const SwipeableRow = ({
             </Tooltip>
             <Tooltip content="Sheet">
               <a
-                href={getGoogleSheetLink()}
+                href={targetSheetLink}
                 target="_blank"
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm text-earth-stone hover:text-green-600 border border-earth-cream/60 transition-transform hover:scale-110"
               >

@@ -25,9 +25,9 @@ export type TokenRow = {
   geckoId: string;
   logo: string;
   allocationPct: number;
+  gsLink: string;
+  freeGsLink?: string;
 };
-
-// lib/getSheetTokens.ts
 
 export async function getSheetTokens(): Promise<TokenRow[]> {
   const url = process.env.GSHEETS_TOKEN_ENDPOINT;
@@ -44,7 +44,7 @@ export async function getSheetTokens(): Promise<TokenRow[]> {
   );
   console.log('🔍 CHECK GOOGLE DATA:', {
     symbol: spx?.name,
-    totalInv: spx?.totalInv, 
+    totalInv: spx?.totalInv,
     lowInv: spx?.lowInv,
     otherInv: spx?.otherInv,
   });
