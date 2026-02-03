@@ -58,14 +58,13 @@ export default function Navbar() {
           ========================================================= */}
       <div
         className={`
-          hidden md:flex fixed top-0 left-0 w-full z-40 px-8 py-4 
+          hidden md:flex fixed top-0 left-0 w-full z-[150] px-8 py-4 
           justify-between items-center
           bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md
           transition-all duration-300 ease-in-out
-          ${
-            scrolled
-              ? 'opacity-0 pointer-events-none -translate-y-2' // ถ้าเลื่อนลง: จางหาย + ลอยขึ้นนิดนึง
-              : 'opacity-100 pointer-events-auto translate-y-0' // ถ้าอยู่บน: ชัดเจน อยู่ที่เดิม
+          ${scrolled
+            ? 'opacity-0 pointer-events-none -translate-y-2' // ถ้าเลื่อนลง: จางหาย + ลอยขึ้นนิดนึง
+            : 'opacity-100 pointer-events-auto translate-y-0' // ถ้าอยู่บน: ชัดเจน อยู่ที่เดิม
           }
         `}
       >
@@ -97,10 +96,9 @@ export default function Navbar() {
                   hover:text-earth-tan
                   after:absolute after:left-0 after:right-0 after:bottom-0 after:h-0.5
                   after:rounded-full after:bg-earth-sage
-                  ${
-                    isActive
-                      ? 'after:w-full text-white'
-                      : 'after:w-0 text-white/90 hover:after:w-full'
+                  ${isActive
+                    ? 'after:w-full text-white'
+                    : 'after:w-0 text-white/90 hover:after:w-full'
                   }
                   after:transition-all after:duration-300
                 `}
@@ -128,7 +126,7 @@ export default function Navbar() {
           ========================================================= */}
 
       {/* Wrapper ใสๆ เพื่อจัดกึ่งกลาง กันไม่ให้ CSS ตีกัน */}
-      <div className="hidden md:flex fixed top-0 left-4 h-full flex-col justify-center z-40 pointer-events-none">
+      <div className="hidden md:flex fixed top-0 left-4 h-full flex-col justify-center z-[150] pointer-events-none">
         {/* ตัว Dock จริงๆ */}
         <div
           className={`
@@ -136,10 +134,9 @@ export default function Navbar() {
             bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl 
             border border-earth-cream/10 rounded-2xl
             transition-all duration-300 ease-in-out
-            ${
-              scrolled
-                ? 'opacity-100 translate-x-0' // โชว์: อยู่ที่เดิม
-                : 'opacity-0 -translate-x-2' // ซ่อน: จางหาย + หลบไปซ้าย
+            ${scrolled
+              ? 'opacity-100 translate-x-0' // โชว์: อยู่ที่เดิม
+              : 'opacity-0 -translate-x-2' // ซ่อน: จางหาย + หลบไปซ้าย
             }
           `}
         >
@@ -164,11 +161,10 @@ export default function Navbar() {
                     href={item.href}
                     className={`
                     relative group/item p-2 rounded-xl transition-all duration-200
-                    ${
-                      isActive
+                    ${isActive
                         ? 'bg-earth-sage/20 text-earth-sage'
                         : 'text-earth-cream/70 hover:text-earth-darkbrown hover:bg-earth-cream/50 '
-                    }
+                      }
                   `}
                   >
                     <item.icon size={24} />
@@ -194,7 +190,7 @@ export default function Navbar() {
       {/* =========================================================
           MOBILE NAVBAR (Sticky Top)
           ========================================================= */}
-      <div className="md:hidden fixed left-0 top-0 w-full z-40 bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
+      <div className="md:hidden fixed left-0 top-0 w-full z-[150] bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-md border-b border-earth-cream/10 h-16 px-4 flex justify-between items-center">
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2">
           <img
@@ -226,7 +222,7 @@ export default function Navbar() {
       {/* Backdrop (พื้นหลังดำจางๆ) */}
       <div
         className={`
-          md:hidden fixed inset-0 z-[40] bg-black/60 backdrop-blur-sm transition-opacity duration-300
+          md:hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm transition-opacity duration-300
           top-16 
           ${mobileOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}
         `}
@@ -236,7 +232,7 @@ export default function Navbar() {
       {/* Drawer Container */}
       <div
         className={`
-          md:hidden fixed z-[40] w-[280px] 
+          md:hidden fixed z-[110] w-[280px] 
           top-16 bottom-0 
           left-0
           bg-gradient-to-br from-earth-darkbrown to-earth-brown shadow-xl border-r border-white/10
@@ -260,15 +256,13 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
               className={`
                     flex items-center gap-3 p-3 rounded-xl transition-all duration-200
-                    ${
-                      pathname === item.href
-                        ? `${
-                            isChristmas
-                              ? 'bg-red-600 text-white'
-                              : 'bg-earth-stone/80 text-darkbrown'
-                          } shadow-lg font-bold`
-                        : 'text-earth-cream/70 hover:bg-white/10 hover:text-white'
-                    }
+                    ${pathname === item.href
+                  ? `${isChristmas
+                    ? 'bg-red-600 text-white'
+                    : 'bg-earth-stone/80 text-darkbrown'
+                  } shadow-lg font-bold`
+                  : 'text-earth-cream/70 hover:bg-white/10 hover:text-white'
+                }
                   `}
             >
               <item.icon size={20} />
@@ -290,10 +284,9 @@ export default function Navbar() {
             className={`
               w-full flex justify-center items-center gap-2 text-white font-bold py-3 rounded-xl 
               transition-all shadow-lg active:scale-95
-              ${
-                isChristmas
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-earth-sage hover:bg-earth-sage/90'
+              ${isChristmas
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-earth-sage hover:bg-earth-sage/90'
               }
             `}
           >

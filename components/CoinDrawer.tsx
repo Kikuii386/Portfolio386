@@ -189,7 +189,7 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
                         // ✅ Class หลัก: ใช้ md: นำหน้าเพื่อบังคับ Style Desktop เดิม
                         // ✅ ส่วนที่ไม่มี md: คือ Style Mobile
                         className={`
-                            fixed z-[110] bg-white shadow-2xl flex flex-col border-earth-cream/60
+                            fixed z-[100] bg-white shadow-2xl flex flex-col border-earth-cream/60
                             
                             /* Desktop Style (Original) */
                             md:right-0 md:top-0 md:h-full md:w-[480px] md:border-l md:rounded-none md:bottom-auto md:left-auto
@@ -204,7 +204,7 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
                         </div>
 
                         {/* Header (Desktop Style คงเดิม, Mobile เพิ่ม rounded-t) */}
-                        <div className="sticky top-0 bg-white/95 backdrop-blur-md z-[120] px-6 py-4 border-b border-earth-cream/40 flex justify-between items-center shadow-sm rounded-t-[24px] md:rounded-none">
+                        <div className="sticky top-0 bg-white/95 backdrop-blur-md z-[100] px-6 py-4 border-b border-earth-cream/40 flex justify-between items-center shadow-sm rounded-t-[24px] md:rounded-none">
                             <div className="flex items-center gap-3">
                                 <img src={coin.image || coin.logo || '/smile.png'} alt={coin.symbol} className="w-10 h-10 rounded-full shadow-sm bg-white p-0.5 border border-earth-cream" />
                                 <div>
