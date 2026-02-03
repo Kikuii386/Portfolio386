@@ -78,12 +78,12 @@ function ChainGasCard({
                         <span className="text-lg font-bold text-earth-darkbrown font-mono tracking-tight leading-none">
                             {chain === 'ETH' ? value.toFixed(4) : value.toFixed(6)}
                         </span>
-                        <span className="text-[10px] font-sans font-bold text-earth-stone/70">{unit}</span>
+                        <span className="text-[10px] font-bold tracking-wider mb-0.5 transition-colors duration-300 text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">{unit}</span>
                     </div>
 
                     {/* Real Cost in USD */}
                     <span className={`text-[10px] font-bold mt-1 ${textColor}`}>
-                        ~{formatCost(costUsd)} <span className="text-earth-stone/60 font-medium">per tx</span>
+                        ~{formatCost(costUsd)} <span className="font-bold tracking-wider mb-0.5 transition-colors duration-300 text-earth-darkbrown md:text-earth-stone md:group-hover:text-earth-darkbrown">per tx</span>
                     </span>
                 </div>
             </div>
@@ -164,21 +164,19 @@ const MarketRow = React.memo(({ coin, formatCurrency, Sparkline }: any) => {
             initial={{ opacity: 0, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 1 }}
-
-            // 5. ปรับความเร็ว (Spring จะดูเด้งดึ๋งและสมูทกว่า Linear)
             transition={{
-                layout: { type: "spring", stiffness: 45, damping: 10 }, // สำหรับการย้ายที่
-                opacity: { duration: 0.2 } // สำหรับการจางเข้า/ออก
+                layout: { type: "spring", stiffness: 45, damping: 10 },
+                opacity: { duration: 0.2 }
             }}
-            className="hover:bg-earth-cream/20 transition-colors group cursor-pointer"
+            className="hover:bg-earth-cream/20 transition-colors group cursor-pointer border-b border-earth-cream/40 last:border-none"
         >
-            {/* 1. Rank */}
+            {/* 1. Rank: w-[50px] (pl-2 เพื่อให้เลขอยู่ตรงกลางค่อนไปทางขวาหน่อย หรือจะ text-center ก็ได้) */}
             <td className="py-4 pl-2 w-[50px] text-center">
                 <Star size={16} className="mx-auto text-earth-stone/40 hover:text-yellow-400 hover:fill-yellow-400 transition-colors" />
             </td>
 
-            {/* 2. Asset */}
-            <td className="py-4 w-[240px]">
+            {/* 2. Asset: w-[240px] + px-2 (เพื่อให้ตรงกับ Header) */}
+            <td className="py-4 px-2 w-[240px]">
                 <div className="flex items-center gap-3">
                     <span className="text-xs font-mono text-earth-stone w-6 text-right shrink-0">{coin.rank}</span>
                     <img src={coin.image} alt={coin.symbol} className="w-8 h-8 rounded-full shadow-sm shrink-0" />
@@ -193,37 +191,37 @@ const MarketRow = React.memo(({ coin, formatCurrency, Sparkline }: any) => {
                 </div>
             </td>
 
-            {/* 3. Price */}
-            <td className="py-4 text-right w-[120px] font-mono text-sm font-bold text-earth-darkbrown">
+            {/* 3. Price: w-[120px] + px-2 */}
+            <td className="py-4 px-2 text-right w-[120px] font-mono text-sm font-bold text-earth-darkbrown">
                 {coin.price < 1 ? `$${coin.price.toFixed(6)}` : `$${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
             </td>
 
-            {/* 4. Change */}
-            <td className={`py-4 text-right w-[120px] font-mono text-sm font-medium ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            {/* 4. Change: w-[120px] + px-2 */}
+            <td className={`py-4 px-2 text-right w-[120px] font-mono text-sm font-medium ${coin.change24h >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                 <div className="flex items-center justify-end gap-1">
                     {coin.change24h >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                     {Math.abs(coin.change24h).toFixed(2)}%
                 </div>
             </td>
 
-            {/* 5. M.Cap */}
-            <td className="py-4 text-right w-[140px] font-mono text-sm text-earth-primary hidden lg:table-cell truncate">
+            {/* 5. M.Cap: w-[140px] + px-2 */}
+            <td className="py-4 px-2 text-right w-[140px] font-mono text-sm text-earth-primary hidden lg:table-cell truncate">
                 {formatCurrency(coin.mcap)}
             </td>
 
-            {/* 6. Volume */}
-            <td className="py-4 text-right w-[140px] font-mono text-sm text-earth-primary hidden xl:table-cell truncate">
+            {/* 6. Volume: w-[140px] + px-2 */}
+            <td className="py-4 px-2 text-right w-[140px] font-mono text-sm text-earth-primary hidden xl:table-cell truncate">
                 {formatCurrency(coin.vol)}
             </td>
 
-            {/* 7. Graph */}
+            {/* 7. Graph: w-[120px] (ไม่ต้องมี px-2 เพราะกราฟชิดขวาใน flex) */}
             <td className="py-4 w-[120px]">
                 <div className="flex justify-end items-center h-full opacity-80 group-hover:opacity-100 transition-opacity">
                     <Sparkline data={coin.sparkline} isPositive={coin.change7d >= 0} />
                 </div>
             </td>
 
-            {/* 8. Action */}
+            {/* 8. Action: w-[80px] + pr-2 */}
             <td className="py-4 text-right pr-2 w-[80px]">
                 <button className="text-xs font-bold text-earth-stone border border-earth-cream/60 px-3 py-1.5 rounded-lg hover:bg-earth-darkbrown hover:text-white hover:border-earth-darkbrown transition-all">
                     Details
@@ -249,20 +247,22 @@ export default function MarketDashboard() {
 
     // ✅ 3. คำนวณข้อมูล: Filter -> Sort -> Slice (แก้จาก filteredCoins เดิม)
     const processedCoins = useMemo(() => {
-        // 3.1 Filter ตาม Search และ Tab
+        // 3.1 Search Filter (ยังคงไว้เหมือนเดิม)
         let result = coins.filter(coin =>
             coin.name.toLowerCase().includes(deferredSearch.toLowerCase()) ||
             coin.symbol.toLowerCase().includes(deferredSearch.toLowerCase())
         );
 
         if (deferredTab === 'Top Gainers') {
-            // กรองเอาเฉพาะกำไร และเรียงจากมากไปน้อย
-            result = result.filter(c => c.change24h > 0);
+            // ❌ ลบ: result = result.filter(c => c.change24h > 0);
+            // ✅ เหลือแค่: เรียงจาก มาก -> น้อย (บวกเยอะสุดขึ้นก่อน)
             result.sort((a, b) => b.change24h - a.change24h);
+
         } else if (deferredTab === 'Top Losers') {
-            // กรองเอาเฉพาะขาดทุน และเรียงจากติดลบเยอะสุดขึ้นก่อน (Ascending)
-            result = result.filter(c => c.change24h < 0);
+            // ❌ ลบ: result = result.filter(c => c.change24h < 0);
+            // ✅ เหลือแค่: เรียงจาก น้อย -> มาก (ลบเยอะสุดขึ้นก่อน)
             result.sort((a, b) => a.change24h - b.change24h);
+
         } else {
             // Tab: All -> เรียงตาม Rank ปกติ
             result.sort((a, b) => a.rank - b.rank);
@@ -334,30 +334,21 @@ export default function MarketDashboard() {
     const ethPrice = useMemo(() => coins.find(c => c.symbol === 'ETH')?.price || 0, [coins]);
     const solPrice = useMemo(() => coins.find(c => c.symbol === 'SOL')?.price || 0, [coins]);
 
-    const filteredCoins = useMemo(() => {
-        let result = coins.filter(coin =>
-            coin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            coin.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        if (activeTab === 'Top Gainers') {
-            result.sort((a, b) => b.change24h - a.change24h);
-        } else if (activeTab === 'Top Losers') {
-            result.sort((a, b) => a.change24h - b.change24h);
-        } else {
-            result.sort((a, b) => a.rank - b.rank);
-        }
-        return result;
-    }, [searchTerm, activeTab, coins]);
-
     const highlights = useMemo(() => {
         if (coins.length === 0) return { hot: [], gainers: [], volume: [] };
 
+        // 1. เรียงตาม % เปลี่ยนแปลง (สำหรับ Top Gainers)
         const sortedByChange = [...coins].sort((a, b) => b.change24h - a.change24h);
+
+        // 2. เรียงตาม Volume (สำหรับ Top Volume)
         const sortedByVol = [...coins].sort((a, b) => b.vol - a.vol);
 
+        // ✅ 3. (แก้ไขใหม่) เรียงตาม Market Cap จากมากไปน้อย สำหรับ Trending/Hot
+        const sortedByMcap = [...coins].sort((a, b) => b.mcap - a.mcap);
+
         return {
-            hot: coins.filter(c => ['BTC', 'ETH', 'SOL', 'PEPE', 'DOGE'].includes(c.symbol) || Math.abs(c.change24h) > 10).slice(0, 3),
+            // เลือก 3 อันดับแรกที่มี Market Cap สูงสุด (เช่น BTC, ETH, USDT/SOL)
+            hot: sortedByMcap.slice(0, 3),
             gainers: sortedByChange.slice(0, 3),
             volume: sortedByVol.slice(0, 3),
         };
@@ -515,44 +506,27 @@ export default function MarketDashboard() {
                 </div>
             </div>
 
-            <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl min-h-[600px] flex flex-col">
-                <div className="overflow-x-auto custom-scrollbar flex-1 -mx-6 px-6">
+            <div className="bg-white border border-earth-cream/60 rounded-2xl shadow-xl h-[800px] flex flex-col relative overflow-hidden">
+
+                {/* 2. Scroll Container: รวม Scrollbar ไว้ตรงนี้ (ทั้งแนวตั้งและแนวนอน) */}
+                <div className="overflow-auto custom-scrollbar flex-1 w-full h-full px-6 pb-6">
+
                     <table className="w-full text-left border-collapse min-w-[800px] table-fixed">
-                        <thead className="sticky top-0 bg-white z-10 shadow-sm">
+
+                        {/* 3. Sticky Header: จะเกาะติดขอบบนของ Scroll Container นี้ */}
+                        <thead className="sticky top-0 z-20 shadow-sm">
                             <tr className="text-[11px] text-earth-stone font-bold uppercase tracking-wider border-b border-earth-cream/60">
-                                {/* 1. Rank: กว้าง 60px */}
-                                <th className="py-4 pl-2 w-[75.2px] text-center">#</th>
 
-                                {/* 2. Asset: กว้าง 260px */}
-                                <th className="px-2 py-4 text-left w-[325.8px]">
-                                    Asset
-                                </th>
+                                {/* 2. Header Cells: เพิ่ม pt-10 (หรือ pt-8) เพื่อสร้างพื้นที่ว่างด้านบน และใส่ bg-white */}
+                                <th className="bg-white pt-8 pb-4 pl-2 w-[50px] text-center">#</th>
+                                <th className="bg-white px-2 pt-8 pb-4 text-left w-[240px]">Asset</th>
+                                <th className="bg-white px-2 pt-8 pb-4 text-right w-[120px]">Price</th>
+                                <th className="bg-white px-2 pt-8 pb-4 text-right w-[120px]">24h Change</th>
+                                <th className="bg-white px-2 pt-8 pb-4 text-right hidden lg:table-cell w-[140px]">Market Cap</th>
+                                <th className="bg-white px-2 pt-8 pb-4 text-right hidden xl:table-cell w-[140px]">Volume (24h)</th>
+                                <th className="bg-white pt-8 pb-4 text-right w-[120px]">Last 7 Days</th>
+                                <th className="bg-white pt-8 pb-4 text-right pr-2 w-[80px]">Action</th>
 
-                                {/* 3. Price: กว้าง 140px */}
-                                <th className="px-2 py-4 text-right w-[175.2px]">
-                                    Price
-                                </th>
-
-                                {/* 4. Change: กว้าง 140px */}
-                                <th className="px-2 py-4 text-right w-[175.2px]">
-                                    24h Change
-                                </th>
-
-                                {/* 5. M.Cap: กว้าง 160px (ซ่อนบนจอเล็กเหมือนเดิม) */}
-                                <th className="px-2 py-4 text-right hidden lg:table-cell w-[200px]">
-                                    Market Cap
-                                </th>
-
-                                {/* 6. Volume: กว้าง 160px (ซ่อนบนจอเล็กเหมือนเดิม) */}
-                                <th className="px-2 py-4 text-right hidden xl:table-cell w-[200px]">
-                                    Volume (24h)
-                                </th>
-
-                                {/* 7. Last 7 Days: กว้าง 140px */}
-                                <th className="py-4 text-right w-[175.2px]">Last 7 Days</th>
-
-                                {/* 8. Action: กว้าง 100px */}
-                                <th className="py-4 text-right pr-2 w-[125px]">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-earth-cream/40">
