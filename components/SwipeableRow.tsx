@@ -355,12 +355,6 @@ export const SwipeableRow = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
 
-      // 5. ปรับความเร็ว (Spring จะดูเด้งดึ๋งและสมูทกว่า Linear)
-      transition={{
-        layout: { type: "spring", stiffness: 45, damping: 10 }, // สำหรับการย้ายที่
-        opacity: { duration: 0.2 } // สำหรับการจางเข้า/ออก
-      }}
-
       className="group hover:bg-earth-cream/40 transition-colors duration-300"
       onWheel={handleWheel}
     >

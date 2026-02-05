@@ -712,7 +712,7 @@ export default function EvmMultiWalletBalanceChecker() {
                     >
                       <QtyDisplay qty={Number(r.formatted)} />
                     </span>
-                    <span className="p-10 text-[10px] text-earth-stone font-bold uppercase truncate">
+                    <span className="text-[10px] text-earth-stone font-bold uppercase truncate">
                       {tokenSymbol}
                     </span>
                   </div>

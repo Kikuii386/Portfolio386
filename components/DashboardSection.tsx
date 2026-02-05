@@ -221,6 +221,11 @@ export default function DashboardSection({
   const [history, setHistory] = useState<KPIRow[]>(initialHistory);
 
   const [volTimeframe, setVolTimeframe] = useState<'1D' | '1W' | '1M'>('1D');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // ✅ 4. แก้ useEffect: ให้ฉลาดขึ้น (ถ้ามีของแล้ว ไม่ต้อง Fetch ซ้ำ)
   useEffect(() => {
@@ -501,7 +506,7 @@ export default function DashboardSection({
       const isSentiment = payload[0].dataKey === 'barHeight';
 
       return (
-        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[150px]">
+        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[150px] pointer-events-none">
           <p className="text-earth-primary font-mono text-xs mb-2 border-b border-earth-cream pb-1">
             {label}
           </p>
@@ -541,7 +546,7 @@ export default function DashboardSection({
       const isPositive = currentPnL >= 0;
 
       return (
-        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[180px]">
+        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[180px] pointer-events-none">
           {/* Header: วันที่ */}
           <p className="text-earth-primary font-mono text-xs mb-2 border-b border-earth-cream pb-1 font-bold">
             {label}
@@ -723,9 +728,12 @@ export default function DashboardSection({
             </div>
 
             <div className="flex-1 w-full -ml-2 h-full min-h-0">
-              <ZoomableChartWrapper originalData={chartData}>
+              {isMounted && (<ZoomableChartWrapper
+                key={`wealth-${chartData.length}`}
+                originalData={chartData}
+              >
                 {(zoomedData) => (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%"    >
                     <ComposedChart
                       data={zoomedData}
                       margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
@@ -771,7 +779,8 @@ export default function DashboardSection({
                           `${(val / 1000000).toFixed(1)}M`
                         }
                       />
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip />}
+                        wrapperStyle={{ pointerEvents: 'none' }} />
 
                       <Area
                         type="monotone"
@@ -808,6 +817,7 @@ export default function DashboardSection({
                   </ResponsiveContainer>
                 )}
               </ZoomableChartWrapper>
+              )}
             </div>
           </div>
 
@@ -856,9 +866,10 @@ export default function DashboardSection({
               </div>
             </div>
             <div className="flex-1 w-full h-full min-h-0">
-              <ZoomableChartWrapper originalData={volumeChartData}>
+              {isMounted && (<ZoomableChartWrapper key={`vol-${volumeChartData.length}`}
+                originalData={volumeChartData}>
                 {(zoomedData) => (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%"    >
                     <BarChart
                       data={zoomedData}
                       margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -893,6 +904,7 @@ export default function DashboardSection({
 
                       <Tooltip
                         content={<CustomTooltip />}
+                        wrapperStyle={{ pointerEvents: 'none' }}
                         cursor={{ fill: COLORS.cream, opacity: 0.4 }}
                       />
 
@@ -915,6 +927,7 @@ export default function DashboardSection({
                   </ResponsiveContainer>
                 )}
               </ZoomableChartWrapper>
+              )}
             </div>
           </div>
         </div>
@@ -933,7 +946,7 @@ export default function DashboardSection({
             </div>
 
             <div className="flex-1 w-full h-full min-h-0">
-              <ZoomableChartWrapper originalData={chartData}>
+              {isMounted && (<ZoomableChartWrapper key={`pnl-${chartData.length}`} originalData={chartData}>
                 {(zoomedData) => {
                   // คำนวณจุดตัดศูนย์
                   const gradientOffset = () => {
@@ -947,7 +960,7 @@ export default function DashboardSection({
                   const off = gradientOffset();
 
                   return (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%"    >
                       <AreaChart
                         data={zoomedData}
                         margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
@@ -1068,7 +1081,8 @@ export default function DashboardSection({
                           }
                         />
 
-                        <Tooltip content={<CustomPnLTooltip />} offset={20} />
+                        <Tooltip content={<CustomPnLTooltip />} offset={20}
+                          wrapperStyle={{ pointerEvents: 'none' }} />
 
                         <Area
                           type="monotone"
@@ -1124,6 +1138,7 @@ export default function DashboardSection({
                   );
                 }}
               </ZoomableChartWrapper>
+              )}
             </div>
           </div>
 
@@ -1153,9 +1168,9 @@ export default function DashboardSection({
             </div>
 
             <div className="flex-1 w-full h-full min-h-0">
-              <ZoomableChartWrapper originalData={chartData}>
+              {isMounted && (<ZoomableChartWrapper key={`f_g-${chartData.length}`} originalData={chartData}>
                 {(zoomedData) => (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%"    >
                     <BarChart
                       data={zoomedData}
                       margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
@@ -1172,6 +1187,7 @@ export default function DashboardSection({
                       />
                       <Tooltip
                         content={<CustomTooltip />}
+                        wrapperStyle={{ pointerEvents: 'none' }}
                         cursor={{ fill: 'transparent' }}
                       />
                       <Bar
@@ -1191,6 +1207,7 @@ export default function DashboardSection({
                   </ResponsiveContainer>
                 )}
               </ZoomableChartWrapper>
+              )}
             </div>
 
             <div className="flex justify-between text-[10px] text-earth-stone mt-2 font-mono border-t border-earth-cream pt-2">
@@ -1247,9 +1264,9 @@ export default function DashboardSection({
             </div>
 
             <div className="flex-1 w-full relative h-full min-h-0 ">
-              <ZoomableChartWrapper originalData={chartData}>
+              {isMounted && (<ZoomableChartWrapper originalData={chartData}>
                 {(zoomedData) => (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%"    >
                     <ComposedChart
                       data={zoomedData}
                       margin={{ top: 10, right: 0, left: 10, bottom: 0 }}
@@ -1302,7 +1319,8 @@ export default function DashboardSection({
                         dy={5}
                       />
 
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip />}
+                        wrapperStyle={{ pointerEvents: 'none' }} />
 
                       <Line
                         yAxisId="left"
@@ -1357,6 +1375,7 @@ export default function DashboardSection({
                   </ResponsiveContainer>
                 )}
               </ZoomableChartWrapper>
+              )}
             </div>
           </div>
         </div>
@@ -1474,7 +1493,7 @@ function AllocationChart({ tokens }: { tokens: EnrichedToken[] }) {
 
       return (
         // ✅ ใช้ Class เดิมของ CustomTooltip เพื่อความ Consistency
-        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[140px]">
+        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[140px] pointer-events-none">
           {/* ✅ Header: Logo + Name */}
           <div className="flex items-center gap-3 mb-2 border-b border-earth-cream pb-2">
             {d.logo ? (
@@ -1525,14 +1544,14 @@ function AllocationChart({ tokens }: { tokens: EnrichedToken[] }) {
   };
 
   return (
-    <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl sm:min-h-[300px] flex flex-col overflow-hidden">
+    <div className="bg-white border border-earth-cream/60 rounded-2xl p-6 shadow-xl h-[544px] md:h-[415px] flex flex-col overflow-hidden">
       <h2 className="text-earth-darkbrown font-bold text-lg mb-4 flex items-center gap-2">
         Allocation
       </h2>
 
       <div className="flex flex-col md:flex-row items-center h-full gap-4">
         {/* 1. Chart Area (60% Width) */}
-        <div className="relative w-full md:w-[60%] h-[250px]">
+        <div className="relative w-full md:w-[60%] h-[250px] min-w-[250px]">
           {/* Center Text (ยอดรวมตรงกลางโดนัท) */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-lg font-bold text-earth-darkbrown">
@@ -1542,37 +1561,42 @@ function AllocationChart({ tokens }: { tokens: EnrichedToken[] }) {
               TOTAL
             </span>
           </div>
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={100}
-            minHeight={100}
-          >
-            <PieChart
-              className="outline-none" // ✅ ใส่ Class นี้แทน style ครับ
-              accessibilityLayer={false} // ✅ (Optional) ปิด Layer การเข้าถึงถ้าไม่จำเป็น ช่วยแก้เรื่อง Focus ได้เหมือนกัน
+          <div className="absolute inset-0">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+
+              className="outline-none"
             >
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius="65%"
-                outerRadius="100%"
-                paddingAngle={0}
-                dataKey="value"
-                stroke="none"
+              <PieChart
+                className="outline-none" // ✅ ใส่ Class นี้แทน style ครับ
+                accessibilityLayer={false} // ✅ (Optional) ปิด Layer การเข้าถึงถ้าไม่จำเป็น ช่วยแก้เรื่อง Focus ได้เหมือนกัน
               >
-                {data.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={PIE_COLORS[index % PIE_COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              {/* ✅ เรียกใช้ Tooltip ที่หน้าตาเหมือนเพื่อน แต่ฉลาดกว่า */}
-              <Tooltip content={<CustomPieTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="65%"
+                  outerRadius="100%"
+                  paddingAngle={0}
+                  dataKey="value"
+                  stroke="none"
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={PIE_COLORS[index % PIE_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                {/* ✅ เรียกใช้ Tooltip ที่หน้าตาเหมือนเพื่อน แต่ฉลาดกว่า */}
+                <Tooltip content={<CustomPieTooltip />}
+                  wrapperStyle={{ pointerEvents: 'none' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* 2. Custom Legend Area (40% Width) */}
@@ -1680,7 +1704,7 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
       const totalCost = data.val - data.pnl;
 
       return (
-        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[160px]">
+        <div className="bg-white/95 border border-earth-cream p-3 rounded-xl shadow-xl backdrop-blur-md min-w-[160px] pointer-events-none">
           {/* Header */}
           <div className="flex items-center gap-3 mb-2 border-b border-earth-cream pb-2">
             {data.logo ? (
@@ -1773,13 +1797,11 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
         </h2>
         <p className="text-earth-stone text-sm">Total Gainer</p>
       </div>
-      <div className="flex-1 w-full h-full min-h-0 ">
+      <div className="flex-1 w-full h-full min-w-[260px] min-h-[260px]">
         {isMounted ? (
           <ResponsiveContainer
             width="100%"
             height="100%"
-            minWidth={100}
-            minHeight={100}
             className="outline-none"
           >
             <BarChart
@@ -1805,14 +1827,20 @@ function TopMoversCard({ tokens }: { tokens: EnrichedToken[] }) {
 
               <Tooltip
                 content={<CustomBarTooltip />}
-                cursor={{ fill: COLORS.cream, opacity: 0.5 }} // Highlight แถวอัตโนมัติ (ไม่ต้องเขียนโค้ดเอง)
+                wrapperStyle={{ pointerEvents: 'none' }}
+                cursor={{
+                  fill: COLORS.cream,
+                  opacity: 0.5,
+                  style: { pointerEvents: 'none' }, // สำคัญมากสำหรับ Zoom
+                }}
               />
 
               <Bar
                 dataKey="absPercent" // ใช้ค่า Absolute เพื่อให้กราฟพุ่งไปทางขวาเสมอ
                 radius={[4, 4, 4, 4]} // มนมุมขวา
                 barSize={25} // ความสูงของแท่ง
-                isAnimationActive={false}
+                animationDuration={800}
+                animationEasing="ease-out"
                 activeBar={false} // บอกว่าไม่ต้องทำสถานะ Active เวลาคลิก
                 tabIndex={-1} // ปิด Animation เพื่อความเร็ว (หรือเปิดก็ได้)
               >

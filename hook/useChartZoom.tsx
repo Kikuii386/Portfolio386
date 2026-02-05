@@ -155,13 +155,14 @@ export const useChartZoom = (data: any[]) => {
 
     // Attach Events (Add only ONCE per data change)
     container.addEventListener('wheel', handleWheel, { passive: false });
-    container.addEventListener('mousedown', handleMouseDown);
+    // 🔥 Use Capture Phase for mousedown to prevent Recharts from blocking it
+    container.addEventListener('mousedown', handleMouseDown, { capture: true });
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       container.removeEventListener('wheel', handleWheel);
-      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mousedown', handleMouseDown, { capture: true }); // Must match addEventListener options
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       if (rAFId) cancelAnimationFrame(rAFId);
@@ -189,9 +190,6 @@ export const ZoomableChartWrapper = ({
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  if (!isMounted) {
-    return <div className={`w-full h-full min-h-0 ${className}`} />;
-  }
 
   return (
     <div
@@ -216,7 +214,7 @@ export const ZoomableChartWrapper = ({
         }
       `}</style>
 
-      {children(zoomedData)}
+      {isMounted ? children(zoomedData) : null}
     </div>
   );
 };

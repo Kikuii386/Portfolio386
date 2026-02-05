@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef, useDeferredValue } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useDeferredValue, useCallback } from 'react';
 import { ResponsiveContainer, AreaChart, Area, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import {
     Search, Star, ChevronRight, Coins, ArrowRightLeft,
@@ -9,6 +9,7 @@ import {
 import Tooltip from '@/components/ui/Tooltips';
 import { motion, AnimatePresence } from 'framer-motion';
 import PriceDisplay from './PriceDisplay';
+import CoinDrawer from './CoinDrawer';
 // import Tooltip from '@/components/ui/Tooltips'; // ⚠️ ตรวจสอบว่ามีไฟล์นี้จริง ถ้าไม่มีให้ comment ไว้ก่อน
 
 // --- 🎨 Palette (Earth Tone Theme) ---
@@ -89,7 +90,7 @@ function ChainGasCard({
     );
 }
 
-const TABS = ['All', 'Top Gainers', 'Top Losers'];
+const TABS = ['All', 'Top Gainers', 'Top Losers', 'Top Volume'];
 
 // --- 🔧 Sub-Component: Custom Tooltip สำหรับ Sparkline ---
 const CustomSparklineTooltip = ({ active, payload, isPositive }: any) => {
@@ -198,101 +199,109 @@ function MarketSkeleton() {
                 ))}
             </div>
 
-            {/* 3️⃣ MAIN TABLE */}
+            {/* 3️⃣ MAIN CONTENT (Table & Mobile Cards) */}
             {/* Controls Section */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 px-4">
-                <div className="h-[42px] w-40 bg-earth-darkbrown/10 rounded-lg" /> {/* Title */}
+                <div className="h-[42px] w-40 bg-earth-darkbrown/10 rounded-lg" />
                 <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
-                    <div className="flex gap-2"> {/* Tabs */}
+                    <div className="flex gap-2">
                         {[1, 2, 3].map(i => <div key={i} className="h-[42px] w-24 bg-earth-darkbrown/10 rounded-xl" />)}
                     </div>
-                    <div className="h-[42px] w-full md:w-64 bg-earth-darkbrown/10 rounded-xl" /> {/* Search */}
+                    <div className="h-[42px] w-full md:w-64 bg-earth-darkbrown/10 rounded-xl" />
                 </div>
             </div>
 
-            {/* Table Container (White BG) */}
-            <div className="bg-white border border-earth-cream/60 rounded-2xl shadow-xl h-[830px] flex flex-col relative overflow-hidden">
-                <div className="overflow-hidden flex-1 w-full h-full px-6 pb-6">
+            {/* Container (White BG) */}
+            <div className="bg-white border border-earth-cream/60 rounded-2xl shadow-xl min-h-[600px] md:h-[830px] flex flex-col relative overflow-hidden">
+                <div className="overflow-hidden flex-1 w-full h-full px-2 py-2 md:px-6 md:pb-6">
 
-                    {/* Fake Header Row */}
-                    <div className="flex items-center border-b border-earth-cream/60 pt-8 pb-4">
-                        <div className="w-[71.97px] pl-2 flex justify-center"><div className="h-3 w-4 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[345.5px] pl-6 pr-2"><div className="h-3 w-20 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[172.75px] px-2 flex justify-end"><div className="h-3 w-16 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[172.75px] px-2 flex justify-end"><div className="h-3 w-16 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[201.53px] px-2 hidden lg:flex justify-end"><div className="h-3 w-20 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[201.53px] px-2 hidden xl:flex justify-end"><div className="h-3 w-20 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[172.75px] flex justify-end"><div className="h-3 w-16 bg-earth-darkbrown/10 rounded" /></div>
-                        <div className="w-[115.22px] pr-2 flex justify-end"><div className="h-3 w-10 bg-earth-darkbrown/10 rounded" /></div>
+                    {/* 🟢 VIEW 1: DESKTOP TABLE SKELETON (Hidden on Mobile) */}
+                    <div className="hidden md:block h-full">
+                        {/* Fake Header Row */}
+                        <div className="flex items-center border-b border-earth-cream/60 pt-8 pb-4">
+                            <div className="w-[71.97px] pl-2 flex justify-center"><div className="h-3 w-4 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[345.5px] pl-6 pr-2"><div className="h-3 w-20 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[172.75px] px-2 flex justify-end"><div className="h-3 w-16 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[172.75px] px-2 flex justify-end"><div className="h-3 w-16 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[201.53px] px-2 hidden lg:flex justify-end"><div className="h-3 w-20 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[201.53px] px-2 hidden xl:flex justify-end"><div className="h-3 w-20 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[172.75px] flex justify-end"><div className="h-3 w-16 bg-earth-darkbrown/10 rounded" /></div>
+                            <div className="w-[115.22px] pr-2 flex justify-end"><div className="h-3 w-10 bg-earth-darkbrown/10 rounded" /></div>
+                        </div>
+
+                        {/* Fake Data Rows */}
+                        <div className="space-y-0">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                                <div key={i} className="flex items-center w-full py-4 border-b border-earth-cream/40">
+                                    <div className="w-[71.97px] pl-2 flex justify-center shrink-0"><div className="w-4 h-4 bg-earth-darkbrown/10 rounded-full" /></div>
+                                    <div className="w-[345.5px] px-2 shrink-0 flex items-center gap-3">
+                                        <div className="w-4 h-3 bg-earth-darkbrown/10 rounded shrink-0" />
+                                        <div className="w-8 h-8 rounded-full bg-earth-darkbrown/10 shrink-0" />
+                                        <div className="flex flex-col gap-1">
+                                            <div className="w-24 h-3 bg-earth-darkbrown/10 rounded" />
+                                            <div className="w-12 h-2 bg-earth-darkbrown/10 rounded" />
+                                        </div>
+                                    </div>
+                                    <div className="w-[172.75px] px-2 shrink-0 flex justify-end"><div className="w-20 h-3 bg-earth-darkbrown/10 rounded" /></div>
+                                    <div className="w-[172.75px] px-2 shrink-0 flex justify-end"><div className="w-16 h-3 bg-earth-darkbrown/10 rounded" /></div>
+                                    <div className="w-[201.53px] px-2 shrink-0 hidden lg:flex justify-end"><div className="w-24 h-3 bg-earth-darkbrown/10 rounded" /></div>
+                                    <div className="w-[201.53px] px-2 shrink-0 hidden xl:flex justify-end"><div className="w-24 h-3 bg-earth-darkbrown/10 rounded" /></div>
+                                    <div className="w-[172.75px] shrink-0 flex justify-end items-center"><div className="w-24 h-8 bg-earth-darkbrown/10 rounded" /></div>
+                                    <div className="w-[115.22px] pr-2 shrink-0 flex justify-end"><div className="w-16 h-8 bg-earth-darkbrown/10 rounded-lg" /></div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Fake Data Rows */}
-                    <div className="space-y-0">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                            <div key={i} className="flex items-center w-full py-4 border-b border-earth-cream/40">
-                                {/* 1. Rank */}
-                                <div className="w-[71.97px] pl-2 flex justify-center shrink-0">
-                                    <div className="w-4 h-4 bg-earth-darkbrown/10 rounded-full" />
-                                </div>
-                                {/* 2. Asset */}
-                                <div className="w-[345.5px] px-2 shrink-0 flex items-center gap-3">
-                                    <div className="w-4 h-3 bg-earth-darkbrown/10 rounded shrink-0" />
-                                    <div className="w-8 h-8 rounded-full bg-earth-darkbrown/10 shrink-0" />
-                                    <div className="flex flex-col gap-1">
-                                        <div className="w-24 h-3 bg-earth-darkbrown/10 rounded" />
-                                        <div className="w-12 h-2 bg-earth-darkbrown/10 rounded" />
+                    {/* 🟢 VIEW 2: MOBILE CARD SKELETON (Shown on Mobile) */}
+                    <div className="md:hidden grid grid-cols-1 gap-3 pb-10">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            // ✅ Layout เหมือน MarketCard เป๊ะๆ
+                            <div key={i} className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3">
+
+                                {/* Row 1: Header */}
+                                <div className="flex justify-between items-start">
+                                    {/* Left: Logo + Text */}
+                                    <div className="flex items-center gap-3">
+                                        {/* Logo Circle */}
+                                        <div className="w-10 h-10 rounded-full bg-earth-darkbrown/10 shrink-0" />
+
+                                        {/* Text Col */}
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="w-20 h-4 bg-earth-darkbrown/10 rounded" /> {/* Symbol */}
+                                            <div className="w-14 h-3 bg-earth-darkbrown/10 rounded" /> {/* Name */}
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Price + Change */}
+                                    <div className="flex flex-col items-end gap-1.5">
+                                        <div className="w-24 h-5 bg-earth-darkbrown/10 rounded" /> {/* Price */}
+                                        <div className="w-16 h-4 bg-earth-darkbrown/10 rounded" /> {/* Change */}
                                     </div>
                                 </div>
-                                {/* 3. Price */}
-                                <div className="w-[172.75px] px-2 shrink-0 flex justify-end">
-                                    <div className="w-20 h-3 bg-earth-darkbrown/10 rounded" />
-                                </div>
-                                {/* 4. Change */}
-                                <div className="w-[172.75px] px-2 shrink-0 flex justify-end">
-                                    <div className="w-16 h-3 bg-earth-darkbrown/10 rounded" />
-                                </div>
-                                {/* 5. Mcap (Hidden LG) */}
-                                <div className="w-[201.53px] px-2 shrink-0 hidden lg:flex justify-end">
-                                    <div className="w-24 h-3 bg-earth-darkbrown/10 rounded" />
-                                </div>
-                                {/* 6. Volume (Hidden XL) */}
-                                <div className="w-[201.53px] px-2 shrink-0 hidden xl:flex justify-end">
-                                    <div className="w-24 h-3 bg-earth-darkbrown/10 rounded" />
-                                </div>
-                                {/* 7. Graph */}
-                                <div className="w-[172.75px] shrink-0 flex justify-end items-center">
-                                    <div className="w-24 h-8 bg-earth-darkbrown/10 rounded" />
-                                </div>
-                                {/* 8. Action */}
-                                <div className="w-[115.22px] pr-2 shrink-0 flex justify-end">
-                                    <div className="w-16 h-8 bg-earth-darkbrown/10 rounded-lg" />
-                                </div>
+
+                                {/* Row 2: Stats Box */}
+                                {/* ใช้กล่องใหญ่แทนข้างใน เพื่อจำลอง Stats Box */}
+                                <div className="h-12 w-full bg-earth-darkbrown/5 rounded-lg border border-earth-cream/40" />
                             </div>
                         ))}
                     </div>
+
                 </div>
             </div>
         </div>
     );
 }
 
-const MarketRow = React.memo(({ coin, Sparkline }: any) => {
+const MarketRow = React.memo(({ coin, Sparkline, onSelect }: any) => {
     return (
         <motion.tr
-            layout
-            initial={{ opacity: 0, y: 4 }}
+            layout="position"
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{
-                layout: {
-                    type: "spring",
-                    stiffness: 60,
-                    damping: 15,
-                    mass: 1
-                },
-                opacity: { duration: 0.2 }
-            }}
+            exit={{ opacity: 0, scale: 0.95 }}
             className="group border-b border-earth-cream/40 last:border-none relative"
+
         >
             <td colSpan={8} className="p-0 border-none">
                 <div className="flex items-center w-full py-4 hover:bg-earth-cream/40 transition-colors duration-300 ease-in-out">
@@ -302,13 +311,13 @@ const MarketRow = React.memo(({ coin, Sparkline }: any) => {
                     <div className="w-[345.5px] px-2 shrink-0">
                         <div className="flex items-center gap-3">
                             <span className="text-xs font-mono text-earth-stone w-6 text-right shrink-0">{coin.rank}</span>
-                            <img src={coin.image} alt={coin.symbol} className="w-9 h-9 rounded-full shadow-sm shrink-0" />
+                            <img src={coin.image} alt={coin.symbol} className="w-8 h-8 rounded-full shadow-sm shrink-0" />
                             <div className="min-w-0 flex-1">
                                 <div className="text-base font-bold text-earth-darkbrown group-hover:text-earth-sage transition-colors truncate" title={coin.name}>
-                                    {coin.name.length > 20 ? `${coin.name.slice(0, 20)}...` : coin.name}
+                                    {coin.symbol}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[12px] text-earth-stone font-mono bg-earth-cream/30 px-1 rounded">{coin.symbol}</span>
+                                    <span className="text-[12px] text-earth-stone font-mono bg-earth-cream/30 px-1 rounded">{coin.name.length > 20 ? `${coin.name.slice(0, 20)}...` : coin.name}</span>
                                 </div>
                             </div>
                         </div>
@@ -336,7 +345,11 @@ const MarketRow = React.memo(({ coin, Sparkline }: any) => {
                     </div>
 
                     <div className="w-[115.22px] pr-2 text-right shrink-0">
-                        <button className="text-sm font-bold text-earth-stone border border-earth-cream/60 px-3 py-1.5 rounded-lg hover:bg-earth-darkbrown hover:text-white hover:border-earth-darkbrown transition-all duration-300 ease-in-out">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSelect(coin);
+                            }} className="text-xs font-bold text-earth-stone border border-earth-cream/60 px-2 py-1 rounded-lg hover:bg-earth-darkbrown hover:text-white hover:border-earth-darkbrown transition-all duration-300 ease-in-out">
                             Details
                         </button>
                     </div>
@@ -347,9 +360,7 @@ const MarketRow = React.memo(({ coin, Sparkline }: any) => {
     );
 });
 
-const MarketCard = React.memo(({ coin, formatCurrency }: any) => {
-    // ⚠️ ไม่ต้องรับ prop Sparkline แล้ว
-
+const MarketCard = React.memo(({ coin, onSelect }: any) => {
     return (
         <motion.div
             layout
@@ -357,44 +368,49 @@ const MarketCard = React.memo(({ coin, formatCurrency }: any) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            // ✅ เพิ่ม active:scale-[0.98] ให้รู้ว่ากดได้
-            className="bg-white border border-earth-cream/60 rounded-xl p-3 shadow-sm relative overflow-hidden group active:scale-[0.98] transition-all duration-200 cursor-pointer hover:border-earth-darkbrown/30"
+            // ✅ ใช้ Style Container ตามตัวอย่าง: bg-white, p-4, rounded-xl, border, shadow-sm
+            className="bg-white p-4 rounded-xl border border-earth-cream/60 shadow-sm flex flex-col gap-3 transition-all duration-200 active:scale-[0.98]"
         >
-            {/* ROW 1: Main Info */}
-            <div className="flex justify-between items-center mb-2.5">
+            {/* --- Row 1: Header --- */}
+            <div className="flex justify-between items-start">
 
-                {/* Left: Rank + Icon + Symbol */}
-                <div className="flex items-center gap-3 overflow-hidden">
-                    <span className="text-[10px] font-mono font-bold text-earth-stone/50 min-w-[18px]">
-                        #{coin.rank}
-                    </span>
+                {/* Left: Identity */}
+                <div className="flex items-center gap-3 max-w-[65%]">
+
+                    {/* 1. Logo (ย้ายมาเป็นตัวแรกสุด) */}
                     <img
                         src={coin.image}
                         alt={coin.symbol}
-                        // ✅ ลดขนาดรูปลงเหลือ w-8 h-8 (32px)
-                        className="w-8 h-8 rounded-full shadow-sm border border-earth-cream/40 shrink-0"
+                        className="w-10 h-10 rounded-full shadow-sm border border-earth-cream/40 shrink-0"
                     />
+
                     <div className="flex flex-col min-w-0">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="font-bold text-earth-darkbrown text-sm leading-tight truncate">
+                        {/* 2. Symbol + Rank (วางคู่กันตรงนี้) */}
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-earth-darkbrown/90 text-sm leading-tight truncate">
                                 {coin.symbol}
                             </span>
-                            <span className="text-[10px] text-earth-stone truncate hidden sm:inline-block">
-                                {coin.name}
+                            {/* Rank Badge แบบ Minimal */}
+                            <span className="font-mono text-[10px] font-bold text-earth-stone/60 bg-earth-cream/40 px-1.5 py-0.5 rounded-md leading-none">
+                                #{coin.rank}
                             </span>
                         </div>
+
+                        <span className="text-[11px] text-earth-stone font-medium truncate mt-0.5">
+                            {coin.name}
+                        </span>
                     </div>
                 </div>
 
-                {/* Right: Price & Change */}
-                <div className="flex flex-col items-end shrink-0 pl-2">
-                    <div className="text-sm font-bold text-earth-darkbrown font-mono leading-tight">
+                {/* Right: Price & Change (เลียนแบบส่วน Balance) */}
+                <div className="text-right max-w-[35%] flex flex-col items-end">
+                    <div className="font-mono text-base font-bold text-earth-darkbrown leading-none">
                         <PriceDisplay price={coin.price} />
                     </div>
-                    {/* Change Pill: ปรับให้เล็กลง */}
-                    <div className={`text-[10px] font-bold flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-md ${coin.change24h >= 0
-                        ? 'text-green-700 bg-green-50'
-                        : 'text-red-700 bg-red-50'
+                    {/* Change Badge */}
+                    <div className={`mt-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold font-mono flex items-center gap-1 leading-none ${coin.change24h >= 0
+                        ? 'bg-green-100/50 text-green-700'
+                        : 'bg-red-100/50 text-red-700'
                         }`}>
                         {coin.change24h >= 0 ? '▲' : '▼'}
                         {Math.abs(coin.change24h).toFixed(2)}%
@@ -402,26 +418,51 @@ const MarketCard = React.memo(({ coin, formatCurrency }: any) => {
                 </div>
             </div>
 
-            {/* ROW 2: Footer Stats (M.Cap / Vol) - แบบเส้นบรรทัดเดียว */}
-            <div className="flex items-center justify-between border-t border-earth-cream/30 pt-2 mt-1">
-                <div className="flex items-center gap-1">
-                    <span className="text-[9px] uppercase text-earth-stone font-bold tracking-wider">MCap</span>
-                    <span className="text-[10px] font-mono text-earth-primary font-medium">
-                        {/* ใช้ PriceDisplay หรือ formatCurrency ก็ได้ */}
+            {/* --- Row 2: Stats Box (เลียนแบบกล่อง Address) --- */}
+            {/* ใช้ bg-earth-cream/50 และ border เหมือนตัวอย่างเป๊ะ */}
+            <div className="flex items-center justify-between bg-earth-cream/50 border border-earth-cream/40 rounded-lg px-3 py-2">
+
+                {/* M.Cap */}
+                <div className="flex flex-col items-start">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+
+                        <span className="text-[10px] pl-3 uppercase text-earth-stone/80 font-bold tracking-wider">M.Cap</span>
+                    </div>
+                    <span className="font-mono text-xs font-semibold text-earth-darkbrown/90 pl-3">
                         <PriceDisplay price={coin.mcap} />
                     </span>
                 </div>
 
-                {/* ขีดคั่นกลาง (Optional) */}
-                <div className="h-2 w-px bg-earth-cream/60"></div>
+                {/* Divider Line (เส้นคั่นกลางบางๆ) */}
+                <div className="w-px h-6 bg-earth-cream/60 mx-2"></div>
 
+                {/* 2. Volume + Arrow (ขวา) */}
+                {/* ✅ เอา Chevron มาไว้ในนี้ ถัดจาก Volume */}
                 <div className="flex items-center gap-1">
-                    <span className="text-[9px] uppercase text-earth-stone font-bold tracking-wider">Vol</span>
-                    <span className="text-[10px] font-mono text-earth-primary font-medium">
-                        <PriceDisplay price={coin.vol} />
-                    </span>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] uppercase text-earth-stone/80 font-bold tracking-wider mb-0.5">Vol</span>
+                        <span className="font-mono text-xs font-semibold text-earth-darkbrown/90">
+                            <PriceDisplay price={coin.vol} />
+                        </span>
+                    </div>
+
+                    {/* ✅ ทำให้กดได้เฉพาะตรงนี้ */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation(); // กันเหนียวไว้
+                            onSelect(coin);
+                        }}
+                        className="p-0.5 -mr-1 rounded-lg hover:bg-earth-darkbrown/10 active:scale-90 transition-all cursor-pointer group"
+                    >
+                        <ChevronRight
+                            size={18}
+                            className="text-earth-stone/80 group-hover:text-earth-darkbrown transition-colors"
+                        />
+                    </button>
                 </div>
+
             </div>
+
         </motion.div>
     );
 });
@@ -437,24 +478,47 @@ export default function MarketDashboard() {
     const loadMoreRef = React.useRef(null); // ตัวจับตำแหน่งล่างสุด
     const deferredSearch = useDeferredValue(searchTerm);
     const deferredTab = useDeferredValue(activeTab);
+    const [selectedCoin, setSelectedCoin] = useState<any>(null); // เก็บเหรียญที่เลือก
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const tableRef = useRef<HTMLDivElement>(null);
+    const tableSectionRef = useRef<HTMLDivElement>(null);
+    const handleSelectCoin = useCallback((coin: any) => {
+        setSelectedCoin(coin);
+        setIsDrawerOpen(true);
+    }, []);
+
+    const handleMoreClick = (tabName: string) => {
+        setActiveTab(tabName); // เปลี่ยน Tab
+
+        // สั่งให้เลื่อนลงไปที่ตารางแบบนุ่มนวล
+        if (tableSectionRef.current) {
+            tableSectionRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start' // เลื่อนให้ส่วนหัวตารางมาอยู่ด้านบนจอ
+            });
+        }
+    };
 
 
 
     // ✅ 3. คำนวณข้อมูล: Filter -> Sort -> Slice (แก้จาก filteredCoins เดิม)
     const processedCoins = useMemo(() => {
-        // 3.1 Search Filter (ยังคงไว้เหมือนเดิม)
+        // 1. Search Filter (เหมือนเดิม)
         let result = coins.filter(coin =>
             coin.name.toLowerCase().includes(deferredSearch.toLowerCase()) ||
             coin.symbol.toLowerCase().includes(deferredSearch.toLowerCase())
         );
+
+        // 2. Sort Logic (เพิ่มเคส Top Volume)
         if (deferredTab === 'Top Gainers') {
             result.sort((a, b) => b.change24h - a.change24h);
-
         } else if (deferredTab === 'Top Losers') {
             result.sort((a, b) => a.change24h - b.change24h);
-
+        } else if (deferredTab === 'Top Volume') {
+            // 🆕 เพิ่ม Logic เรียงตาม Volume มาก -> น้อย
+            result.sort((a, b) => b.vol - a.vol);
         } else {
-            // Tab: All -> เรียงตาม Rank ปกติ
+            // Tab: 'All' (หรือ Trending) -> เรียงตาม Rank (Market Cap)
             result.sort((a, b) => a.rank - b.rank);
         }
         return result;
@@ -617,13 +681,13 @@ export default function MarketDashboard() {
 
             {/* 2️⃣ HIGHLIGHTS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex flex-col">
-                <HighlightCard title="Trending / Hot" icon={Flame} data={highlights.hot} iconColor="text-orange-500" />
-                <HighlightCard title="Top Gainers (24h)" icon={TrendingUp} data={highlights.gainers} iconColor="text-green-700" />
-                <HighlightCard title="Top Volume (24h)" icon={Zap} data={highlights.volume} iconColor="text-blue-500" />
+                <HighlightCard title="Trending / Hot" icon={Flame} data={highlights.hot} iconColor="text-orange-500" onMoreClick={() => handleMoreClick('All')} />
+                <HighlightCard title="Top Gainers (24h)" icon={TrendingUp} data={highlights.gainers} iconColor="text-green-700" onMoreClick={() => handleMoreClick('Top Gainers')} />
+                <HighlightCard title="Top Volume (24h)" icon={Zap} data={highlights.volume} iconColor="text-blue-500" onMoreClick={() => handleMoreClick('Top Volume')} />
             </div>
 
             {/* 3️⃣ MAIN TABLE */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 px-4">
+            <div ref={tableSectionRef} className="scroll-mt-25 flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 px-4">
                 <h2 className="text-earth-darkbrown font-bold text-xl flex items-center gap-2 h-[42px]">Crypto Market</h2>
                 <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
                     {/* Tabs */}
@@ -681,7 +745,7 @@ export default function MarketDashboard() {
 
                 {/* 2. Scroll Container: รวม Scrollbar ไว้ตรงนี้ (ทั้งแนวตั้งและแนวนอน) */}
                 <div className="overflow-auto custom-scrollbar flex-1 w-full h-full px-4 pb-4 pb-4 md:px-6 md:pb-6 ">
-                    <div className="md:hidden sticky top-0 z-30 bg-white py-3 pt-6 shadow-sm flex justify-between items-center text-[10px] font-bold text-earth-stone uppercase tracking-wider">
+                    <div className="md:hidden sticky top-0 z-30 bg-white py-3 px-4 pt-6 shadow-sm flex justify-between items-center text-[10px] font-bold text-earth-stone uppercase tracking-wider w-full">
                         <span className="pl-2">Asset</span>
                         <span className="pr-2">Price / 24h</span>
                     </div>
@@ -711,6 +775,7 @@ export default function MarketDashboard() {
                                             key={coin.id}
                                             coin={coin}
                                             Sparkline={Sparkline}
+                                            onSelect={handleSelectCoin}
                                         />
                                     ))}
                                 </AnimatePresence>
@@ -718,13 +783,14 @@ export default function MarketDashboard() {
                         </table>
                     </div>
                     {/* 🟢 VIEW 2: CARDS (สำหรับ Mobile) - โชว์เฉพาะมือถือ */}
-                    <div className="grid grid-cols-1 gap-3 md:hidden pb-10">
+                    <div className="grid grid-cols-1 gap-3 md:hidden pb-4">
                         <AnimatePresence mode='popLayout'>
                             {visibleCoins.map((coin) => (
                                 <MarketCard
                                     key={coin.id}
                                     coin={coin}
                                     Sparkline={Sparkline}
+                                    onSelect={handleSelectCoin}
                                 />
                             ))}
                         </AnimatePresence>
@@ -745,6 +811,11 @@ export default function MarketDashboard() {
                     )}
                 </div>
             </div>
+            <CoinDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                coin={selectedCoin}
+            />
         </div>
     );
 }
@@ -786,7 +857,7 @@ function HeaderCard({ title, value, icon: Icon, change, progress, staticLabel }:
 }
 
 // Sub-Component: Highlight Card
-function HighlightCard({ title, icon: Icon, data, iconColor }: any) {
+function HighlightCard({ title, icon: Icon, data, iconColor, onMoreClick }: any) {
     return (
         // 1️⃣ ปรับความสูงเป็น h-[240px] เพื่อรองรับ logo และ font ที่ใหญ่ขึ้น
         <div className="bg-white border border-earth-cream/60 rounded-2xl p-5 shadow-xl flex flex-col h-[240px]">
@@ -797,7 +868,9 @@ function HighlightCard({ title, icon: Icon, data, iconColor }: any) {
                     <Icon size={16} className={iconColor} />
                     {title}
                 </h3>
-                <button className="text-xs text-earth-stone hover:text-earth-sage flex items-center gap-0.5 transition-colors">
+                <button
+                    onClick={onMoreClick}
+                    className="text-xs text-earth-stone hover:text-earth-sage flex items-center gap-0.5 transition-colors">
                     More <ChevronRight size={12} />
                 </button>
             </div>

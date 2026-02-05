@@ -101,7 +101,6 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
     }, []);
 
     // --- Logic คำนวณ (คงเดิม) ---
-    const change24h = coin?.priceChangeH24 ?? 0;
     const price = coin?.currentPrice ?? coin?.price ?? 0;
     const mcap = coin?.marketCap ?? coin?.mcap ?? 0;
     const myQty = viewMode === 'high' ? coin?.highQty : viewMode === 'low' ? coin?.lowQty : viewMode === 'other' ? coin?.otherQty : viewMode === 'free' ? coin?.freeQty : coin?.totalQty || 0;
@@ -123,6 +122,15 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
         const diffFromAvg = ((endPrice - avg) / avg) * 100;
         return { avg, pnl, pnlPercent, diffFromAvg };
     }, [chartData]);
+
+    const rawChange24h = coin?.priceChangeH24;
+    const useFallback = rawChange24h === null || rawChange24h === undefined;
+    const displayChange = useFallback ? (stats.pnlPercent || 0) : rawChange24h;
+    const isPositive = displayChange >= 0;
+    const changeLabel = useFallback
+        ? `Change (${timeframe === '1' ? '24H' : `${timeframe}D`})`
+        : "24h Change";
+    const color = isPositive ? '#16a34a' : '#dc2626';
 
     const formatXAxis = (tickItem: number) => {
         const date = new Date(tickItem);
@@ -157,8 +165,6 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
 
     if (!mounted) return null;
 
-    const isPositive = change24h >= 0;
-    const color = isPositive ? '#16a34a' : '#dc2626';
 
     // ✅ Animation Variants: แยกท่าทาง Mobile/Desktop
     const drawerVariants = {
@@ -231,9 +237,9 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
                                 <div className={`text-right ${isPositive ? 'text-green-700' : 'text-red-700'}`}>
                                     <div className="flex items-center gap-1 font-bold text-lg justify-end">
                                         {isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                                        {Math.abs(change24h).toFixed(2)}%
+                                        {Math.abs(displayChange).toFixed(2)}%
                                     </div>
-                                    <p className="text-xs text-earth-stone font-medium">24h Change</p>
+                                    <p className="text-xs text-earth-stone font-medium">{changeLabel}</p>
                                 </div>
                             </div>
 
