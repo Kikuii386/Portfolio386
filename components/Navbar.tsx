@@ -7,6 +7,7 @@ import Tooltip from './ui/Tooltips';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
 import MenuToggle from './ui/MenuToggle';
+import WalletConnectButton from './ConnectButton';
 // ✅ Import ไอคอนให้ครบทุกเมนู
 import {
   LayoutDashboard,

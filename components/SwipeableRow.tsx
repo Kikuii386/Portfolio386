@@ -6,6 +6,7 @@ import {
   X,
   Check,
   Copy,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { EnrichedToken } from '@/lib/enrichWithPrices';
 import PriceDisplay from '@/components/PriceDisplay';
@@ -24,6 +25,7 @@ interface SwipeableRowProps {
   onToggle: () => void;
   totalValue?: number;
   onSelect: (token: EnrichedToken) => void;
+  onSwap: (token: EnrichedToken) => void;
 }
 
 export const SwipeableRow = ({
@@ -36,6 +38,7 @@ export const SwipeableRow = ({
   onToggle,
   totalValue = 0,
   onSelect,
+  onSwap,
 }: SwipeableRowProps) => {
   // --- Calculation Logic (เหมือนเดิม) ---
   const entry =
@@ -76,7 +79,7 @@ export const SwipeableRow = ({
   const chgColor =
     chg > 0 ? 'text-green-700 ' : chg < 0 ? 'text-red-700' : 'text-earth-stone';
 
-  const SLIDE_WIDTH = 160;
+  const SLIDE_WIDTH = 200;
 
   const targetSheetLink =
     viewMode === 'free' && t.freeGsLink ? t.freeGsLink : // ถ้าโหมด Free
@@ -374,6 +377,18 @@ export const SwipeableRow = ({
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm text-earth-stone hover:text-earth-olive border border-earth-cream/60 transition-transform hover:scale-110"
               >
                 <LineChart size={16} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Swap">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSwap(t); // 👈 ส่งฟังก์ชันนี้ลงมาจาก Parent
+                }}
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm text-earth-stone hover:text-earth-darkbrown border border-earth-cream/60 transition-transform hover:scale-110"
+              >
+                {/* ใช้ไอคอนลูกศรสวนกัน */}
+                <ArrowRightLeft size={16} />
               </button>
             </Tooltip>
             <Tooltip content="Sheet">

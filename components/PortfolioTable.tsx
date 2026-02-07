@@ -23,6 +23,8 @@ import { SwipeableRow } from './SwipeableRow';
 import { getGoogleSheetLink } from './ui/RowActions';
 import MobileFilterDrawer from '@/components/MobileFilterDrawer';
 import CoinDrawer from '@/components/CoinDrawer';
+import Modal from './Modal';
+import SmartSwapCard from '@/components/SmartSwapCard';
 
 type Props = {
   tokens: EnrichedToken[];
@@ -42,6 +44,8 @@ function PortfolioTable({
   const [mounted, setMounted] = useState(false);
   const { copiedText, copy } = useCopyToClipboard();
   const [selectedToken, setSelectedToken] = useState<EnrichedToken | null>(null);
+  const [swapToken, setSwapToken] = useState<EnrichedToken | null>(null);
+  const [isSwapOpen, setIsSwapOpen] = useState(false);
 
 
 
@@ -1102,6 +1106,10 @@ function PortfolioTable({
                         prev === t.contract ? null : t.contract
                       )
                     }
+                    onSwap={(token) => {
+                      setSwapToken(token);
+                      setIsSwapOpen(true);
+                    }}
                   />
                 ))
               )}
@@ -1123,6 +1131,9 @@ function PortfolioTable({
             coin={selectedToken}
             viewMode={viewMode}
           />
+          <Modal isOpen={isSwapOpen} onClose={() => setIsSwapOpen(false)}>
+            {swapToken && <SmartSwapCard initialToken={swapToken} />}
+          </Modal>
         </div>
       </div>
     </div>

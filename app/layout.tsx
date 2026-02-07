@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/context/ThemeContext';
 import Snowfall from '@/components/Snowfall'; // ✅ Import
 import ChristmasLights from '@/components/ChristmasLights';
+import { Web3Provider } from '@/components/Web3Provider';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.earthcrypto.space'),
@@ -50,7 +51,8 @@ export default function RootLayout({
         <link rel="icon" href="/logo.png" />
       </head>
       <body className="min-h-screen flex flex-col font-sans">
-          <ThemeProvider>
+        <ThemeProvider>
+          <Web3Provider>
             <Snowfall />
             <ChristmasLights />
             <Navbar />
@@ -58,7 +60,8 @@ export default function RootLayout({
               <div className="w-full px-0">{children}</div>
             </main>
             <Toaster />
-          </ThemeProvider>
+          </Web3Provider>
+        </ThemeProvider>
 
       </body>
     </html>

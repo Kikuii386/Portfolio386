@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import PriceDisplay from '@/components/PriceDisplay';
 import QtyDisplay from '@/components/QtyDisplay';
+import { ZoomableChartWrapper } from '@/hook/useChartZoom';
 
 // --- Helpers คงเดิมทั้งหมด ---
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -273,27 +274,31 @@ export default function CoinDrawer({ isOpen, onClose, coin, viewMode }: CoinDraw
                                             Loading Chart data...
                                         </div>
                                     ) : chartData.length > 0 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart
-                                                data={chartData}
-                                                margin={{ top: 10, right: 0, left: 10, bottom: 0 }}
-                                            >
-                                                <defs>
-                                                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor={color} stopOpacity={0.15} />
-                                                        <stop offset="95%" stopColor={color} stopOpacity={0.05} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                                <YAxis domain={['auto', 'auto']} tick={<CustomYAxisTick />} axisLine={false} tickLine={false} width={65} />
-                                                <XAxis dataKey="time" tickFormatter={formatXAxis} tick={{ fontSize: 10, fill: '#888' }} axisLine={false} tickLine={false} minTickGap={30} dy={10} />
-                                                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                                                <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#colorPrice)" animationDuration={800} activeDot={{ r: 6, fill: color, stroke: '#fff', strokeWidth: 2 }} />
-                                                {hasPosition && myAvgCost > 0 && (
-                                                    <ReferenceLine y={myAvgCost} stroke="#06b6d4" strokeDasharray="4 4" label={(props) => <MyCostLabel {...props} price={myAvgCost} />} />
-                                                )}
-                                            </AreaChart>
-                                        </ResponsiveContainer>
+                                        <ZoomableChartWrapper originalData={chartData}>
+                                            {(zoomedData: any[]) => (
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <AreaChart
+                                                        data={zoomedData}
+                                                        margin={{ top: 10, right: 0, left: 10, bottom: 0 }}
+                                                    >
+                                                        <defs>
+                                                            <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1" >
+                                                                <stop offset="5%" stopColor={color} stopOpacity={0.15} />
+                                                                <stop offset="95%" stopColor={color} stopOpacity={0.05} />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                                        <YAxis domain={['auto', 'auto']} tick={<CustomYAxisTick />} axisLine={false} tickLine={false} width={65} />
+                                                        <XAxis dataKey="time" tickFormatter={formatXAxis} tick={{ fontSize: 10, fill: '#888' }} axisLine={false} tickLine={false} minTickGap={30} dy={10} allowDataOverflow={true} />
+                                                        <Tooltip wrapperStyle={{ pointerEvents: 'none' }} content={<CustomTooltip />} cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4', style: { pointerEvents: 'none' } }} />
+                                                        <Area type="monotone" dataKey="price" stroke={color} strokeWidth={2} fill="url(#colorPrice)" isAnimationActive={false} activeDot={{ r: 6, fill: color, stroke: '#fff', strokeWidth: 2, style: { pointerEvents: 'none' } }} />
+                                                        {hasPosition && myAvgCost > 0 && (
+                                                            <ReferenceLine y={myAvgCost} stroke="#06b6d4" strokeDasharray="4 4" label={(props) => <MyCostLabel {...props} price={myAvgCost} />} />
+                                                        )}
+                                                    </AreaChart>
+                                                </ResponsiveContainer>
+                                            )}
+                                        </ZoomableChartWrapper>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-full text-earth-stone/40">
                                             <Activity size={40} className="mb-2 opacity-50" />
