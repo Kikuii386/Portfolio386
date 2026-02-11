@@ -8,6 +8,7 @@ import ThemeToggle from './ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
 import MenuToggle from './ui/MenuToggle';
 import WalletConnectButton from './ConnectButton';
+import UnifiedWalletModal from './UnifiedWalletModal';
 // ✅ Import ไอคอนให้ครบทุกเมนู
 import {
   LayoutDashboard,
@@ -41,6 +42,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isChristmas } = useTheme();
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -114,10 +117,9 @@ export default function Navbar() {
         {/* Right Section */}
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <button className="flex items-center gap-2 bg-earth-sage hover:bg-earth-sage/90 text-white font-medium px-5 py-2 rounded-lg transition-all active:scale-95 shadow-md">
-            <Wallet size={18} />
-            <span>Connect Wallet</span>
-          </button>
+          <WalletConnectButton variant="default"
+            onOpenModal={() => setIsWalletModalOpen(true)}
+          />
         </div>
       </div>
       <div className="h-16 hidden md:block" />
@@ -176,13 +178,26 @@ export default function Navbar() {
           </nav>
 
           <div className="mt-auto flex flex-col gap-4 items-center w-full ">
-            <Tooltip content="Switch Theme" side="right">
-              <ThemeToggle />
-            </Tooltip>
-            <Tooltip content="Connect Wallet" side="right">
-              <button className="w-10 h-10 flex items-center justify-center bg-earth-sage hover:bg-earth-sage/90 text-white rounded-xl transition-all active:scale-95 shadow-lg">
-                <Wallet size={20} />
-              </button>
+            <Tooltip
+              content="Connect Wallet"
+              side="right"
+              open={isTooltipOpen} // 👈 ควบคุมการเปิดปิดเอง
+              onOpenChange={(open) => {
+                // ถ้า Modal ไม่ได้เปิดอยู่ -> ให้เปิดปิด Tooltip ตามปกติ
+                // แต่ถ้ากดปุ่มไปแล้ว (Modal เปิด) -> อย่าโชว์ Tooltip
+                if (!isWalletModalOpen) setIsTooltipOpen(open);
+              }}
+            >
+              <div
+                className="w-10 h-10 outline-none"
+                // เมื่อคลิก -> สั่งปิด Tooltip ทันที!
+                onClick={() => setIsTooltipOpen(false)}
+              >
+                <WalletConnectButton
+                  variant="icon"
+                  onOpenModal={() => setIsWalletModalOpen(true)}
+                />
+              </div>
             </Tooltip>
           </div>
         </div>
@@ -281,21 +296,16 @@ export default function Navbar() {
             <ThemeToggle />
           </div>
 
-          <button
-            className={`
-              w-full flex justify-center items-center gap-2 text-white font-bold py-3 rounded-xl 
-              transition-all shadow-lg active:scale-95
-              ${isChristmas
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-earth-sage hover:bg-earth-sage/90'
-              }
-            `}
-          >
-            <Wallet size={20} />
-            Connect Wallet
-          </button>
+          <WalletConnectButton variant="mobile"
+            isChristmas={isChristmas}
+            onOpenModal={() => setIsWalletModalOpen(true)}
+          />
         </div>
       </div>
+      <UnifiedWalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+      />
     </>
   );
 }

@@ -619,7 +619,7 @@ export default function EvmMultiWalletBalanceChecker() {
                     className="hover:bg-earth-cream/40 transition-colors group duration-300"
                   >
                     <td className="px-5 py-4">
-                      <Tooltip content="Go to Solscan" side="top">
+                      <Tooltip content="Go to Blockscan" side="top">
                         <div
                           className="inline-flex items-center cursor-pointer group/label"
                           onClick={() => {

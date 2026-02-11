@@ -8,14 +8,18 @@ type TooltipProps = {
   children: React.ReactNode;
   side?: 'top' | 'right' | 'bottom' | 'left';
   className?: string;
-};
+  open?: boolean; // รับค่าเปิดปิด
+  onOpenChange?: (open: boolean) => void; // ฟังก์ชันเปลี่ยนค่า
+}
 
 export default function Tooltip({
   content,
   children,
   side = 'top',
-  className = '', // ✅ 2. รับค่า className มา (Default เป็นว่าง)
-}: TooltipProps) {
+  className = '',
+  open,
+  onOpenChange,
+}: TooltipProps) { // ✅ 2. รับค่า className มา (Default เป็นว่าง)
   const [isHovered, setIsHovered] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -24,7 +28,7 @@ export default function Tooltip({
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
+    onOpenChange?.(true);
     if (triggerRef.current) {
       // 1. คำนวณตำแหน่งปุ่ม
       const rect = triggerRef.current.getBoundingClientRect();
@@ -60,6 +64,7 @@ export default function Tooltip({
   };
   const handleMouseLeave = () => {
     setIsHovered(false);
+    onOpenChange?.(false);
 
     timeoutRef.current = setTimeout(() => {
       setShouldRender(false);
@@ -71,6 +76,9 @@ export default function Tooltip({
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  const isVisible = open === false ? false : shouldRender;
+  const isOpacityVisible = open === false ? false : isHovered;
 
   return (
     <>
@@ -85,21 +93,20 @@ export default function Tooltip({
       </div>
 
       {/* ส่วน Tooltip (ย้ายไป render ที่ body เพื่อทะลุ overflow) */}
-      {shouldRender &&
+      {isVisible &&
         typeof document !== 'undefined' &&
         createPortal(
           <div
             className={`
-              hidden sm:block fixed z-[110] px-2 py-1 text-xs font-medium 
+              hidden sm:block fixed z-[151] px-2 py-1 text-xs font-medium 
               text-earth-cream bg-earth-darkbrown 
               border border-earth-cream/10 shadow-md rounded pointer-events-none
               
              
               transition-all duration-300 ease-in-out
-              ${
-                isHovered
-                  ? 'opacity-100 scale-100 translate-y-0'
-                  : 'opacity-0 scale-95 translate-y-1'
+              ${isOpacityVisible
+                ? 'opacity-100 scale-100 translate-y-0'
+                : 'opacity-0 scale-95 translate-y-1'
               }
             `}
             style={{
@@ -109,10 +116,10 @@ export default function Tooltip({
                 side === 'top'
                   ? 'translate(-50%, -100%)'
                   : side === 'bottom'
-                  ? 'translate(-50%, 0)'
-                  : side === 'left'
-                  ? 'translate(-100%, -50%)'
-                  : 'translate(0, -50%)',
+                    ? 'translate(-50%, 0)'
+                    : side === 'left'
+                      ? 'translate(-100%, -50%)'
+                      : 'translate(0, -50%)',
             }}
           >
             {content}
