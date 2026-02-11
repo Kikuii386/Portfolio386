@@ -127,7 +127,7 @@ export default function DropdownSelect({
                   left: coords.left,
                   minWidth: Math.max(coords.width, 180),
                   transformOrigin: 'top center',
-                  zIndex: 30,
+                  zIndex: 70,
                 }}
                 className={`
                 portal-dropdown-menu 

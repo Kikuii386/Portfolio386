@@ -131,7 +131,7 @@ async function scanSolanaBalances(
                 formatted: '',
               });
             }
-          } catch (err) {}
+          } catch (err) { }
         })
       );
     }
@@ -244,7 +244,7 @@ export default function SolMultiWalletBalanceChecker() {
       <button
         onClick={handleScan}
         disabled={loading}
-        className="w-full h-[50] py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+        className="w-full h-[50px] py-3.5 bg-earth-sage text-white font-semibold rounded-xl hover:bg-earth-olive hover:shadow-lg hover:shadow-earth-sage/20 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2.5"
       >
         {loading ? (
           <Loader2 size={20} className="animate-spin" />

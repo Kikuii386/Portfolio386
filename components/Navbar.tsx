@@ -18,9 +18,6 @@ import {
   ArrowLeftRight,
   WalletCards, // ใช้สำหรับ Balance
   Settings,
-  Wallet, // ใช้สำหรับปุ่ม Connect
-  Menu,
-  X,
 } from 'lucide-react';
 
 // ✅ รายการเมนูครบ 7 อย่าง (เพิ่ม Balance กลับมาแล้ว)
@@ -42,7 +39,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isChristmas } = useTheme();
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   useEffect(() => {
@@ -181,17 +177,9 @@ export default function Navbar() {
             <Tooltip
               content="Connect Wallet"
               side="right"
-              open={isTooltipOpen} // 👈 ควบคุมการเปิดปิดเอง
-              onOpenChange={(open) => {
-                // ถ้า Modal ไม่ได้เปิดอยู่ -> ให้เปิดปิด Tooltip ตามปกติ
-                // แต่ถ้ากดปุ่มไปแล้ว (Modal เปิด) -> อย่าโชว์ Tooltip
-                if (!isWalletModalOpen) setIsTooltipOpen(open);
-              }}
             >
               <div
                 className="w-10 h-10 outline-none"
-                // เมื่อคลิก -> สั่งปิด Tooltip ทันที!
-                onClick={() => setIsTooltipOpen(false)}
               >
                 <WalletConnectButton
                   variant="icon"

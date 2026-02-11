@@ -1,14 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, Settings, Wallet, Loader2, RefreshCcw } from 'lucide-react';
+import { ArrowDown, Settings, Loader2, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccount, useWalletClient } from 'wagmi'; // EVM
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'; // Solana
 import { VersionedTransaction } from '@solana/web3.js'; // Solana Utils
 import { EnrichedToken } from '@/lib/enrichWithPrices';
-import { useConnectModal } from '@rainbow-me/rainbowkit'; // สำหรับ EVM
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+
+// ❌ ลบ Import ของ Rainbow/Solana UI ออก
+// import { useConnectModal } from '@rainbow-me/rainbowkit';
+// import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+
+// ✅ Import Modal ของเราเข้ามาแทน (เช็ค Path ให้ตรงกับที่คุณเก็บไฟล์ไว้นะครับ)
+import UnifiedWalletModal from '@/components/UnifiedWalletModal';
 
 // --- Types ---
 type ChainType = 'EVM' | 'SOLANA';
@@ -17,7 +22,7 @@ interface Token {
     symbol: string;
     name: string;
     logo: string;
-    address: string; // Contract Address (EVM) หรือ Mint Address (SOL)
+    address: string;
     decimals: number;
 }
 
@@ -32,10 +37,9 @@ interface ChainConfig {
 const CHAINS: ChainConfig[] = [
     { id: 'ethereum', name: 'Ethereum', type: 'EVM', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg' },
     { id: 'solana', name: 'Solana', type: 'SOLANA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg' },
-    { id: 'base', name: 'Base', type: 'EVM', logo: 'https://cryptologos.cc/logos/base-token-logo.svg?v=035' }, // 0x รองรับ Base
+    { id: 'base', name: 'Base', type: 'EVM', logo: 'https://cryptologos.cc/logos/base-token-logo.svg?v=035' },
 ];
 
-// Mock Tokens (ในของจริงต้องดึงจาก Token List ตาม Chain ที่เลือก)
 const MOCK_TOKENS: Record<string, Token[]> = {
     ethereum: [
         { symbol: 'ETH', name: 'Ether', decimals: 18, address: '0x...', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg' },
@@ -55,28 +59,32 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
     const [activeChain, setActiveChain] = useState<ChainConfig>(CHAINS[0]);
     const [fromToken, setFromToken] = useState<Token>(MOCK_TOKENS['ethereum'][0]);
     const [toToken, setToToken] = useState<Token>(MOCK_TOKENS['ethereum'][1]);
-    const { openConnectModal } = useConnectModal(); // ของ RainbowKit
-    const { setVisible: setSolanaModalVisible } = useWalletModal();
+
+    // ❌ ลบ Hooks ของ Rainbow/Solana Modal เดิม
+    // const { openConnectModal } = useConnectModal();
+    // const { setVisible: setSolanaModalVisible } = useWalletModal();
+
+    // ✅ เพิ่ม State ควบคุม Modal ของเราเอง
+    const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
+
     const [amountIn, setAmountIn] = useState('');
     const [quoteData, setQuoteData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // 1. Hook สำหรับ EVM
+    // EVM Hooks
     const { address: evmAddress, isConnected: isEvmConnected } = useAccount();
     const { data: walletClient } = useWalletClient();
 
-    // 2. Hook สำหรับ Solana
+    // Solana Hooks
     const { publicKey: solAddress, signTransaction, connected: isSolConnected } = useWallet();
     const { connection } = useConnection();
 
-    // ✅ Logic: ตั้งค่าเริ่มต้นเมื่อได้รับ initialToken
+    // Logic: ตั้งค่าเริ่มต้น
     useEffect(() => {
         if (initialToken) {
-            // เช็คว่าเป็นเชนไหน
             const targetChain = CHAINS.find(c => c.name.toLowerCase() === initialToken.chain.toLowerCase()) || CHAINS[0];
             setActiveChain(targetChain);
 
-            // สร้าง Object Token จากข้อมูลที่มี
             const newToken: Token = {
                 symbol: initialToken.symbol,
                 name: initialToken.name,
@@ -86,59 +94,48 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
             };
             setFromToken(newToken);
 
-            // เลือกตัวรับเป็น USDC ของเชนนั้นๆ อัตโนมัติ
             const tokens = MOCK_TOKENS[targetChain.id] || MOCK_TOKENS['ethereum'];
             const defaultTo = tokens.find(t => t.symbol === 'USDC') || tokens[1];
             setToToken(defaultTo);
         }
     }, [initialToken]);
 
-    // ฟังก์ชัน Execute Swap (เมื่อกดปุ่ม Swap Now)
+    // Logic: Swap Execution
     const handleSwap = async () => {
         if (!quoteData) return;
 
         try {
             if (activeChain.type === 'SOLANA') {
-                // --- Logic ฝั่ง Solana (Jupiter) ---
                 if (!solAddress || !signTransaction) return alert('Connect Solana Wallet first');
 
-                // 1. ขอ Transaction จาก API ของเรา (หรือ Jupiter)
                 const swapRes = await fetch('https://quote-api.jup.ag/v6/swap', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        quoteResponse: quoteData.data, // ข้อมูล Quote ที่ได้มาก่อนหน้านี้
+                        quoteResponse: quoteData.data,
                         userPublicKey: solAddress.toString(),
                         wrapAndUnwrapSol: true,
                     })
                 });
 
                 const swapJson = await swapRes.json();
-
-                // 2. Deserialize Transaction
                 const swapTransactionBuf = Buffer.from(swapJson.swapTransaction, 'base64');
                 var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-
-                // 3. Sign & Send
-                const signature = await signTransaction(transaction); // ให้ User กดยืนยันใน Phantom
-
-                // 4. ส่งเข้า Blockchain
+                const signature = await signTransaction(transaction);
                 const txid = await connection.sendRawTransaction(signature.serialize());
                 await connection.confirmTransaction(txid);
 
                 alert(`Swap Success! Tx: ${txid}`);
 
             } else {
-                // --- Logic ฝั่ง EVM (0x) ---
                 if (!evmAddress || !walletClient) return alert('Connect EVM Wallet first');
 
-                // ✅ แก้ไข: ยัด Object เข้าไปตรงๆ แล้วใส่ 'as any' เพื่อแก้ขีดแดง
                 const hash = await walletClient.sendTransaction({
                     account: evmAddress,
                     to: quoteData.data.to,
                     data: quoteData.data.data,
-                    value: BigInt(quoteData.data.value), // แปลงเป็น BigInt ถูกแล้ว
-                    chain: null, // ใส่ null เพื่อให้ wallet จัดการเรื่อง chain เอง
+                    value: BigInt(quoteData.data.value),
+                    chain: null,
                 } as any);
 
                 alert(`Swap Submitted! Hash: ${hash}`);
@@ -149,7 +146,7 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
         }
     };
 
-    // เปลี่ยน Token List เมื่อเปลี่ยน Chain
+    // Change Token List on Chain Change
     useEffect(() => {
         const tokens = MOCK_TOKENS[activeChain.id] || MOCK_TOKENS['ethereum'];
         setFromToken(tokens[0]);
@@ -158,52 +155,38 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
         setAmountIn('');
     }, [activeChain]);
 
-    // --- 🔥 The Brain: Quote Fetcher ---
+    // Fetch Quote Logic
     const fetchQuote = async (amount: string) => {
         if (!amount || parseFloat(amount) <= 0) return;
         setIsLoading(true);
 
         try {
             if (activeChain.type === 'SOLANA') {
-                // ✅ [UPDATED] เรียกผ่าน API Route ของเราเอง (/api/quote/solana)
-
                 const amountInSmallestUnit = Math.floor(parseFloat(amount) * (10 ** fromToken.decimals));
-
-                // สร้าง Query String ส่งไปให้หลังบ้าน
                 const params = new URLSearchParams({
                     inputMint: fromToken.address,
                     outputMint: toToken.address,
                     amount: amountInSmallestUnit.toString(),
-                    slippageBps: '50' // 0.5% slippage
+                    slippageBps: '50'
                 });
 
-                // ยิงไปที่ Local API
                 const res = await fetch(`/api/quote/solana?${params.toString()}`);
-
                 if (!res.ok) throw new Error('Solana quote failed');
-
                 const data = await res.json();
 
                 setQuoteData({
-                    // Jupiter ส่งกลับมาเป็น outAmount (string)
                     price: parseFloat(data.outAmount) / (10 ** toToken.decimals),
                     provider: 'Jupiter',
                     data: data
                 });
 
             } else {
-                // ✅ 2. เรียกผ่าน API Route ของเราเอง (Secure Proxy)
                 const amountInSmallestUnit = Math.floor(parseFloat(amount) * (10 ** fromToken.decimals));
-
-                // ยิงไปที่ Local API ของเราแทน
                 const url = `/api/quote?sellToken=${fromToken.address}&buyToken=${toToken.address}&sellAmount=${amountInSmallestUnit}`;
-
-                // ไม่ต้องใส่ Header Key ตรงนี้แล้ว เพราะ API Route ใส่ให้แล้ว
                 const res = await fetch(url);
-
                 if (!res.ok) throw new Error('Quote failed');
-
                 const data = await res.json();
+
                 setQuoteData({
                     price: data.buyAmount / (10 ** toToken.decimals),
                     provider: '0x Protocol',
@@ -217,7 +200,6 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
         }
     };
 
-    // Debounce การพิมพ์เพื่อไม่ให้ยิง API รัวเกินไป
     useEffect(() => {
         const timeout = setTimeout(() => {
             if (amountIn) fetchQuote(amountIn);
@@ -227,17 +209,13 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
 
     const isChainConnected = activeChain.type === 'EVM' ? isEvmConnected : isSolConnected;
 
+    // ✅ แก้ไข Logic ปุ่ม Action
     const handleAction = () => {
-        // ถ้ายังไม่เชื่อมต่อ ให้เปิด Modal ตามชนิด Chain
         if (!isChainConnected) {
-            if (activeChain.type === 'EVM') {
-                if (openConnectModal) openConnectModal();
-            } else {
-                setSolanaModalVisible(true);
-            }
+            // ไม่ว่าจะเป็น Chain ไหน ก็เปิด Modal รวมของเราอันเดียว
+            setIsUnifiedModalOpen(true);
             return;
         }
-        // ถ้าเชื่อมแล้ว ให้ Swap
         handleSwap();
     };
 
@@ -337,7 +315,7 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
                     </div>
                 </div>
 
-                {/* --- Quote Info (Accordion) --- */}
+                {/* --- Quote Info --- */}
                 <AnimatePresence>
                     {quoteData && (
                         <motion.div
@@ -363,7 +341,7 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
                     )}
                 </AnimatePresence>
 
-                {/* ✅ Action Button: ใส่ onClick แล้ว */}
+                {/* Button */}
                 <button
                     onClick={handleAction}
                     disabled={isLoading || (!amountIn && isChainConnected)}
@@ -373,6 +351,12 @@ export default function SmartSwapCard({ initialToken }: SmartSwapCardProps) {
                 </button>
 
             </div>
+
+            {/* ✅✅✅ ใส่ UnifiedWalletModal ไว้ตรงนี้ (นอกสุดของ Card) */}
+            <UnifiedWalletModal
+                isOpen={isUnifiedModalOpen}
+                onClose={() => setIsUnifiedModalOpen(false)}
+            />
         </div>
     );
 }

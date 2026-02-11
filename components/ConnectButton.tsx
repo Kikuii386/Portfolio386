@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+
 import { useAccount, useDisconnect as useEvmDisconnect } from 'wagmi';
 import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -64,7 +65,7 @@ export default function UnifiedConnectButton({ variant = 'default', isChristmas 
 
     if (variant === 'default') {
         // Top Bar: ปุ่มยาวปกติ, rounded-lg, px-5 py-2
-        buttonClass = "flex items-center gap-2 bg-earth-sage hover:bg-earth-sage/90 text-white font-medium px-5 py-2 rounded-lg transition-all active:scale-95 shadow-md";
+        buttonClass = "flex items-center gap-2 bg-earth-sage hover:bg-earth-sage/90 text-white font-medium px-5 py-2 h-[40px] w-[178.77px] rounded-lg transition-all active:scale-95 shadow-md";
     }
     else if (variant === 'icon') {
         // Side Dock: สี่เหลี่ยมจัตุรัส w-10 h-10, rounded-xl, จัดกึ่งกลาง
@@ -72,7 +73,7 @@ export default function UnifiedConnectButton({ variant = 'default', isChristmas 
     }
     else if (variant === 'mobile') {
         // Mobile: เต็มจอ w-full, สูง py-3, รองรับ Theme คริสต์มาส
-        buttonClass = `w-full flex justify-center items-center gap-2 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95 ${isChristmas ? 'bg-red-600 hover:bg-red-700' : 'bg-earth-sage hover:bg-earth-sage/90'
+        buttonClass = `w-full flex justify-center items-center gap-2 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95 ${isChristmas ? 'bg-red-600 hover:bg-red-700' : 'bg-earth-sage hover:bg-earth-sage/90 h-[48px]'
             }`;
     }
 
