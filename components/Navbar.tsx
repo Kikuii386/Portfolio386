@@ -174,19 +174,16 @@ export default function Navbar() {
           </nav>
 
           <div className="mt-auto flex flex-col gap-4 items-center w-full ">
-            <Tooltip
-              content="Connect Wallet"
-              side="right"
-            >
-              <div
-                className="w-10 h-10 outline-none"
-              >
-                <WalletConnectButton
-                  variant="icon"
-                  onOpenModal={() => setIsWalletModalOpen(true)}
-                />
-              </div>
-            </Tooltip>
+            <div className="relative w-10 h-10 outline-none">
+
+              {/* 1. Tooltip ครอบเฉพาะปุ่ม (Button) */}
+
+              <WalletConnectButton
+                variant="icon"
+                onOpenModal={() => setIsWalletModalOpen(true)}
+              />
+
+            </div>
           </div>
         </div>
       </div>
