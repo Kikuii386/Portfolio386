@@ -1,33 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export async function GET(request: Request) {
-    // 1. ดึง Query Params จาก URL ที่หน้าบ้านส่งมา
-    const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
 
-    // 2. สร้าง URL ปลายทางไปหา Jupiter (Official API v6)
-    // เราจะส่งต่อ params ทั้งหมด (inputMint, outputMint, amount, slippageBps) ไปเลย
+    // Jupiter API V6 Endpoint
     const jupiterUrl = `https://quote-api.jup.ag/v6/quote?${searchParams.toString()}`;
 
     try {
-        // 3. ยิงไปหา Jupiter (ตอนนี้ยังฟรี ไม่ต้องใส่ Key แต่ทำเผื่อไว้)
         const res = await fetch(jupiterUrl, {
             headers: {
                 'Content-Type': 'application/json',
-                // ถ้าอนาคตต้องใช้ Key ก็ใส่ตรงนี้: 'Authorization': process.env.JUPITER_API_KEY
             },
         });
 
-        if (!res.ok) {
-            throw new Error(`Jupiter API Error: ${res.statusText}`);
-        }
-
         const data = await res.json();
 
-        // 4. ส่งผลลัพธ์กลับไปหน้าบ้าน
+        // ✅ ถ้า Jupiter ตอบ Error (เช่น 400) ให้ส่ง Error นั้นกลับไปหน้าบ้านเลย
+        if (!res.ok) {
+            return NextResponse.json(data, { status: res.status });
+        }
+
         return NextResponse.json(data, { status: 200 });
 
     } catch (error) {
-        console.error('Jupiter Quote Error:', error);
-        return NextResponse.json({ error: 'Failed to fetch Solana quote' }, { status: 500 });
+        console.error('Jupiter Proxy Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
