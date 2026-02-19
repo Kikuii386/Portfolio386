@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
 
 interface ModalProps {
     isOpen: boolean;
@@ -66,15 +65,6 @@ export default function Modal({ isOpen, onClose, children, title }: ModalProps) 
                             transition={{ duration: 0.2 }}
                             className="w-full max-w-[480px] bg-transparent pointer-events-auto relative"
                         >
-                            {/* ปุ่มปิด (X) */}
-                            <button
-                                onClick={onClose}
-                                className="absolute -top-10 right-0 p-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-
-                            {/* เนื้อหาข้างใน */}
                             {children}
                         </motion.div>
                     </div>

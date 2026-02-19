@@ -1,15 +1,32 @@
 import { NextResponse } from 'next/server';
 
-// URL ของ Token List ต้นทาง
 const TOKEN_SOURCES = {
     ethereum: 'https://gateway.ipfs.io/ipns/tokens.uniswap.org',
     base: 'https://raw.githubusercontent.com/base-org/token-list/main/tokens.json',
-    solana: 'https://token.jup.ag/strict', // Jupiter Strict List (JSON Array)
+    solana: 'https://token.jup.ag/strict',
+};
+
+// 🌟 เพิ่มฟังก์ชันนี้เพื่ออัปเกรดความชัดของรูป
+const optimizeLogoUrl = (url?: string) => {
+    if (!url) return null;
+    let optimizedUrl = url;
+
+    // 1. ถ้าเป็นลิงก์ CoinGecko ไซส์ /thumb/ (จิ๋วมาก) ให้เปลี่ยนเป็น /large/ (ชัดจัดเต็ม)
+    if (optimizedUrl.includes('coingecko.com') && optimizedUrl.includes('/thumb/')) {
+        optimizedUrl = optimizedUrl.replace('/thumb/', '/large/');
+    }
+
+    // 2. ถ้าเป็นลิงก์ ipfs:// ตรงๆ เบราว์เซอร์ปกติจะเปิดไม่ได้/โหลดช้า ให้แปลงเป็น HTTP Gateway
+    if (optimizedUrl.startsWith('ipfs://')) {
+        optimizedUrl = optimizedUrl.replace('ipfs://', 'https://cloudflare-ipfs.com/ipfs/');
+    }
+
+    return optimizedUrl;
 };
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const chain = searchParams.get('chain'); // รับค่า chain เช่น 'ethereum', 'base', 'solana'
+    const chain = searchParams.get('chain');
 
     if (!chain || !TOKEN_SOURCES[chain as keyof typeof TOKEN_SOURCES]) {
         return NextResponse.json({ error: 'Invalid chain' }, { status: 400 });
@@ -24,21 +41,17 @@ export async function GET(request: Request) {
         const data = await res.json();
         let formattedTokens = [];
 
-        // --- จัดการ Data Normalization (แปลงให้หน้าบ้านใช้ง่ายๆ) ---
-
         if (chain === 'solana') {
-            // Solana (Jupiter) ส่งมาเป็น Array เลย
             formattedTokens = data.map((t: any) => ({
                 symbol: t.symbol,
                 name: t.name,
                 address: t.address,
                 decimals: t.decimals,
-                logo: t.logoURI,
+                // ✅ เรียกใช้ฟังก์ชันแปลงรูปที่นี่
+                logo: optimizeLogoUrl(t.logoURI),
                 chainId: 0
             }));
         } else {
-            // EVM (Uniswap Standard) ส่งมาเป็น Object { tokens: [...] }
-            // ต้องกรอง Chain ID ให้ตรงด้วย
             const targetChainId = chain === 'ethereum' ? 1 : chain === 'base' ? 8453 : 1;
 
             if (data.tokens) {
@@ -49,13 +62,13 @@ export async function GET(request: Request) {
                         name: t.name,
                         address: t.address,
                         decimals: t.decimals,
-                        logo: t.logoURI,
+                        // ✅ เรียกใช้ฟังก์ชันแปลงรูปที่นี่
+                        logo: optimizeLogoUrl(t.logoURI),
                         chainId: t.chainId
                     }));
             }
         }
 
-        // ส่งกลับเฉพาะ Array ของ Token ล้วนๆ หน้าบ้านจะได้ไม่ต้องเขียน Logic เยอะ
         return NextResponse.json(formattedTokens, { status: 200 });
 
     } catch (error) {

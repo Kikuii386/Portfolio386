@@ -1132,7 +1132,7 @@ function PortfolioTable({
             viewMode={viewMode}
           />
           <Modal isOpen={isSwapOpen} onClose={() => setIsSwapOpen(false)}>
-            {swapToken && <SmartSwapCard initialToken={swapToken} />}
+            {swapToken && <SmartSwapCard initialToken={swapToken} onClose={() => setIsSwapOpen(false)} />}
           </Modal>
         </div>
       </div>
