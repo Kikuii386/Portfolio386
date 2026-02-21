@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowDown, Settings, Loader2, RefreshCcw, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // EVM Hooks
@@ -28,29 +28,57 @@ interface ChainConfig {
 
 
 const CHAINS: ChainConfig[] = [
-    {
-        id: 'ethereum', name: 'Ethereum', type: 'EVM', chainId: 1,
-        logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
-        // ✅ เรียก API Route ที่เราเพิ่งสร้าง
-        tokenListUrl: '/api/tokens?chain=ethereum'
-    },
-    {
-        id: 'base', name: 'Base', type: 'EVM', chainId: 8453,
-        logo: 'https://cryptologos.cc/logos/base-token-logo.svg?v=035',
-        // ✅ เรียก API Route ที่เราเพิ่งสร้าง
-        tokenListUrl: '/api/tokens?chain=base'
-    },
-    {
-        id: 'solana', name: 'Solana', type: 'SOLANA',
-        logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg',
-        // ✅ เรียก API Route ที่เราเพิ่งสร้าง
-        tokenListUrl: '/api/tokens?chain=solana'
-    },
+    { id: 'ethereum', name: 'Ethereum', type: 'EVM', chainId: 1, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', tokenListUrl: '/api/tokens?chain=ethereum' },
+    { id: 'bsc', name: 'BNB Chain', type: 'EVM', chainId: 56, logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg', tokenListUrl: '/api/tokens?chain=bsc' },
+    { id: 'polygon', name: 'Polygon', type: 'EVM', chainId: 137, logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg', tokenListUrl: '/api/tokens?chain=polygon' },
+    { id: 'arbitrum', name: 'Arbitrum', type: 'EVM', chainId: 42161, logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg', tokenListUrl: '/api/tokens?chain=arbitrum' },
+    { id: 'base', name: 'Base', type: 'EVM', chainId: 8453, logo: 'https://cryptologos.cc/logos/base-token-logo.svg', tokenListUrl: '/api/tokens?chain=base' },
+    { id: 'optimism', name: 'Optimism', type: 'EVM', chainId: 10, logo: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg', tokenListUrl: '/api/tokens?chain=optimism' },
+    { id: 'linea', name: 'Linea', type: 'EVM', chainId: 59144, logo: 'https://cryptologos.cc/logos/linea-logo.svg', tokenListUrl: '/api/tokens?chain=linea' },
+    { id: 'blast', name: 'Blast', type: 'EVM', chainId: 81457, logo: 'https://cryptologos.cc/logos/blast-logo.svg', tokenListUrl: '/api/tokens?chain=blast' },
+    { id: 'avalanche', name: 'Avalanche', type: 'EVM', chainId: 43114, logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg', tokenListUrl: '/api/tokens?chain=avalanche' },
+    { id: 'sonic', name: 'Sonic', type: 'EVM', chainId: 146, logo: 'https://cryptologos.cc/logos/sonic-logo.svg', tokenListUrl: '/api/tokens?chain=sonic' },
+    { id: 'berachain', name: 'Berachain', type: 'EVM', chainId: 80094, logo: 'https://cryptologos.cc/logos/berachain-bera-logo.svg', tokenListUrl: '/api/tokens?chain=berachain' },
+    { id: 'abstract', name: 'Abstract', type: 'EVM', chainId: 2741, logo: 'https://cryptologos.cc/logos/abstract-logo.svg', tokenListUrl: '/api/tokens?chain=abstract' },
+    { id: 'hyperliquid', name: 'Hyperliquid', type: 'EVM', chainId: 998, logo: 'https://cryptologos.cc/logos/hyperliquid-logo.svg', tokenListUrl: '/api/tokens?chain=hyperliquid' },
+    { id: 'zksync', name: 'zkSync', type: 'EVM', chainId: 324, logo: 'https://cryptologos.cc/logos/zksync-era-logo.svg', tokenListUrl: '/api/tokens?chain=zksync' },
+    // Solana (Non-EVM เก็บไว้ตัวสุดท้าย)
+    { id: 'solana', name: 'Solana', type: 'SOLANA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg', tokenListUrl: '/api/tokens?chain=solana' },
 ];
 
 const WRAPPED_NATIVE_MAP: Record<number, string> = {
-    1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // Mainnet WETH
-    8453: '0x4200000000000000000000000000000000000006', // Base WETH
+    1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',      // Ethereum: WETH
+    56: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',     // BNB Chain: WBNB
+    137: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',    // Polygon: WPOL (formerly WMATIC)
+    42161: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',  // Arbitrum: WETH
+    8453: '0x4200000000000000000000000000000000000006',   // Base: WETH
+    10: '0x4200000000000000000000000000000000000006',     // Optimism: WETH
+    59144: '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f',  // Linea: WETH
+    81457: '0x4300000000000000000000000000000000000004',  // Blast: WETH
+    43114: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',  // Avalanche: WAVAX
+    146: '0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38',    // Sonic: wS
+    80094: '0x6969696969696969696969696969696969696969',  // Berachain: WBERA
+    2741: '0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91',   // Abstract: WETH (Standard ZK-Stack)
+    998: '0x5555555555555555555555555555555555555555',    // Hyperliquid (Testnet 998): WHYPE
+    324: '0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91',    // zkSync Era: WETH
+};
+
+const DEFAULT_TOKENS: Record<string, Token> = {
+    'ethereum': { symbol: 'ETH', name: 'Ethereum', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 1 },
+    'bsc': { symbol: 'BNB', name: 'BNB Chain', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg', chainId: 56 },
+    'polygon': { symbol: 'POL', name: 'Polygon', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg', chainId: 137 },
+    'arbitrum': { symbol: 'ETH', name: 'Arbitrum', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg', chainId: 42161 },
+    'base': { symbol: 'ETH', name: 'Base', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/base-token-logo.svg', chainId: 8453 },
+    'optimism': { symbol: 'ETH', name: 'Optimism', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg', chainId: 10 },
+    'linea': { symbol: 'ETH', name: 'Linea', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/linea-logo.svg', chainId: 59144 },
+    'blast': { symbol: 'ETH', name: 'Blast', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/blast-logo.svg', chainId: 81457 },
+    'avalanche': { symbol: 'AVAX', name: 'Avalanche', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg', chainId: 43114 },
+    'sonic': { symbol: 'S', name: 'Sonic', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/sonic-logo.svg', chainId: 146 },
+    'berachain': { symbol: 'BERA', name: 'Berachain', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/berachain-bera-logo.svg', chainId: 80094 },
+    'abstract': { symbol: 'ETH', name: 'Abstract', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/abstract-logo.svg', chainId: 2741 },
+    'hyperliquid': { symbol: 'HYPE', name: 'Hyperliquid', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/hyperliquid-logo.svg', chainId: 998 },
+    'zksync': { symbol: 'ETH', name: 'zkSync', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/zksync-era-logo.svg', chainId: 324 },
+    'solana': { symbol: 'SOL', name: 'Solana', address: 'So11111111111111111111111111111111111111112', decimals: 9, logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg', chainId: 0 },
 };
 
 interface SmartSwapCardProps {
@@ -84,6 +112,9 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     const [selectorMode, setSelectorMode] = useState<'from' | 'to'>('from');
     const [fromPrice, setFromPrice] = useState<number>(0);
     const [toPrice, setToPrice] = useState<number>(0);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [slippage, setSlippage] = useState('0.5');
+    const settingsRef = useRef<HTMLDivElement>(null);
 
     // Optional: Balance Hook
     // Optional: Balance Hook
@@ -134,7 +165,10 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
             let queryAddress = token.address;
 
             // แปลง Native Token (ETH) ให้เป็น Wrapped (WETH) เพื่อให้ DexScreener หาเจอ
-            if (token.address === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' && token.chainId) {
+            const isNative = token.address.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+                token.address.toLowerCase() === 'native';
+
+            if (isNative && token.chainId) {
                 queryAddress = WRAPPED_NATIVE_MAP[token.chainId] || token.address;
             }
 
@@ -151,74 +185,100 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     };
 
     useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            // ถ้าคลิกเป้าหมาย (event.target) ไม่อยู่ใน settingsRef ให้ปิดเมนู
+            if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+                setIsSettingsOpen(false);
+            }
+        };
+
+        // เปิดรับ Event เมื่อ component ทำงาน
+        document.addEventListener('mousedown', handleClickOutside);
+
+        // ล้าง Event เมื่อ component ถูกทำลาย ป้องกันบั๊ก
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
         const fetchTokens = async () => {
             if (!activeChain.tokenListUrl) return;
 
-            // เคลียร์ UI ให้ดูเรียบร้อยตอนกำลังโหลด
             setIsTokenListLoading(true);
 
             try {
                 const res = await fetch(activeChain.tokenListUrl);
                 const data = await res.json();
 
+                if (!isMounted) return;
+
                 let tokens: Token[] = data.map((t: any) => ({
-                    symbol: t.symbol, name: t.name, address: t.address, decimals: t.decimals, logo: t.logo, chainId: t.chainId || 0
+                    symbol: t.symbol,
+                    name: t.name,
+                    address: t.address,
+                    decimals: t.decimals,
+                    logo: t.logo,
+                    chainId: t.chainId || 0
                 }));
 
-                // เพิ่ม Native
-                if (activeChain.type === 'EVM' && !tokens.find(t => t.symbol === 'ETH')) {
-                    tokens.unshift({ symbol: 'ETH', name: 'Ether', decimals: 18, address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: activeChain.chainId });
+                // ✅ 1. แก้ไขการเพิ่ม Native Token ให้ dynamic ตามเชน
+                if (activeChain.type === 'EVM') {
+                    // หาว่า Native ของเชนนี้ควรชื่ออะไร (ดึงจาก DEFAULT_TOKENS ที่เราสร้างไว้)
+                    const defaultNative = DEFAULT_TOKENS[activeChain.id] || DEFAULT_TOKENS['ethereum'];
+
+                    // ตรวจสอบว่าในลิสต์มีเหรียญ symbol นี้หรือยัง (เช่น BNB หรือ ETH)
+                    if (!tokens.find(t => t.symbol === defaultNative.symbol)) {
+                        tokens.unshift(defaultNative);
+                    }
                 }
+
                 if (activeChain.type === 'SOLANA' && !tokens.find(t => t.symbol === 'SOL')) {
-                    tokens.unshift({ symbol: 'SOL', name: 'Solana', decimals: 9, address: 'So11111111111111111111111111111111111111112', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg', chainId: 0 });
+                    tokens.unshift(DEFAULT_TOKENS['solana']);
                 }
 
                 setTokenList(tokens);
 
-                // 🌟 หัวใจสำคัญ: การตั้งค่า From/To
+                // 🌟 การจัดการ From/To
                 if (initialToken && !hasHandledInitial) {
-                    // --- กรณี 1: มี initialToken (มาจากหน้าอื่น) ---
                     const foundInList = tokens.find(t => t.address.toLowerCase() === initialToken.contract.toLowerCase());
 
                     const newToken: Token = {
-                        symbol: initialToken.symbol, name: initialToken.name, logo: initialToken.logo || '/smile.png',
-                        address: initialToken.contract, decimals: foundInList ? foundInList.decimals : 18, chainId: activeChain.chainId
+                        symbol: initialToken.symbol,
+                        name: initialToken.name,
+                        logo: initialToken.logo || '/smile.png',
+                        address: initialToken.contract,
+                        decimals: foundInList ? foundInList.decimals : 18,
+                        chainId: activeChain.chainId
                     };
 
                     setFromToken(newToken);
                     if (initialToken.currentPrice) setFromPrice(initialToken.currentPrice);
 
-                    // ตั้งค่า To เป็น Native เสมอ
-                    const native = tokens.find(t => t.symbol === 'ETH' || t.symbol === 'SOL' || t.symbol === 'WETH');
-                    const stable = tokens.find(t => t.symbol === 'USDC' || t.symbol === 'USDT');
+                    // ✅ 2. ปรับการหาเหรียญปลายทาง (To Token) ให้ฉลาดขึ้น
+                    const native = tokens[0]; // ตัวแรกที่เรา unshift เข้าไป (BNB/ETH/SOL)
+                    const stable = tokens.find(t => t.symbol === 'USDC' || t.symbol === 'USDT' || t.symbol === 'USDT.e');
 
-                    if (native && newToken.symbol !== native.symbol) {
+                    if (native && newToken.address.toLowerCase() !== native.address.toLowerCase()) {
                         setToToken(native);
                     } else {
                         setToToken(stable || tokens[1] || null);
                     }
 
-                    // มาร์คว่าจัดการ initialToken เสร็จแล้ว จะได้ไม่ทำซ้ำอีก
                     setHasHandledInitial(true);
 
-                } else if (!hasHandledInitial) {
-                    // --- กรณี 2: เข้ามาหน้าเว็บตรงๆ ไม่มี initialToken ---
-                    if (tokens.length > 0) setFromToken(tokens[0]);
+                } else if (!hasHandledInitial || (hasHandledInitial && activeChain)) {
+                    // ✅ 3. กรณีเปลี่ยนเชน หรือเข้าหน้าเว็บครั้งแรก
+                    // ให้เลือกเหรียญแรกในลิสต์ (ซึ่งเราเอา Native ใส่ไว้ตัวแรกเสมอ)
+                    if (tokens.length > 0) {
+                        setFromToken(tokens[0]);
+                    }
                     if (tokens.length > 1) {
                         const usdc = tokens.find(t => t.symbol === 'USDC' || t.symbol === 'USDT');
                         setToToken(usdc || tokens[1]);
                     }
-                    setHasHandledInitial(true); // ป้องกันการ Reset กลับไปกลับมา
-                }
-
-                // ถ้ายูสเซอร์เปลี่ยนเชนเอง (หลังจาก load ครั้งแรกผ่านไปแล้ว) 
-                // เราต้องยอมให้มันหาค่า Default ใหม่ แต่ห้ามเอา initialToken มายุ่ง
-                if (hasHandledInitial && (!fromToken || !tokens.find(t => t.address === fromToken.address))) {
-                    if (tokens.length > 0) setFromToken(tokens[0]);
-                    if (tokens.length > 1) {
-                        const usdc = tokens.find(t => t.symbol === 'USDC' || t.symbol === 'USDT');
-                        setToToken(usdc || tokens[1]);
-                    }
+                    setHasHandledInitial(true);
                 }
 
             } catch (error) {
@@ -229,6 +289,9 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
         };
 
         fetchTokens();
+        return () => {
+            isMounted = false;
+        };
     }, [activeChain]);
 
     useEffect(() => {
@@ -243,17 +306,32 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
 
     // ✅ 1. UPDATE: Logic เมื่อได้รับ initialToken จาก SwipeableRow
     useEffect(() => {
-        if (initialToken && !hasHandledInitial) {
-            const chainMap: Record<string, string> = { 'ETH': 'ethereum', 'ETHEREUM': 'ethereum', 'SOL': 'solana', 'SOLANA': 'solana', 'BASE': 'base' };
+        if (initialToken) {
+            const chainMap: Record<string, string> = {
+                'ETH': 'ethereum', 'ETHEREUM': 'ethereum',
+                'BSC': 'bsc', 'BNB': 'bsc',
+                'POLYGON': 'polygon', 'MATIC': 'polygon',
+                'ARB': 'arbitrum', 'ARBITRUM': 'arbitrum',
+                'BASE': 'base',
+                'OP': 'optimism', 'OPTIMISM': 'optimism',
+                'LINEA': 'linea',
+                'BLAST': 'blast',
+                'AVAX': 'avalanche', 'AVALANCHE': 'avalanche',
+                'SONIC': 'sonic',
+                'BERA': 'berachain', 'BERACHAIN': 'berachain',
+                'ABSTRACT': 'abstract',
+                'HYPE': 'hyperliquid', 'HYPERLIQUID': 'hyperliquid',
+                'ZK': 'zksync', 'ZKSYNC': 'zksync',
+                'SOL': 'solana', 'SOLANA': 'solana'
+            };
             const normalizedChainName = chainMap[initialToken.chain.toUpperCase()] || 'ethereum';
             const targetChain = CHAINS.find(c => c.id === normalizedChainName) || CHAINS[0];
 
-            if (activeChain.id !== targetChain.id) {
-                setActiveChain(targetChain);
-                // รอให้ Chain เปลี่ยนและ fetchTokens ทำงานก่อน
-            }
+            // 🌟 สั่งให้ทำงานแค่การตั้งค่าเริ่มต้นเท่านั้น ไม่ต้องเช็คเงื่อนไขย้อนหลัง
+            setActiveChain(targetChain);
+            setHasHandledInitial(false); // ปล่อยให้ระบบไปโหลด Token ต่อ
         }
-    }, [initialToken, activeChain.id, hasHandledInitial]);// Removed tokenList dependency to avoid loop, logic depends on how initialToken comes in
+    }, [initialToken]);
 
     // ✅ CHECK ALLOWANCE (EVM Only)
     const { data: allowance, refetch: refetchAllowance } = useReadContract({
@@ -303,7 +381,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                     inputMint: fromToken?.address || '',
                     outputMint: toToken?.address || '',
                     amount: amountInSmallest,
-                    slippageBps: '50' // 0.5%
+                    slippageBps: Math.floor(parseFloat(slippage || '0.5') * 100).toString()
                 });
                 const res = await fetch(`/api/quote/solana?${params}`);
                 if (!res.ok) throw new Error('Solana quote failed');
@@ -328,6 +406,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                     sellToken: fromToken?.address || '',
                     buyToken: toToken?.address || '',
                     sellAmount: amountInSmallest,
+                    slippagePercentage: (parseFloat(slippage || '0.5') / 100).toString(),
                     ...(evmAddress ? { taker: evmAddress } : {})
                 });
 
@@ -335,19 +414,13 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                 if (!res.ok) throw new Error('EVM quote failed');
                 const data = await res.json();
 
-                // 0x v2 response structure checks
-                // If /swap/v2/price (indication) -> buyAmount
-                // If /swap/v2/quote (firm) -> buyAmount, transaction
-
                 const txData = data.transaction || null;
                 const buyAmount = data.buyAmount;
+                const sources = data.route?.fills?.map((f: any) => f.source.replace('_', ' ')) || [];
+                const uniqueSources = Array.from(new Set(sources));
+                const routeText = uniqueSources.length > 0 ? uniqueSources.join(' + ') : '0x Protocol';
 
                 if (!buyAmount) throw new Error('No buyAmount in quote');
-
-                // 🌟 LOGIC แก้ไข: คำนวณ Price Impact เอง (Manual Calculation) 🌟
-                // Formula: (OutputUSD - InputUSD) / InputUSD * 100
-                // Expect negative value for loss (Slippage + Fee)
-
                 let priceImpactDisplay = '< 0.01%';
                 let impactPercent = 0;
 
@@ -388,12 +461,22 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                         allowanceTarget: data.issues?.allowance?.spender || data.allowanceTarget || '0xdef1c0ded9bec7f1a1670819833240f027b25eff' // Fallback to 0x proxy
                     },
 
-                    provider: '0x Protocol',
+                    // 🌟 อัปเดต Provider ให้แสดงชื่อ DEX แทนคำว่า 0x Protocol แข็งๆ
+                    provider: routeText,
 
                     // 3. Price Impact (ใช้ค่าที่ถูกต้องที่เราคำนวณแล้ว)
                     priceImpact: priceImpactDisplay,
 
-                    isFirmQuote: !!txData
+                    isFirmQuote: !!txData,
+
+                    // 🌟 4. ข้อมูลเพิ่มเติมสำหรับแสดงโชว์ความโปร่งใส (Min Received, Fee, Tax)
+                    minReceived: data.minBuyAmount ? formatUnits(BigInt(data.minBuyAmount), toToken?.decimals || 18) : null,
+
+                    networkFee: data.totalNetworkFee ? formatUnits(BigInt(data.totalNetworkFee), 18) : null,
+
+                    sellTax: data.tokenMetadata?.sellToken?.sellTaxBps ? (parseInt(data.tokenMetadata.sellToken.sellTaxBps) / 100) : 0,
+
+                    buyTax: data.tokenMetadata?.buyToken?.buyTaxBps ? (parseInt(data.tokenMetadata.buyToken.buyTaxBps) / 100) : 0,
                 });
             }
         } catch (error) {
@@ -561,9 +644,53 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
         <div className="w-full max-w-[480px] mx-auto font-sans">
             <div className="bg-white border border-earth-cream/60 rounded-3xl p-5 shadow-xl relative">
                 <div className="flex justify-end mb-4 gap-4">
-                    <button className="text-earth-stone hover:text-earth-darkbrown transition-colors">
-                        <Settings size={20} />
-                    </button>
+                    <div ref={settingsRef} className="relative flex items-center">
+                        <button
+                            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                            className={`transition-colors p-1 rounded-full ${isSettingsOpen ? 'bg-earth-sage/20 text-earth-olive' : 'text-earth-stone hover:bg-gray-100 hover:text-earth-darkbrown'}`}
+                        >
+                            <Settings size={20} />
+                        </button>
+
+                        {/* กล่องเมนูตั้งค่า Slippage (ซ่อน/โชว์) */}
+                        <AnimatePresence>
+                            {isSettingsOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="absolute top-10 right-0 bg-white border border-earth-cream/60 shadow-xl rounded-xl p-4 w-64 z-50"
+                                >
+                                    <div className="text-sm font-bold text-earth-darkbrown mb-3">Settings</div>
+                                    <div className="text-xs text-earth-stone mb-2">Max Slippage (%)</div>
+                                    <div className="flex gap-2 mb-3">
+                                        {/* ปุ่มตั้งค่าแบบด่วน */}
+                                        {['0.1', '0.5', '1.0'].map(val => (
+                                            <button
+                                                key={val}
+                                                onClick={() => setSlippage(val)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${slippage === val ? 'bg-earth-olive text-white' : 'bg-earth-cream/30 text-earth-stone hover:bg-earth-cream'}`}
+                                            >
+                                                {val}%
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {/* ช่องกรอกแบบ Custom */}
+                                    <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus-within:border-earth-olive focus-within:ring-1 focus-within:ring-earth-olive transition-all">
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="Custom"
+                                            value={slippage}
+                                            onChange={(e) => setSlippage(e.target.value)}
+                                            className="w-full bg-transparent outline-none text-earth-darkbrown text-sm font-medium"
+                                        />
+                                        <span className="text-earth-stone text-sm ml-1">%</span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                     {/* ✅ เพิ่มปุ่ม X ตรงนี้ */}
                     <button
                         className="text-earth-stone hover:text-earth-clay transition-colors p-1 hover:bg-gray-100 rounded-full"
@@ -571,9 +698,11 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                     >
                         <X size={20} />
                     </button>
+                    {/* ✅ 2. UI กล่องตั้งค่า Slippage (จะโชว์เมื่อ isSettingsOpen เป็น true) */}
+
                 </div>
                 {/* Input: Sell */}
-                <div className="bg-earth-cream/20 p-4 rounded-2xl border border-transparent hover:border-earth-cream/60 transition-all mb-1">
+                <div className="bg-earth-cream/40 p-4 rounded-2xl border border-transparent hover:border-earth-cream/60 transition-all mb-1">
                     <div className="flex justify-between text-xs text-earth-stone mb-2">
                         <span>You Pay</span>
                         {/* โชว์ Balance จริง */}
@@ -606,7 +735,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                                     />
                                 </div>
                             ) : (
-                                <div className="w-6 h-6 rounded-full bg-earth-stone/10 animate-pulse" />
+                                <div className="w-7 h-7 rounded-full bg-earth-stone/10 animate-pulse" />
                             )}
                             <span className="font-bold text-earth-darkbrown">{fromToken?.symbol || 'Select'}</span>
                             <ArrowDown size={14} className="text-earth-stone" />
@@ -638,7 +767,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                 </div>
 
                 {/* Input: Buy */}
-                <div className="bg-earth-cream/20 p-4 rounded-2xl border border-transparent hover:border-earth-cream/60 transition-all mt-1">
+                <div className="bg-earth-cream/40 p-4 rounded-2xl border border-transparent hover:border-earth-cream/60 transition-all mt-1">
                     <div className="flex justify-between text-xs text-earth-stone mb-2">
                         <span>You Receive</span>
                         {isLoading && <Loader2 className="animate-spin w-3 h-3" />}
@@ -669,7 +798,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                                     />
                                 </div>
                             ) : (
-                                <div className="w-6 h-6 rounded-full bg-earth-stone/10 animate-pulse" />
+                                <div className="w-7 h-7 rounded-full bg-earth-stone/10 animate-pulse" />
                             )}
                             <span className="font-bold text-earth-darkbrown">{toToken?.symbol || 'Select'}</span>
                             <ArrowDown size={14} className="text-earth-stone" />
@@ -702,6 +831,25 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                                         {quoteData.priceImpact}
                                     </span>
                                 </div>
+                                {/* ✅ 3. (เพิ่มใหม่) Minimum Received */}
+                                {quoteData.minReceived && (
+                                    <div className="flex justify-between items-center text-earth-stone">
+                                        <span className="flex items-center gap-1">Minimum Received</span>
+                                        <span className="font-bold text-earth-darkbrown">
+                                            {formatDisplayValue(quoteData.minReceived)} {toToken?.symbol}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* ✅ 4. (เพิ่มใหม่) Token Tax Warning (โชว์เฉพาะถ้ามี Tax เกิน 0%) */}
+                                {(quoteData.sellTax > 0 || quoteData.buyTax > 0) && (
+                                    <div className="flex justify-between items-center text-red-500 font-medium">
+                                        <span className="flex items-center gap-1">Token Tax Warning</span>
+                                        <span>
+                                            Buy: {quoteData.buyTax}% | Sell: {quoteData.sellTax}%
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}

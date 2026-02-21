@@ -114,7 +114,7 @@ export default function TokenSelectorModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[85vh]"
                     >
                         {/* Header */}
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
@@ -165,7 +165,7 @@ export default function TokenSelectorModal({
                         </div>
 
                         {/* Token List */}
-                        <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent min-h-[250px]" onScroll={handleScroll}>
+                        <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent min-h-[250px] " onScroll={handleScroll}>
                             {/* ... (โค้ดแสดง Loading / List / Empty เหมือนเดิมเป๊ะๆ) ... */}
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center h-full py-10 opacity-60">

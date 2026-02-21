@@ -1,26 +1,50 @@
 import { NextResponse } from 'next/server';
 
+// 🌟 1. เพิ่มแหล่งดึงข้อมูล Token List ให้ครบทุกเชน EVM
 const TOKEN_SOURCES = {
     ethereum: 'https://gateway.ipfs.io/ipns/tokens.uniswap.org',
+    bsc: 'https://tokens.pancakeswap.finance/pancakeswap-extended.json',
+    polygon: 'https://unpkg.com/quickswap-default-token-list@1.0.91/build/quickswap-default.tokenlist.json',
+    arbitrum: 'https://bridge.arbitrum.io/token-list-42161.json',
     base: 'https://raw.githubusercontent.com/base-org/token-list/main/tokens.json',
+    optimism: 'https://static.optimism.io/optimism.tokenlist.json',
+    linea: 'https://raw.githubusercontent.com/Consensys/linea-token-list/main/tokens/linea-mainnet.json',
+    blast: 'https://raw.githubusercontent.com/viaprotocol/tokenlists/main/tokenlists/blast.json',
+    avalanche: 'https://raw.githubusercontent.com/viaprotocol/tokenlists/main/tokenlists/avalanche.json',
+    zksync: 'https://raw.githubusercontent.com/MatterLabs/token-list/main/tokens/zksync-era.json',
+    // สำหรับเชนใหม่จัดๆ (Sonic, Abstract, Berachain, Hyperliquid) 
+    // ถ้ายังไม่มี Official List ให้ใช้ Li.Fi หรือพึ่งพา Default Token จาก 0x ไปก่อน
+    sonic: 'https://raw.githubusercontent.com/viaprotocol/tokenlists/main/tokenlists/fantom.json', // ใช้ Fantom แทนชั่วคราวได้
     solana: 'https://token.jup.ag/strict',
 };
 
-// 🌟 เพิ่มฟังก์ชันนี้เพื่ออัปเกรดความชัดของรูป
+// 🌟 2. สร้างแผนผัง Chain ID เพื่อให้ Filter ข้อมูลได้ถูกต้อง
+const CHAIN_ID_MAP: Record<string, number> = {
+    ethereum: 1,
+    bsc: 56,
+    polygon: 137,
+    arbitrum: 42161,
+    base: 8453,
+    optimism: 10,
+    linea: 59144,
+    blast: 81457,
+    avalanche: 43114,
+    sonic: 146,
+    berachain: 80094,
+    abstract: 2741,
+    hyperliquid: 998,
+    zksync: 324
+};
+
 const optimizeLogoUrl = (url?: string) => {
     if (!url) return null;
     let optimizedUrl = url;
-
-    // 1. ถ้าเป็นลิงก์ CoinGecko ไซส์ /thumb/ (จิ๋วมาก) ให้เปลี่ยนเป็น /large/ (ชัดจัดเต็ม)
     if (optimizedUrl.includes('coingecko.com') && optimizedUrl.includes('/thumb/')) {
         optimizedUrl = optimizedUrl.replace('/thumb/', '/large/');
     }
-
-    // 2. ถ้าเป็นลิงก์ ipfs:// ตรงๆ เบราว์เซอร์ปกติจะเปิดไม่ได้/โหลดช้า ให้แปลงเป็น HTTP Gateway
     if (optimizedUrl.startsWith('ipfs://')) {
         optimizedUrl = optimizedUrl.replace('ipfs://', 'https://cloudflare-ipfs.com/ipfs/');
     }
-
     return optimizedUrl;
 };
 
@@ -47,26 +71,26 @@ export async function GET(request: Request) {
                 name: t.name,
                 address: t.address,
                 decimals: t.decimals,
-                // ✅ เรียกใช้ฟังก์ชันแปลงรูปที่นี่
                 logo: optimizeLogoUrl(t.logoURI),
                 chainId: 0
             }));
         } else {
-            const targetChainId = chain === 'ethereum' ? 1 : chain === 'base' ? 8453 : 1;
+            // ✅ ดึง Chain ID จาก Map ที่เราทำไว้
+            const targetChainId = CHAIN_ID_MAP[chain] || 1;
 
-            if (data.tokens) {
-                formattedTokens = data.tokens
-                    .filter((t: any) => t.chainId === targetChainId)
-                    .map((t: any) => ({
-                        symbol: t.symbol,
-                        name: t.name,
-                        address: t.address,
-                        decimals: t.decimals,
-                        // ✅ เรียกใช้ฟังก์ชันแปลงรูปที่นี่
-                        logo: optimizeLogoUrl(t.logoURI),
-                        chainId: t.chainId
-                    }));
-            }
+            // บาง Token List เก็บโครงสร้างต่างกัน (บางที่ data.tokens, บางที่ data ตรงๆ)
+            const tokensArray = data.tokens || (Array.isArray(data) ? data : []);
+
+            formattedTokens = tokensArray
+                .filter((t: any) => t.chainId === targetChainId)
+                .map((t: any) => ({
+                    symbol: t.symbol,
+                    name: t.name,
+                    address: t.address,
+                    decimals: t.decimals,
+                    logo: optimizeLogoUrl(t.logoURI || t.iconUrls?.[0]),
+                    chainId: t.chainId
+                }));
         }
 
         return NextResponse.json(formattedTokens, { status: 200 });
