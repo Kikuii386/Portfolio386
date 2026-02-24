@@ -5,17 +5,17 @@ const TOKEN_SOURCES = {
     ethereum: 'https://gateway.ipfs.io/ipns/tokens.uniswap.org',
     bsc: 'https://tokens.pancakeswap.finance/pancakeswap-extended.json',
     polygon: 'https://unpkg.com/quickswap-default-token-list@1.0.91/build/quickswap-default.tokenlist.json',
-    arbitrum: 'https://bridge.arbitrum.io/token-list-42161.json',
-    base: 'https://raw.githubusercontent.com/base-org/token-list/main/tokens.json',
+    arbitrum: 'https://tokenlist.arbitrum.io/ArbTokenLists/arbed_arb_whitelist_era.json',
+    base: 'https://tokens.coingecko.com/base/all.json',
     optimism: 'https://static.optimism.io/optimism.tokenlist.json',
-    linea: 'https://raw.githubusercontent.com/Consensys/linea-token-list/main/tokens/linea-mainnet.json',
-    blast: 'https://raw.githubusercontent.com/viaprotocol/tokenlists/main/tokenlists/blast.json',
-    avalanche: 'https://raw.githubusercontent.com/viaprotocol/tokenlists/main/tokenlists/avalanche.json',
-    zksync: 'https://raw.githubusercontent.com/MatterLabs/token-list/main/tokens/zksync-era.json',
-    // สำหรับเชนใหม่จัดๆ (Sonic, Abstract, Berachain, Hyperliquid) 
-    // ถ้ายังไม่มี Official List ให้ใช้ Li.Fi หรือพึ่งพา Default Token จาก 0x ไปก่อน
-    sonic: 'https://raw.githubusercontent.com/viaprotocol/tokenlists/main/tokenlists/fantom.json', // ใช้ Fantom แทนชั่วคราวได้
-    solana: 'https://token.jup.ag/strict',
+    linea: 'https://tokens.coingecko.com/linea/all.json',
+    blast: 'https://tokens.coingecko.com/blast/all.json',
+    avalanche: 'https://tokens.coingecko.com/avalanche/all.json',
+    zksync: 'https://tokens.coingecko.com/zksync/all.json',
+    abstract: 'https://tokens.coingecko.com/abstract/all.json',
+    berachain: 'https://tokens.coingecko.com/berachain/all.json',
+    sonic: 'https://tokens.coingecko.com/sonic/all.json',
+    solana: 'https://tokens.coingecko.com/solana/all.json',
 };
 
 // 🌟 2. สร้างแผนผัง Chain ID เพื่อให้ Filter ข้อมูลได้ถูกต้อง
@@ -32,7 +32,6 @@ const CHAIN_ID_MAP: Record<string, number> = {
     sonic: 146,
     berachain: 80094,
     abstract: 2741,
-    hyperliquid: 998,
     zksync: 324
 };
 
@@ -65,8 +64,12 @@ export async function GET(request: Request) {
         const data = await res.json();
         let formattedTokens = [];
 
+        // ✅ ใช้โครงสร้างตรวจสอบแบบเดียวกันหมด เพราะ CoinGecko ส่งข้อมูลมาห่อด้วย 'tokens'
+        const tokensArray = data.tokens || (Array.isArray(data) ? data : []);
+
         if (chain === 'solana') {
-            formattedTokens = data.map((t: any) => ({
+            // ✅ แก้ไขการอ่านข้อมูลให้รองรับ CoinGecko และจำกัดแค่ 1,000 เหรียญแรกกันหน้าเว็บค้าง
+            formattedTokens = tokensArray.slice(0, 1000).map((t: any) => ({
                 symbol: t.symbol,
                 name: t.name,
                 address: t.address,
@@ -77,9 +80,6 @@ export async function GET(request: Request) {
         } else {
             // ✅ ดึง Chain ID จาก Map ที่เราทำไว้
             const targetChainId = CHAIN_ID_MAP[chain] || 1;
-
-            // บาง Token List เก็บโครงสร้างต่างกัน (บางที่ data.tokens, บางที่ data ตรงๆ)
-            const tokensArray = data.tokens || (Array.isArray(data) ? data : []);
 
             formattedTokens = tokensArray
                 .filter((t: any) => t.chainId === targetChainId)

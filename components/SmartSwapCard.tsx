@@ -9,6 +9,7 @@ import { parseUnits, formatUnits, erc20Abi, type Address } from 'viem';
 // Solana Hooks
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { VersionedTransaction } from '@solana/web3.js';
+import { Buffer } from 'buffer';
 // Components
 import UnifiedWalletModal from '@/components/UnifiedWalletModal';
 import { EnrichedToken } from '@/lib/enrichWithPrices';
@@ -32,16 +33,16 @@ const CHAINS: ChainConfig[] = [
     { id: 'bsc', name: 'BNB Chain', type: 'EVM', chainId: 56, logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg', tokenListUrl: '/api/tokens?chain=bsc' },
     { id: 'polygon', name: 'Polygon', type: 'EVM', chainId: 137, logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg', tokenListUrl: '/api/tokens?chain=polygon' },
     { id: 'arbitrum', name: 'Arbitrum', type: 'EVM', chainId: 42161, logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg', tokenListUrl: '/api/tokens?chain=arbitrum' },
-    { id: 'base', name: 'Base', type: 'EVM', chainId: 8453, logo: 'https://cryptologos.cc/logos/base-token-logo.svg', tokenListUrl: '/api/tokens?chain=base' },
+    { id: 'base', name: 'Base', type: 'EVM', chainId: 8453, logo: 'https://cdn.brandfetch.io/id6XsSOVVS/w/400/h/400/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1757929784005', tokenListUrl: '/api/tokens?chain=base' },
     { id: 'optimism', name: 'Optimism', type: 'EVM', chainId: 10, logo: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg', tokenListUrl: '/api/tokens?chain=optimism' },
-    { id: 'linea', name: 'Linea', type: 'EVM', chainId: 59144, logo: 'https://cryptologos.cc/logos/linea-logo.svg', tokenListUrl: '/api/tokens?chain=linea' },
-    { id: 'blast', name: 'Blast', type: 'EVM', chainId: 81457, logo: 'https://cryptologos.cc/logos/blast-logo.svg', tokenListUrl: '/api/tokens?chain=blast' },
+    { id: 'linea', name: 'Linea', type: 'EVM', chainId: 59144, logo: 'https://images.seeklogo.com/logo-png/52/1/linea-logo-png_seeklogo-527155.png', tokenListUrl: '/api/tokens?chain=linea' },
+    { id: 'blast', name: 'Blast', type: 'EVM', chainId: 81457, logo: 'https://cdn.prod.website-files.com/65a6baa1a3f8ed336f415cb4/65a6cee39aadb0fa7418aa77_Blast%20Logo%20Icon%20Yellow.svg', tokenListUrl: '/api/tokens?chain=blast' },
     { id: 'avalanche', name: 'Avalanche', type: 'EVM', chainId: 43114, logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg', tokenListUrl: '/api/tokens?chain=avalanche' },
-    { id: 'sonic', name: 'Sonic', type: 'EVM', chainId: 146, logo: 'https://cryptologos.cc/logos/sonic-logo.svg', tokenListUrl: '/api/tokens?chain=sonic' },
-    { id: 'berachain', name: 'Berachain', type: 'EVM', chainId: 80094, logo: 'https://cryptologos.cc/logos/berachain-bera-logo.svg', tokenListUrl: '/api/tokens?chain=berachain' },
-    { id: 'abstract', name: 'Abstract', type: 'EVM', chainId: 2741, logo: 'https://cryptologos.cc/logos/abstract-logo.svg', tokenListUrl: '/api/tokens?chain=abstract' },
-    { id: 'hyperliquid', name: 'Hyperliquid', type: 'EVM', chainId: 998, logo: 'https://cryptologos.cc/logos/hyperliquid-logo.svg', tokenListUrl: '/api/tokens?chain=hyperliquid' },
-    { id: 'zksync', name: 'zkSync', type: 'EVM', chainId: 324, logo: 'https://cryptologos.cc/logos/zksync-era-logo.svg', tokenListUrl: '/api/tokens?chain=zksync' },
+    { id: 'sonic', name: 'Sonic', type: 'EVM', chainId: 146, logo: 'https://gateway.soniclabs.com/sonic.svg', tokenListUrl: '/api/tokens?chain=sonic' },
+    { id: 'berachain', name: 'Berachain', type: 'EVM', chainId: 80094, logo: 'https://public.saasexch.com/static/cms/cmsSassLandingPage1/202502/a4755dc9da81e4a9735f91b9ee4fe57b.png', tokenListUrl: '/api/tokens?chain=berachain' },
+    { id: 'abstract', name: 'Abstract', type: 'EVM', chainId: 2741, logo: 'https://pbs.twimg.com/profile_images/1947751080705630208/0OQFUJxI_400x400.jpg', tokenListUrl: '/api/tokens?chain=abstract' },
+    { id: 'hyperliquid', name: 'Hyperliquid', type: 'EVM', chainId: 998, logo: 'https://cdn.brandfetch.io/idGSMNVeGY/w/270/h/270/theme/dark/icon.png?c=1bxid64Mup7aczewSAYMX&t=1768327356373', tokenListUrl: '/api/tokens?chain=hyperliquid' },
+    { id: 'zksync', name: 'zkSync', type: 'EVM', chainId: 324, logo: 'https://www.zksync.io/brand/zksync-logo/zksync-logomark-dark-transparent.svg', tokenListUrl: '/api/tokens?chain=zksync' },
     // Solana (Non-EVM เก็บไว้ตัวสุดท้าย)
     { id: 'solana', name: 'Solana', type: 'SOLANA', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg', tokenListUrl: '/api/tokens?chain=solana' },
 ];
@@ -67,17 +68,17 @@ const DEFAULT_TOKENS: Record<string, Token> = {
     'ethereum': { symbol: 'ETH', name: 'Ethereum', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 1 },
     'bsc': { symbol: 'BNB', name: 'BNB Chain', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg', chainId: 56 },
     'polygon': { symbol: 'POL', name: 'Polygon', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg', chainId: 137 },
-    'arbitrum': { symbol: 'ETH', name: 'Arbitrum', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg', chainId: 42161 },
-    'base': { symbol: 'ETH', name: 'Base', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/base-token-logo.svg', chainId: 8453 },
+    'arbitrum': { symbol: 'ETH', name: 'Arbitrum', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 42161 },
+    'base': { symbol: 'ETH', name: 'Base', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 8453 },
     'optimism': { symbol: 'ETH', name: 'Optimism', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg', chainId: 10 },
-    'linea': { symbol: 'ETH', name: 'Linea', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/linea-logo.svg', chainId: 59144 },
-    'blast': { symbol: 'ETH', name: 'Blast', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/blast-logo.svg', chainId: 81457 },
+    'linea': { symbol: 'ETH', name: 'Linea', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 59144 },
+    'blast': { symbol: 'ETH', name: 'Blast', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 81457 },
     'avalanche': { symbol: 'AVAX', name: 'Avalanche', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg', chainId: 43114 },
     'sonic': { symbol: 'S', name: 'Sonic', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/sonic-logo.svg', chainId: 146 },
-    'berachain': { symbol: 'BERA', name: 'Berachain', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/berachain-bera-logo.svg', chainId: 80094 },
-    'abstract': { symbol: 'ETH', name: 'Abstract', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/abstract-logo.svg', chainId: 2741 },
+    'berachain': { symbol: 'BERA', name: 'Berachain', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://berascan.com/assets/bera/images/svg/logos/token-light.svg', chainId: 80094 },
+    'abstract': { symbol: 'ETH', name: 'Abstract', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 2741 },
     'hyperliquid': { symbol: 'HYPE', name: 'Hyperliquid', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/hyperliquid-logo.svg', chainId: 998 },
-    'zksync': { symbol: 'ETH', name: 'zkSync', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/zksync-era-logo.svg', chainId: 324 },
+    'zksync': { symbol: 'ETH', name: 'zkSync', address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', decimals: 18, logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', chainId: 324 },
     'solana': { symbol: 'SOL', name: 'Solana', address: 'So11111111111111111111111111111111111111112', decimals: 9, logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg', chainId: 0 },
 };
 
@@ -513,23 +514,37 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
             if (activeChain.type === 'SOLANA') {
                 if (!solAddress || !signTransaction) return alert('Connect Solana Wallet first');
 
-                const swapRes = await fetch('https://quote-api.jup.ag/v6/swap', {
+                // 🌟 ยิงไปที่ Route เดิมของคุณเลย แต่ใช้ method POST
+                const swapRes = await fetch('/api/quote/solana', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         quoteResponse: quoteData.data,
                         userPublicKey: solAddress.toString(),
+                        dynamicComputeUnitLimit: true,
                         wrapAndUnwrapSol: true,
                     })
                 });
 
+                if (!swapRes.ok) {
+                    const errData = await swapRes.json();
+                    throw new Error(errData.error || 'Failed to get swap transaction');
+                }
+
                 const swapJson = await swapRes.json();
+
                 const swapTransactionBuf = Buffer.from(swapJson.swapTransaction, 'base64');
                 var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
                 const signature = await signTransaction(transaction);
-                const txid = await connection.sendRawTransaction(signature.serialize());
+
+                const txid = await connection.sendRawTransaction(signature.serialize(), {
+                    skipPreflight: true,
+                    maxRetries: 2,
+                });
+
+                alert(`Swap Submitted! Tx: ${txid}`);
                 await connection.confirmTransaction(txid);
-                alert(`Swap Success! Tx: ${txid}`);
 
             } else {
                 if (!evmAddress || !walletClient) return alert('Connect EVM Wallet first');
