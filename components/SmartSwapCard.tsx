@@ -14,6 +14,7 @@ import { Buffer } from 'buffer';
 import UnifiedWalletModal from '@/components/UnifiedWalletModal';
 import { EnrichedToken } from '@/lib/enrichWithPrices';
 import TokenSelectorModal, { Token } from '@/components/TokenSelectorModal';
+import QtyDisplay from '@/components/QtyDisplay';
 
 // --- Types ---
 type ChainType = 'EVM' | 'SOLANA';
@@ -95,6 +96,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     const [tokenList, setTokenList] = useState<Token[]>([]);
     const [amountIn, setAmountIn] = useState('');
     const [quoteData, setQuoteData] = useState<any>(null);
+    const [quoteUsdValue, setQuoteUsdValue] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isTokenListLoading, setIsTokenListLoading] = useState(false);
     const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
@@ -139,6 +141,15 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
         query: {
             // เพิ่ม !fromToken เช็คด้วย
             enabled: !!fromToken && !isNative && !!evmAddress
+        }
+    });
+    const { data: realFromDecimals, isLoading: isDecimalsLoading } = useReadContract({
+        address: fromToken?.address as Address,
+        abi: erc20Abi,
+        functionName: 'decimals',
+        chainId: activeChain.chainId,
+        query: {
+            enabled: !!fromToken && !isNative && activeChain.type === 'EVM',
         }
     });
 
@@ -235,8 +246,24 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                     }
                 }
 
-                if (activeChain.type === 'SOLANA' && !tokens.find(t => t.symbol === 'SOL')) {
+                if (activeChain.type === 'SOLANA') {
+                    // 1. เตะเหรียญที่ชื่อ SOL (ตัวปลอมที่ API อาจจะส่งมา) ทิ้งไปก่อน
+                    tokens = tokens.filter(t => t.symbol !== 'SOL');
+
+                    // 2. ยัด SOL ของแท้ (So111...) เข้าคิวที่ 1 เสมอ
                     tokens.unshift(DEFAULT_TOKENS['solana']);
+
+                    // 3. ถ้าในลิสต์ไม่มี USDC ให้สร้างขึ้นมาแล้วยัดเข้าคิวที่ 2
+                    if (!tokens.find(t => t.symbol === 'USDC')) {
+                        tokens.splice(1, 0, {
+                            symbol: 'USDC',
+                            name: 'USD Coin',
+                            address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // Address ของแท้
+                            decimals: 6,
+                            logo: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
+                            chainId: 0
+                        });
+                    }
                 }
 
                 setTokenList(tokens);
@@ -250,7 +277,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                         name: initialToken.name,
                         logo: initialToken.logo || '/smile.png',
                         address: initialToken.contract,
-                        decimals: foundInList ? foundInList.decimals : 18,
+                        decimals: foundInList ? foundInList.decimals : ((initialToken as any).decimals || 18),
                         chainId: activeChain.chainId
                     };
 
@@ -296,14 +323,21 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     }, [activeChain]);
 
     useEffect(() => {
+        // 🔥 1. เคลียร์ราคาเก่าทิ้ง "ทันที" ป้องกันการเอาไปคูณข้ามเหรียญ
+        setFromPrice(0);
         if (fromToken) fetchTokenPrice(fromToken).then(setFromPrice);
-        else setFromPrice(0);
-    }, [fromToken, activeChain]); // เพิ่ม activeChain dependency
+    }, [fromToken, activeChain]);
 
     useEffect(() => {
+        // 🔥 1. เคลียร์ราคาเก่าทิ้งทันที
+        setToPrice(0);
         if (toToken) fetchTokenPrice(toToken).then(setToPrice);
-        else setToPrice(0);
-    }, [toToken, activeChain]); // เพิ่ม activeChain dependency
+    }, [toToken, activeChain]);
+
+    // 🔥 2. เคลียร์ Quote เก่าทิ้งด้วยเมื่อเปลี่ยนเหรียญ
+    useEffect(() => {
+        setQuoteData(null);
+    }, [fromToken?.address, toToken?.address, activeChain.id]);
 
     // ✅ 1. UPDATE: Logic เมื่อได้รับ initialToken จาก SwipeableRow
     useEffect(() => {
@@ -365,6 +399,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     }, [activeChain, isNative, amountIn, quoteData, allowance, fromToken]);
 
 
+
     // ✅ 2. UPDATE: Fetch Quote Logic
     const fetchQuote = async (val: string) => {
         if (!val || parseFloat(val) <= 0) {
@@ -374,8 +409,13 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
         setIsLoading(true);
 
         try {
-            // ใช้ parseUnits เพื่อความแม่นยำ (ป้องกันปัญหา floating point)
-            const amountInSmallest = parseUnits(val, fromToken?.decimals || 18).toString();
+            // 🌟 3. ใช้ทศนิยมของจริงจาก Blockchain (ถ้าหาไม่ได้ค่อยใช้ 18)
+            const actualDecimals = activeChain.type === 'EVM' && !isNative && realFromDecimals !== undefined
+                ? realFromDecimals
+                : (fromToken?.decimals || (activeChain.type === 'SOLANA' ? 9 : 18));
+
+            // ใช้ parseUnits ควบคู่กับ actualDecimals ที่แม่นยำ 100%
+            const amountInSmallest = parseUnits(val, actualDecimals).toString();
 
             if (activeChain.type === 'SOLANA') {
                 const params = new URLSearchParams({
@@ -387,17 +427,54 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                 const res = await fetch(`/api/quote/solana?${params}`);
                 if (!res.ok) throw new Error('Solana quote failed');
                 const data = await res.json();
+                if (data.swapUsdValue) {
+                    const totalUsd = parseFloat(data.swapUsdValue);
+                    setQuoteUsdValue(totalUsd);
 
-                const priceImpact = data.priceImpactPct
-                    ? `${parseFloat(data.priceImpactPct).toFixed(2)}%`
-                    : '< 0.01%';
+                    // 🔥 2. เอามาหารกลับเพื่อบังคับให้ toPrice (ราคาต่อ 1 เหรียญ) ตรงกับความเป็นจริงเป๊ะๆ!
+                    const outAmountParsed = parseFloat(formatUnits(BigInt(data.outAmount), toToken?.decimals || 9));
+                    if (outAmountParsed > 0) {
+                        setToPrice(totalUsd / outAmountParsed);
+                    }
+                } else {
+                    setQuoteUsdValue(null);
+                }
+
+                // 🌟 1. ดึงชื่อ DEX ที่ใช้สลับเหรียญ (เช่น Scorch + SolFi V2)
+                const sources = data.routePlan?.map((r: any) => r.swapInfo.label) || [];
+                const uniqueSources = Array.from(new Set(sources));
+                const routeText = uniqueSources.length > 0 ? uniqueSources.join(' + ') : 'Jupiter';
+
+                // 🌟 2. คำนวณ Price Impact ให้สีและรูปแบบเหมือน EVM
+                let priceImpactDisplay = '< 0.01%';
+                if (data.priceImpactPct) {
+                    const valRaw = parseFloat(data.priceImpactPct);
+                    const percentRaw = valRaw * 100;
+                    const signedVal = percentRaw > 0 ? -percentRaw : percentRaw;
+                    if (Math.abs(signedVal) >= 0.01) {
+                        priceImpactDisplay = `${signedVal.toFixed(2)}%`;
+                    }
+                }
 
                 setQuoteData({
-                    // แปลงหน่วยกลับมาโชว์ (outAmount จาก Jupiter เป็น string integer)
+                    // จำนวนเหรียญที่ได้
                     price: formatUnits(BigInt(data.outAmount), toToken?.decimals || 9),
                     data: data,
-                    provider: 'Jupiter',
-                    priceImpact: priceImpact
+
+                    // แสดงชื่อ DEX ที่วิ่งไปหา
+                    provider: routeText,
+                    priceImpact: priceImpactDisplay,
+                    isFirmQuote: true, // ของ Solana สามารถนำไปใช้ Swap ได้เลย
+
+                    // 🌟 3. ข้อมูลเพิ่มเติมสำหรับความโปร่งใสแบบ EVM
+                    minReceived: data.otherAmountThreshold
+                        ? formatUnits(BigInt(data.otherAmountThreshold), toToken?.decimals || 9)
+                        : null,
+
+                    // ฝั่ง Solana ค่าธรรมเนียมเน็ตเวิร์คถูกมาก (ระดับสตางค์) และไม่มี Tax เหมือนฝั่ง EVM จึงตั้งเป็น 0
+                    networkFee: null,
+                    sellTax: 0,
+                    buyTax: 0,
                 });
 
             } else {
@@ -423,29 +500,12 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
 
                 if (!buyAmount) throw new Error('No buyAmount in quote');
                 let priceImpactDisplay = '< 0.01%';
-                let impactPercent = 0;
-
-                // ตรวจสอบว่ามีราคา USD ครบถ้วน
-                if (fromPrice > 0 && toPrice > 0) {
-                    const inputUsd = parseFloat(val) * fromPrice;
-                    const outputAmount = parseFloat(formatUnits(BigInt(buyAmount), toToken?.decimals || 18));
-                    const outputUsd = outputAmount * toPrice;
-
-                    if (inputUsd > 0) {
-                        // (98 - 100) / 100 * 100 = -2.0%
-                        impactPercent = ((outputUsd - inputUsd) / inputUsd) * 100;
+                if (data.estimatedPriceImpact) {
+                    const valRaw = parseFloat(data.estimatedPriceImpact);
+                    const signedVal = valRaw > 0 ? -valRaw : valRaw;
+                    if (Math.abs(signedVal) >= 0.01) {
+                        priceImpactDisplay = `${signedVal.toFixed(2)}%`;
                     }
-                }
-
-                // การตัดสินใจว่าจะโชว์เลขไหน
-                if (Math.abs(impactPercent) > 0.01) {
-                    // Manual calc has priority
-                    priceImpactDisplay = `${impactPercent.toFixed(2)}%`;
-                } else if (data.estimatedPriceImpact) {
-                    const val = parseFloat(data.estimatedPriceImpact);
-                    // Standardize to negative for loss
-                    const signedVal = val > 0 ? -val : val;
-                    priceImpactDisplay = `${signedVal.toFixed(2)}%`;
                 }
 
                 setQuoteData({
@@ -501,10 +561,11 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     // Debounce Input
     useEffect(() => {
         const timeout = setTimeout(() => {
-            if (amountIn) fetchQuote(amountIn);
+            // 🌟 2. รอให้โหลดทศนิยมจากเชนเสร็จก่อน ค่อยส่งไปหา 0x
+            if (amountIn && !isDecimalsLoading) fetchQuote(amountIn);
         }, 600);
         return () => clearTimeout(timeout);
-    }, [amountIn, fromToken, toToken]); // เพิ่ม dependencies
+    }, [amountIn, fromToken, toToken, realFromDecimals, isDecimalsLoading]);
 
     // ✅ 3. UPDATE: Handle Swap
     const handleSwap = async () => {
@@ -630,18 +691,45 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
         return 'Swap Now';
     };
 
-    const getImpactColor = (impactStr: string) => {
-        if (!impactStr) return 'text-green-500';
-        if (impactStr.includes('<')) return 'text-green-500'; // น้อยมาก
+    const getLivePriceImpact = () => {
+        if (!quoteData || !amountIn) return { text: '< 0.01%', color: 'text-green-500' };
 
-        // แปลง string เป็นตัวเลข (จะติดลบก็ช่างมัน)
-        const rawVal = parseFloat(impactStr.replace('%', ''));
-        // ดูแค่ขนาดความเสียหาย (เอาเครื่องหมายออก)
-        const val = Math.abs(rawVal);
+        // 1. ดึงค่า Default ที่ได้จาก API (Jupiter/0x) มาตั้งไว้ก่อน
+        let displayImpact = quoteData.priceImpact;
 
-        if (val < 1.0) return 'text-green-500';   // หายน้อยกว่า 1% -> เขียว
-        if (val < 3.0) return 'text-yellow-500';  // หาย 1-3% -> เหลือง
-        return 'text-red-500';                    // หายเกิน 3% -> แดง (High Price Impact!)
+        // 2. คำนวณสดๆ ตรงนี้เลย เพื่อบังคับใช้ราคา USD บนหน้าจอที่สดใหม่ที่สุด!
+        if (fromPrice > 0) {
+            const inputUsd = parseFloat(amountIn) * fromPrice;
+
+            // 🔥 ปรับให้ใช้ quoteUsdValue ก่อน ถ้าไม่มีค่อยไปใช้สูตรคูณเดิม
+            let outputUsd = 0;
+            if (quoteUsdValue) {
+                outputUsd = quoteUsdValue;
+            } else if (toPrice > 0) {
+                outputUsd = parseFloat(quoteData.price) * toPrice;
+            }
+
+            // คำนวณเฉพาะตอนที่มี outputUsd ครบถ้วน
+            if (inputUsd > 0 && outputUsd > 0) {
+                const impactPercent = ((outputUsd - inputUsd) / inputUsd) * 100;
+
+                // ถ้าคำนวณแล้วกำไรพุ่งเกิน 5% (ราคา API เพี้ยน) ให้กลับไปใช้ค่าของ 0x/Jupiter
+                // แต่ถ้าปกติติดลบ (ขาดทุน) หรือกำไรนิดหน่อย ให้โชว์ค่าที่เราคำนวณสดๆ ได้เลย
+                if (Math.abs(impactPercent) > 0.01 && impactPercent <= 5) {
+                    displayImpact = `${impactPercent.toFixed(2)}%`;
+                }
+            }
+        }
+
+        // 3. จัดการเรื่องสี (เขียว เหลือง แดง)
+        let colorClass = 'text-green-500';
+        if (displayImpact !== 'Unknown' && !displayImpact.includes('<')) {
+            const val = Math.abs(parseFloat(displayImpact.replace('%', '')));
+            if (val >= 1.0 && val < 3.0) colorClass = 'text-yellow-500';
+            else if (val >= 3.0) colorClass = 'text-red-500';
+        }
+
+        return { text: displayImpact, color: colorClass };
     };
 
     const formatDisplayValue = (val: string) => {
@@ -767,13 +855,13 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                         <div
                             className="bg-white p-2 rounded-xl border-4 border-white shadow-sm text-earth-primary cursor-pointer hover:scale-110 transition-transform"
-                            // ✅ เพิ่ม onClick ตรงนี้ครับ
                             onClick={() => {
                                 const temp = fromToken;
                                 setFromToken(toToken);
                                 setToToken(temp);
-                                setAmountIn(''); // เคลียร์ยอดเงินด้วย เดี๋ยวคำนวณผิด
+                                setAmountIn('');
                                 setQuoteData(null);
+                                setQuoteUsdValue(null); // 🔥 เคลียร์ค่า USD เก่าทิ้งด้วย
                             }}
                         >
                             <ArrowDown size={18} strokeWidth={3} />
@@ -820,7 +908,10 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                         </button>
                     </div>
                     <div className="px-1 mt-1 text-xs text-earth-stone font-medium min-h-[1.2em]">
-                        {quoteData && toPrice > 0 ? formatUsd(parseFloat(quoteData.price) * toPrice) : ''}
+                        {/* 🔥 ดึงค่า quoteUsdValue มาโชว์เป็นหลัก ถ้าไม่มีค่อยใช้สูตรคูณเดิม */}
+                        {quoteUsdValue
+                            ? formatUsd(quoteUsdValue)
+                            : (quoteData && toPrice > 0 ? formatUsd(parseFloat(quoteData.price) * toPrice) : '')}
                     </div>
                 </div>
 
@@ -833,17 +924,19 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                                 {/* 1. แสดง Rate (อัตราแลกเปลี่ยน) */}
                                 <div className="flex justify-between items-center text-earth-stone">
                                     <span className="flex items-center gap-1">Rate</span>
-                                    <span className="font-bold text-earth-darkbrown">
-                                        1 {fromToken?.symbol} ≈ {(parseFloat(quoteData.price) / parseFloat(amountIn || '1')).toFixed(4)} {toToken?.symbol}
+                                    <span className="font-bold text-earth-darkbrown flex items-center gap-1">
+                                        1 {fromToken?.symbol} ≈
+                                        <QtyDisplay qty={parseFloat(quoteData.price) / parseFloat(amountIn || '1')} />
+                                        <span className="ml-0.5">{toToken?.symbol}</span>
                                     </span>
                                 </div>
 
                                 {/* 2. แสดง Price Impact (Slippage) */}
                                 <div className="flex justify-between items-center text-earth-stone">
                                     <span className="flex items-center gap-1">Price Impact</span>
-                                    {/* เช็คค่า impact เพื่อเปลี่ยนสี */}
-                                    <span className={`font-bold ${getImpactColor(quoteData.priceImpact)}`}>
-                                        {quoteData.priceImpact}
+                                    {/* 🔥 เรียกใช้ฟังก์ชัน Live Calculation ตรงนี้ */}
+                                    <span className={`font-bold ${getLivePriceImpact().color}`}>
+                                        {getLivePriceImpact().text}
                                     </span>
                                 </div>
                                 {/* ✅ 3. (เพิ่มใหม่) Minimum Received */}
@@ -872,11 +965,11 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
 
                 {/* 3. แสดง Provider (Route via...) */}
                 {quoteData && (
-                    <div className="flex justify-end items-center gap-1 mt-2 px-1">
+                    <div className="flex justify-between items-center gap-1 mt-2 px-1">
                         <span className="text-[10px] text-earth-stone flex items-center gap-1">
-                            <RefreshCcw size={10} /> Route via
+                            <RefreshCcw size={10} className="shrink-0" /> Route via
                         </span>
-                        <span className="text-[10px] font-bold text-earth-darkbrown flex items-center gap-1 bg-earth-cream/30 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-bold text-earth-darkbrown flex items-center gap-1 bg-earth-cream/30 px-2 py-0.5 rounded-full truncate max-w-[60%]">
                             {quoteData.provider}
                         </span>
                     </div>

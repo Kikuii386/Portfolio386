@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
             const poolAddress = topPool.attributes.address;
 
             // 2.2 ดึงกราฟ OHLCV จาก Pool Address
-            // https://api.geckoterminal.com/api/v2/networks/{network}/pools/{pool_address}/ohlcv/{timeframe}
             const { timeframe, aggregate } = getGtTimeframe(days);
             const chartUrl = `https://api.geckoterminal.com/api/v2/networks/${network}/pools/${poolAddress}/ohlcv/${timeframe}?aggregate=${aggregate}&currency=usd`;
 
@@ -81,12 +80,10 @@ export async function GET(request: NextRequest) {
             const chartData = await chartRes.json();
 
             // 2.3 แปลง Format กลับเป็นแบบ CoinGecko เพื่อให้ Frontend (Recharts) ใช้งานได้เลย
-            // GT format: [timestamp, open, high, low, close, volume]
-            // CG format: [timestamp, price]
             const prices = chartData.data.attributes.ohlcv_list.map((item: number[]) => [
-                item[0] * 1000, // แปลงวินาทีเป็นมิลลิวินาที
-                item[4]         // ใช้ราคา Close (index 4)
-            ]).reverse();       // GT ส่งมาเรียงจากใหม่ไปเก่า ต้องกลับด้านให้กราฟ
+                item[0] * 1000,
+                item[4]
+            ]).reverse();
 
             return NextResponse.json({ prices });
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// 🌟 1. เพิ่มแหล่งดึงข้อมูล Token List ให้ครบทุกเชน EVM
+// 🌟 1. เปลี่ยน URL ของ Solana ให้เป็น API V2 ของ Jupiter (ดึงเฉพาะ Verified Tokens)
 const TOKEN_SOURCES = {
     ethereum: 'https://gateway.ipfs.io/ipns/tokens.uniswap.org',
     bsc: 'https://tokens.pancakeswap.finance/pancakeswap-extended.json',
@@ -15,7 +15,8 @@ const TOKEN_SOURCES = {
     abstract: 'https://tokens.coingecko.com/abstract/all.json',
     berachain: 'https://tokens.coingecko.com/berachain/all.json',
     sonic: 'https://tokens.coingecko.com/sonic/all.json',
-    solana: 'https://tokens.coingecko.com/solana/all.json',
+    // 🔥 แก้ตรงนี้: ใช้ Jupiter Verified API
+    solana: 'https://api.jup.ag/tokens/v2/tag?query=verified',
 };
 
 // 🌟 2. สร้างแผนผัง Chain ID เพื่อให้ Filter ข้อมูลได้ถูกต้อง
@@ -58,27 +59,43 @@ export async function GET(request: Request) {
     const targetUrl = TOKEN_SOURCES[chain as keyof typeof TOKEN_SOURCES];
 
     try {
-        const res = await fetch(targetUrl);
-        if (!res.ok) throw new Error('Failed to fetch external token list');
+        // 🌟 1. สร้าง Headers และดึง JUPITER_API_KEY มาใส่เฉพาะเชน Solana
+        const headers: HeadersInit = {};
+        if (chain === 'solana') {
+            const JUPITER_API_KEY = (process.env.JUPITER_API_KEY || '').trim();
+            if (JUPITER_API_KEY) {
+                headers['x-api-key'] = JUPITER_API_KEY; // ยื่นกุญแจให้ Jupiter!
+            }
+        }
+
+        // 🌟 2. แนบ headers เข้าไปใน fetch
+        const res = await fetch(targetUrl, { headers });
+
+        if (!res.ok) {
+            console.error(`Fetch failed with status: ${res.status}`);
+            throw new Error('Failed to fetch external token list');
+        }
 
         const data = await res.json();
         let formattedTokens = [];
 
-        // ✅ ใช้โครงสร้างตรวจสอบแบบเดียวกันหมด เพราะ CoinGecko ส่งข้อมูลมาห่อด้วย 'tokens'
+        // ✅ ใช้โครงสร้างตรวจสอบแบบเดียวกันหมด 
         const tokensArray = data.tokens || (Array.isArray(data) ? data : []);
 
         if (chain === 'solana') {
-            // ✅ แก้ไขการอ่านข้อมูลให้รองรับ CoinGecko และจำกัดแค่ 1,000 เหรียญแรกกันหน้าเว็บค้าง
+            // ✅ เปลี่ยนการอ่านค่าให้ตรงกับ Jupiter API V2
             formattedTokens = tokensArray.slice(0, 1000).map((t: any) => ({
                 symbol: t.symbol,
                 name: t.name,
-                address: t.address,
+                // 🔥 Jupiter ใช้ 'id' เก็บ Address
+                address: t.id || t.address,
                 decimals: t.decimals,
-                logo: optimizeLogoUrl(t.logoURI),
+                // 🔥 Jupiter ใช้ 'icon' เก็บรูป
+                logo: optimizeLogoUrl(t.icon || t.logoURI),
                 chainId: 0
             }));
         } else {
-            // ✅ ดึง Chain ID จาก Map ที่เราทำไว้
+            // ✅ EVM ปกติ
             const targetChainId = CHAIN_ID_MAP[chain] || 1;
 
             formattedTokens = tokensArray
