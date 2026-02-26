@@ -8,13 +8,14 @@ import { useAccount, useWalletClient, useSwitchChain, useBalance, useReadContrac
 import { parseUnits, formatUnits, erc20Abi, type Address } from 'viem';
 // Solana Hooks
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, PublicKey } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 // Components
 import UnifiedWalletModal from '@/components/UnifiedWalletModal';
 import { EnrichedToken } from '@/lib/enrichWithPrices';
 import TokenSelectorModal, { Token } from '@/components/TokenSelectorModal';
 import QtyDisplay from '@/components/QtyDisplay';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // --- Types ---
 type ChainType = 'EVM' | 'SOLANA';
@@ -118,8 +119,9 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [slippage, setSlippage] = useState('0.5');
     const settingsRef = useRef<HTMLDivElement>(null);
+    const { publicKey } = useWallet(); //
+    const [tokenBalance, setTokenBalance] = useState<string>('0.00');
 
-    // Optional: Balance Hook
     // Optional: Balance Hook
     const isNative = fromToken?.address === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
@@ -165,7 +167,7 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
     const formattedBalance = displayBalance.includes('.')
         ? displayBalance.slice(0, displayBalance.indexOf('.') + 7)
         : displayBalance;
-
+    const finalDisplayBalance = activeChain.type === 'SOLANA' ? tokenBalance : formattedBalance;
     const formatUsd = (val: number) => {
         if (val === 0 || isNaN(val)) return '';
         if (val < 0.01) return '<$0.01';
@@ -195,6 +197,45 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
             return 0;
         }
     };
+
+    useEffect(() => {
+        const fetchCurrentTokenBalance = async () => {
+            if (!publicKey || !fromToken) {
+                setTokenBalance('0.00');
+                return;
+            }
+
+            try {
+                // 1. ถ้าเป็นเหรียญ Native SOL
+                if (fromToken.address === 'So11111111111111111111111111111111111111112') {
+                    const bal = await connection.getBalance(publicKey);
+                    setTokenBalance((bal / 1e9).toFixed(4));
+                }
+                // 2. ถ้าเป็นเหรียญ Token อื่นๆ (SPL Token)
+                else {
+                    const response = await connection.getParsedTokenAccountsByOwner(publicKey, {
+                        mint: new PublicKey(fromToken.address),
+                    });
+
+                    if (response.value.length > 0) {
+                        // ดึงยอดจาก Account แรกที่เจอ
+                        const amount = response.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+                        setTokenBalance(amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }));
+                    } else {
+                        setTokenBalance('0.00');
+                    }
+                }
+            } catch (error) {
+                console.error("Fetch Balance Error:", error);
+                setTokenBalance('0.00');
+            }
+        };
+
+        if (activeChain.type === 'SOLANA') {
+            fetchCurrentTokenBalance();
+        }
+        // 🔥 ให้รันใหม่ทุกครั้งที่เปลี่ยนเหรียญ (fromToken) หรือเปลี่ยนกระเป๋า
+    }, [publicKey, connection, fromToken, activeChain]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -676,6 +717,19 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
 
     const isChainConnected = activeChain.type === 'EVM' ? isEvmConnected : isSolConnected;
 
+    const handleMax = () => {
+        // เลือกยอดเงินตามประเภท Chain ที่ใช้งานอยู่
+        const maxAmount = activeChain.type === 'SOLANA' ? tokenBalance : formattedBalance;
+
+        // ลบเครื่องหมาย comma (,) ออกเพื่อให้ input นำไปคำนวณต่อได้ถูกต้อง
+        const cleanAmount = maxAmount.replace(/,/g, '');
+
+        // ถ้าเป็น 0.00 หรือไม่มีเงิน ไม่ต้องใส่ค่า
+        if (parseFloat(cleanAmount) > 0) {
+            setAmountIn(cleanAmount);
+        }
+    };
+
     const handleAction = () => {
         if (!isChainConnected) setIsUnifiedModalOpen(true);
         else if (needsApproval) handleApprove();
@@ -808,8 +862,24 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                 <div className="bg-earth-cream/40 p-4 rounded-2xl border border-transparent hover:border-earth-cream/60 transition-all mb-1">
                     <div className="flex justify-between text-xs text-earth-stone mb-2">
                         <span>You Pay</span>
-                        {/* โชว์ Balance จริง */}
-                        <span>Balance: {activeChain.type === 'EVM' ? formattedBalance : '0.00'}</span>
+                        {isChainConnected ? (
+                            <div className="flex items-center gap-2">
+                                <span>
+                                    Balance: <span className="text-earth-darkbrown font-bold">
+                                        {activeChain.type === 'SOLANA' ? tokenBalance : formattedBalance}
+                                    </span>
+                                </span>
+                                {/* 🔥 ปุ่ม MAX ดีไซน์เข้ากับธีม Earth ของคุณ */}
+                                <button
+                                    onClick={handleMax}
+                                    className="text-[10px] bg-earth-sage/20 text-earth-sage px-1.5 py-0.5 rounded-md hover:bg-earth-sage/30 transition-colors font-bold border border-earth-sage/20 active:scale-95"
+                                >
+                                    MAX
+                                </button>
+                            </div>
+                        ) : (
+                            <span className="opacity-40 italic">Connect wallet to see balance</span>
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         <input
@@ -979,10 +1049,12 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                 <button
                     onClick={handleAction}
                     // ✅ ปิดปุ่มถ้าเงินไม่พอ แต่ยังให้กดดูราคาได้
-                    disabled={isLoading || (!amountIn && isChainConnected) || isApproving || isInsufficientBalance}
+                    disabled={isLoading || isApproving || (isChainConnected && (!amountIn || isInsufficientBalance))}
                     className={`w-full mt-4 py-4 rounded-2xl font-bold text-lg hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg
-                        ${isInsufficientBalance ? 'bg-red-500 text-white' : (needsApproval ? 'bg-blue-600 text-white' : 'bg-earth-darkbrown text-white')}
-                    `}
+                        ${(isChainConnected && isInsufficientBalance)
+                            ? 'bg-red-500 text-white'
+                            : (needsApproval ? 'bg-blue-600 text-white' : 'bg-earth-darkbrown text-white')}
+`}
                 >
                     {getButtonText()}
                 </button>
