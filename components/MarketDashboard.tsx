@@ -293,7 +293,7 @@ function MarketSkeleton() {
     );
 }
 
-const MarketRow = React.memo(({ coin, Sparkline, onSelect }: any) => {
+const MarketRow = React.memo(({ coin, Sparkline, onSelect, isFavorite, onToggleFavorite }: any) => {
     return (
         <motion.tr
             layout="position"
@@ -306,7 +306,18 @@ const MarketRow = React.memo(({ coin, Sparkline, onSelect }: any) => {
             <td colSpan={8} className="p-0 border-none">
                 <div className="flex items-center w-full py-4 hover:bg-earth-cream/40 transition-colors duration-300 ease-in-out">
                     <div className="w-[71.97px] pl-2 text-center shrink-0">
-                        <Star size={16} className="mx-auto text-earth-stone/40 hover:text-yellow-400 hover:fill-yellow-400 transition-colors" />
+                        <button
+                            onClick={(e) => onToggleFavorite(coin.id, e)}
+                            className="p-1.5 rounded-full hover:bg-earth-darkbrown/5 transition-colors focus:outline-none"
+                        >
+                            <Star
+                                size={16}
+                                className={`mx-auto transition-all duration-300 ${isFavorite
+                                    ? 'text-yellow-500 fill-yellow-500 scale-110' // สีตอนเป็น Favorite
+                                    : 'text-earth-stone/40 hover:text-yellow-400'  // สีตอนปกติ
+                                    }`}
+                            />
+                        </button>
                     </div>
                     <div className="w-[345.5px] px-2 shrink-0">
                         <div className="flex items-center gap-3">
@@ -470,6 +481,7 @@ const MarketCard = React.memo(({ coin, onSelect }: any) => {
 // --- 🚀 Main Component: MarketDashboard ---
 export default function MarketDashboard() {
     const [activeTab, setActiveTab] = useState('All');
+    const [favorites, setFavorites] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [globalData, setGlobalData] = useState<MarketData | null>(null);
     const [headerLoading, setHeaderLoading] = useState(true);
@@ -486,6 +498,67 @@ export default function MarketDashboard() {
         setSelectedCoin(coin);
         setIsDrawerOpen(true);
     }, []);
+
+    useEffect(() => {
+        const fetchFavorites = async () => {
+            try {
+                const res = await fetch('/api/favorites');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        setFavorites(data);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load favorites from DB", error);
+            }
+        };
+        fetchFavorites();
+    }, []);
+
+    // ✅ 3. ฟังก์ชันสำหรับ กดสลับดาว (เพิ่ม/ลบ)
+    const toggleFavorite = useCallback(async (coinId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        const isCurrentlyFavorite = favorites.includes(coinId);
+
+        // Optimistic Update: สลับดาวบนหน้าจอทันทีให้ดูลื่นไหล
+        setFavorites((prev) =>
+            isCurrentlyFavorite
+                ? prev.filter(id => id !== coinId)
+                : [...prev, coinId]
+        );
+
+        // ยิงไปเซฟลง DB
+        try {
+            const res = await fetch('/api/favorites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    coinId: coinId,
+                    isFavorite: isCurrentlyFavorite // ส่งสถานะเก่าไปให้ API รู้ว่าต้อง Insert หรือ Delete
+                })
+            });
+
+            if (!res.ok) {
+                // ถ้า API พัง (เช่น หมดอายุ, เน็ตหลุด) ดึงดาวกลับสถานะเดิม
+                console.error("Failed to update favorite in DB");
+                setFavorites((prev) =>
+                    isCurrentlyFavorite
+                        ? [...prev, coinId]
+                        : prev.filter(id => id !== coinId)
+                );
+            }
+        } catch (error) {
+            console.error("Error toggling favorite", error);
+            // Revert กลับเช่นกัน
+            setFavorites((prev) =>
+                isCurrentlyFavorite
+                    ? [...prev, coinId]
+                    : prev.filter(id => id !== coinId)
+            );
+        }
+    }, [favorites]);
 
     const handleMoreClick = (tabName: string) => {
         setActiveTab(tabName); // เปลี่ยน Tab
@@ -510,7 +583,9 @@ export default function MarketDashboard() {
         );
 
         // 2. Sort Logic (เพิ่มเคส Top Volume)
-        if (deferredTab === 'Top Gainers') {
+        if (deferredTab === 'Favorites') {
+            result = result.filter(coin => favorites.includes(coin.id));
+        } else if (deferredTab === 'Top Gainers') {
             result.sort((a, b) => b.change24h - a.change24h);
         } else if (deferredTab === 'Top Losers') {
             result.sort((a, b) => a.change24h - b.change24h);
@@ -522,7 +597,7 @@ export default function MarketDashboard() {
             result.sort((a, b) => a.rank - b.rank);
         }
         return result;
-    }, [coins, deferredSearch, deferredTab]);
+    }, [coins, deferredSearch, deferredTab, favorites]);
 
     const visibleCoins = useMemo(() => {
         return processedCoins.slice(0, visibleCount);
@@ -637,7 +712,7 @@ export default function MarketDashboard() {
                                 className={className}
                                 style={{ width: size, height: size }}
                             />
-                        )} ก
+                        )}
                         progress={globalData.btcDominance}
                     />
 
@@ -776,6 +851,8 @@ export default function MarketDashboard() {
                                             coin={coin}
                                             Sparkline={Sparkline}
                                             onSelect={handleSelectCoin}
+                                            isFavorite={favorites.includes(coin.id)}
+                                            onToggleFavorite={toggleFavorite}
                                         />
                                     ))}
                                 </AnimatePresence>
@@ -791,6 +868,8 @@ export default function MarketDashboard() {
                                     coin={coin}
                                     Sparkline={Sparkline}
                                     onSelect={handleSelectCoin}
+                                    isFavorite={favorites.includes(coin.id)}
+                                    onToggleFavorite={toggleFavorite}
                                 />
                             ))}
                         </AnimatePresence>

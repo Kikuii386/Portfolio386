@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
             const network = GECKOTERMINAL_MAP[chain.toLowerCase()] || chain.toLowerCase();
 
             // 2.1 หา Pool ที่ดีที่สุดของ Token นี้ก่อน (Top Pool)
-            // https://api.geckoterminal.com/api/v2/networks/{network}/tokens/{token_address}/pools
             const poolUrl = `https://api.geckoterminal.com/api/v2/networks/${network}/tokens/${address}/pools?page=1`;
             const poolRes = await fetch(poolUrl, { next: { revalidate: 300 } }); // Cache Pool นานหน่อย (5 นาที)
 
