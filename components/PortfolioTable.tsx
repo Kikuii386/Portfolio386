@@ -8,6 +8,7 @@ import {
   LineChart,
   FileSpreadsheet,
   SlidersHorizontal,
+  ArrowRightLeft,
 } from 'lucide-react';
 import LoadingIndicator from '@/components/ui/LoadingIndicator';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -32,6 +33,7 @@ type Props = {
   loading?: boolean;
   isFilterOpen: boolean;
   setIsFilterOpen: (isOpen: boolean) => void;
+  onSwap: (token: EnrichedToken) => void;
 };
 
 function PortfolioTable({
@@ -922,18 +924,30 @@ function PortfolioTable({
                             e.stopPropagation(); // กันไม่ให้ไปกวน Accordion
                             setSelectedToken(t); // ✅ สั่งเปิด CoinDrawer โดยส่ง token ตัวนี้เข้าไป
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
                         >
-                          <LineChart size={14} />
+                          <LineChart size={12} />
                           Chart
+                        </button>
+                        {/* ✅ ปุ่ม Swap มือถือ */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSwapToken(t);
+                            setIsSwapOpen(true);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
+                        >
+                          <ArrowRightLeft size={12} />
+                          Swap
                         </button>
                         <a
                           href={targetSheetLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-white border border-earth-cream/60 text-earth-darkbrown text-xs font-semibold shadow-sm active:scale-95 transition-all"
                         >
-                          <FileSpreadsheet size={14} />
+                          <FileSpreadsheet size={12} />
                           Sheet
                         </a>
                       </div>
