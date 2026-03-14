@@ -707,9 +707,10 @@ export default function MarketDashboard() {
                         value={`${globalData.btcDominance.toFixed(1)}%`}
                         icon={({ size, className }: any) => (
                             <img
-                                src="https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=040"
+                                src="https://cryptologos.cc/logos/bitcoin-btc-logo.svg"
                                 alt="BTC"
                                 className={className}
+                                referrerPolicy="no-referrer"
                                 style={{ width: size, height: size }}
                             />
                         )}
@@ -724,9 +725,10 @@ export default function MarketDashboard() {
                         price={ethPrice}
                         icon={({ size, className }: any) => (
                             <img
-                                src="https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=040"
+                                src="https://cryptologos.cc/logos/ethereum-eth-logo.svg"
                                 alt="ETH"
                                 className={className}
+                                referrerPolicy="no-referrer"
                                 style={{ width: size, height: size }}
                             />
                         )}
@@ -742,9 +744,10 @@ export default function MarketDashboard() {
                         price={solPrice}
                         icon={({ size, className }: any) => (
                             <img
-                                src="https://cryptologos.cc/logos/solana-sol-logo.svg?v=040"
+                                src="https://cryptologos.cc/logos/solana-sol-logo.svg"
                                 alt="SOL"
                                 className={className}
+                                referrerPolicy="no-referrer"
                                 style={{ width: size, height: size }}
                             />
                         )}

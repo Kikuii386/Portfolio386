@@ -155,7 +155,7 @@ export default function TokenSelectorModal({
                                                     : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 font-medium'
                                                 }`}
                                         >
-                                            <img src={chain.logo} alt={chain.name} className="w-5 h-5 rounded-full" />
+                                            <img src={chain.logo} alt={chain.name} className="w-5 h-5 rounded-full" referrerPolicy="no-referrer" />
                                             <span className="text-sm">{chain.name}</span>
                                             {isActive && <Check size={14} className="text-earth-olive ml-1" />}
                                         </button>
@@ -198,10 +198,12 @@ export default function TokenSelectorModal({
                                                             className="w-full h-full rounded-full object-contain bg-white border border-gray-100 shadow-sm"
                                                             onError={(e) => e.currentTarget.src = '/smile.png'}
                                                             loading="lazy"
+                                                            referrerPolicy="no-referrer"
                                                         />
                                                         <img
                                                             src={activeChain.logo}
                                                             className="absolute bottom-0 right-0 w-[16px] h-[16px] rounded-full ring-1 ring-white bg-white object-contain"
+                                                            referrerPolicy="no-referrer"
                                                         />
                                                     </div>
                                                     <div className="text-left">

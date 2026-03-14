@@ -900,11 +900,13 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                                         src={fromToken.logo}
                                         className="w-full h-full rounded-full object-contain bg-white"
                                         onError={(e) => e.currentTarget.src = '/smile.png'}
+                                        referrerPolicy="no-referrer"
                                     />
                                     {/* โลโก้เชนย่อส่วนให้พอดีกับกรอบ 24px */}
                                     <img
                                         src={activeChain.logo}
                                         className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full ring-[1.5px] ring-white bg-white object-contain"
+                                        referrerPolicy="no-referrer"
                                     />
                                 </div>
                             ) : (
@@ -962,12 +964,14 @@ export default function SmartSwapCard({ initialToken, onClose }: SmartSwapCardPr
                                     <img
                                         src={toToken.logo}
                                         className="w-full h-full rounded-full object-contain bg-white"
+                                        referrerPolicy="no-referrer"
                                         onError={(e) => e.currentTarget.src = '/smile.png'}
                                     />
                                     {/* โลโก้เชนย่อส่วนให้พอดีกับกรอบ 24px */}
                                     <img
                                         src={activeChain.logo}
                                         className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full ring-[1.5px] ring-white bg-white object-contain"
+                                        referrerPolicy="no-referrer"
                                     />
                                 </div>
                             ) : (
